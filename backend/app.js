@@ -4,6 +4,7 @@ const pool = require('./config/bd')
 const {initModels} = require('./models');
 const {createDefaultAdmin} = require('./models/users')
 const authRoutes = require('./routes/auth.routes');
+const eventRoutes = require('./routes/events.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +18,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);
+app.use('/api/event', eventRoutes);
 
 let server; // Stocke l'instance du serveur HTTP
 
