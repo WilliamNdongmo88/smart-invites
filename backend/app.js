@@ -1,13 +1,22 @@
 const express = require('express');
+const cors = require('cors');
 const pool = require('./config/bd')
-// const authRoutes = require('./routes/auth.routes');
+const {initModels} = require('./models');
+const {createDefaultAdmin} = require('./models/users')
+const authRoutes = require('./routes/auth.routes');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
+// Autorise les requêtes venant d'Angular
+app.use(cors({
+  origin: 'http://localhost:4200',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json());
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 let server; // Stocke l'instance du serveur HTTP
 
@@ -18,8 +27,8 @@ const startServer = async () => {
     console.log('🕐 MySQL test query result:', rows[0]);
 
     // 2 Initialiser toutes les tables
-    // await initModels();
-    // await createDefaultAdmin();
+    await initModels();
+    await createDefaultAdmin();
 
     // 3 Démarrer le serveur
     app.get('/', (req, res) => {
