@@ -5,6 +5,7 @@ const {initModels} = require('./models');
 const {createDefaultAdmin} = require('./models/users')
 const authRoutes = require('./routes/auth.routes');
 const eventRoutes = require('./routes/events.routes');
+const guestRoutes = require('./routes/guests.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,6 +20,7 @@ app.use(cors({
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/event', eventRoutes);
+app.use('/api/guest', guestRoutes);
 
 let server; // Stocke l'instance du serveur HTTP
 

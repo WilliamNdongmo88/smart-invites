@@ -1,7 +1,6 @@
 require('dotenv').config();
 const pool = require('../config/bd');
 
-// Initialisation du modèle User
 const initEventsModel = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS EVENTS (
@@ -19,7 +18,7 @@ const initEventsModel = async () => {
         CONSTRAINT valid_status CHECK (status IN ('PLANNED', 'ACTIVE', 'COMPLETED'))
     )
   `);
-  console.log('✅ Table USERS prête !');
+  console.log('✅ Table EVENTS prête !');
 };
 
 async function createEvent(organizerId, title, description, eventDate, 
