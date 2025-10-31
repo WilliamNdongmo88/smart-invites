@@ -13,13 +13,19 @@
   "type": "commonjs",
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",
+    "axios": "^1.13.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
+    "firebase-admin": "^13.5.0",
+    "jimp": "^1.6.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.15.3",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.4",
+    "uuid": "^13.0.0"
   }
 }

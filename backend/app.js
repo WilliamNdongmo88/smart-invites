@@ -6,6 +6,7 @@ const {createDefaultAdmin} = require('./models/users')
 const authRoutes = require('./routes/auth.routes');
 const eventRoutes = require('./routes/events.routes');
 const guestRoutes = require('./routes/guests.routes');
+const invitationRoutes = require('./routes/invitations.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/event', eventRoutes);
 app.use('/api/guest', guestRoutes);
+app.use('/api/invitation', invitationRoutes);
 
 let server; // Stocke l'instance du serveur HTTP
 

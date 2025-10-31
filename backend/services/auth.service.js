@@ -1,5 +1,4 @@
 const Brevo = require('@getbrevo/brevo');
-const crypto = require('crypto');
 require('dotenv').config();
 const {getUserByEmail, updateUserPassword} = require('../models/users')
 
