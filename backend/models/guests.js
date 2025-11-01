@@ -49,7 +49,7 @@ async function update_guest(guestId, eventId, fullName, email, phoneNumber,
     );
 }
 
-async function updateRsvp_status(guestId, rsvpStatus) {
+async function updateRsvpStatusGuest(guestId, rsvpStatus) {
     await pool.query(`UPDATE GUESTS SET rsvp_status=? WHERE id=?`, [rsvpStatus, guestId]);
 }
 
@@ -58,5 +58,5 @@ async function delete_guest(guestId) {
 }
 
 module.exports = {initGuestModel, createGuest, getGuestById,
-    getGuestByEventId, update_guest, updateRsvp_status, delete_guest,
+    getGuestByEventId, update_guest, updateRsvpStatusGuest, delete_guest,
 }

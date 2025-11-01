@@ -39,4 +39,10 @@ async function getGuestInvitationByToken(token) {
     return guest[0];
 };
 
-module.exports = {initInvitationModel, createInvitation, getGuestInvitationById, getGuestInvitationByToken};
+async function deleteGuestInvitation(guestId) {
+    await pool.query(`DELETE FROM INVITATIONS WHERE guest_id=?`, [guestId]);
+};
+
+module.exports = {initInvitationModel, createInvitation, getGuestInvitationById, 
+    getGuestInvitationByToken, deleteGuestInvitation
+};

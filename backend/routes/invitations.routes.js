@@ -5,6 +5,9 @@ const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
 
 router.post('/generate/:guestId', authenticateToken, requireRole('admin'), InvitationController.genererInvitation);
 router.get("/view/:guestId", InvitationController.viewInvitation);
-router.get("/qrcode/view/:guestId", authenticateToken, InvitationController.viewQrCode);
+router.get("/qrcode/view/:guestId", InvitationController.viewQrCode);
+router.put("/rsvp-status/:token", InvitationController.rsvpGuestStatus);
+router.delete("/delete/:guestId", InvitationController.deleteInvitation);
+
 
 module.exports = router;
