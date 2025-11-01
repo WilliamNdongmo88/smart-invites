@@ -1,36 +1,66 @@
 const { v4: uuidv4 } = require('uuid');
 const { getGuestById } = require("../models/guests");
-const {createInvitation, getGuestInvitation, getGuestInvitationByToken} = require('../models/invitations');
-const {generateQrCodeUrl} = require('../services/invitation.service');
+const {createInvitation, getGuestInvitationById} = require('../models/invitations');
+const { generateGuestQr } = require("../services/qrCodeService");
+const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
+const { bucket } = require('../config/firebaseConfig');
 
 const genererInvitation = async (req, res) => {
-    try {
-        const guest = await getGuestById(req.params.guestId);
-        if(!guest) return res.status(401).json({error: `Aucun invité avec l'id ${req.params.guestId} trouvé`});
+  try {
+    const guest = await getGuestById(req.params.guestId);
+    if (!guest) return res.status(404).json({ error: "Invité introuvable" });
 
-        const invite = await getGuestInvitation(req.params.guestId);
-        if(invite) return res.status(409).json({error: `Invitation déjà envoyé pour cet invité`});
+    const invitations = await getGuestInvitation(req.params.guestId);
+    console.log('Invitation:', invitations);
+    if (invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
+    
+    const token = uuidv4();
+    const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.jpg");
+    const buffer = await generateGuestPdf(guest);
+    const pdfUrl = await uploadPdfToFirebase(guest, buffer);
 
-        // Generate unique token
-        const token = uuidv4();
-        console.log('token ::', token);
-        // Generate QR code URL 
-        const data = await generateQrCodeUrl(token);
-        console.log('data:', data);
-        const invitationId = await createInvitation(req.params.guestId, token, data.publicUrl);
-        console.log('invitationId:', invitationId);
-        return res.status(201).json({invitationId, token, qrCodeUrl})
-        // res.setHeader('Content-Type', 'image/png');
-        // res.send(data.buffer);
-    } catch (error) {
-        console.error('CREATE INVITATION ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
+    await createInvitation(req.params.guestId, token, qrUrl);
+
+    return res.json({ message: "QR code et PDF générés", qrUrl, pdfUrl });
+  } catch (err) {
+    console.error("Erreur génération :", err);
+    res.status(500).json({ error: err.message });
+  }
 };
+
+const viewInvitation = async (req, res) => {
+    try {
+        console.log('guestId:', req.params.guestId);
+        const guest = await getGuestById(req.params.guestId);
+        if (!guest) return res.status(404).send("Invité introuvable");
+
+        const invitations = await getGuestInvitation(req.params.guestId);
+        if (!invitations[0]) return res.status(401).json({ error: "Aucune invitation n'a été envoyé a cet invité" });
+
+        const file = bucket.file(`pdfs/carte_${guest.id}.pdf`);
+        const [exists] = await file.exists();
+
+        if (exists) {
+            // 🔸 Sert le PDF déjà généré
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Disposition", "inline; filename=invitation.pdf");
+            file.createReadStream().pipe(res);
+        } else {
+            // 🔸 Sinon, génère et renvoie à la volée
+            const buffer = await generateGuestPdf(guest);
+            const pdfUrl = await uploadPdfToFirebase(guest, buffer);
+            console.log('pdfUrl:', pdfUrl);
+            res.redirect(pdfUrl);
+        }
+    } catch (error) {
+        console.error("Erreur affichage carte:", error);
+        res.status(500).send("Erreur interne du serveur.");
+    }
+}
 
 const viewQrCode = async (req, res) => {
     try {
-        const result = await getGuestInvitationByToken(req.params.token);
+        const result = await getGuestInvitationById(req.params.guestId);
         if(!result) return res.status(401).json({error: `Aucun invité trouvé`});
         
         console.log('result:', result);
@@ -41,4 +71,4 @@ const viewQrCode = async (req, res) => {
     }
 }
 
-module.exports = {genererInvitation, viewQrCode};
+module.exports = {genererInvitation, viewInvitation, viewQrCode};

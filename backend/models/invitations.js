@@ -20,13 +20,16 @@ const initInvitationModel = async () => {
   console.log('✅ Table INVITATIONS prête !');
 };
 
-async function createInvitation(invitationId, token, qrCodeUrl) {
-    const [result] = await pool.query(`INSERT INTO INVITATIONS (guest_id, token, qr_code_url) 
-        VALUES(?,?,?)`, [invitationId, token, qrCodeUrl]);
+async function createInvitation(guestId, token, qrCodeUrl) {
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+    const [result] = await pool.query(`INSERT INTO INVITATIONS (guest_id, token, qr_code_url, expires_at) 
+        VALUES(?,?,?,?)`, [guestId, token, qrCodeUrl, expiresAt]);
     return result.insertId;
 };
 
-async function getGuestInvitation(guestId) {
+async function getGuestInvitationById(guestId) {
     const guest = await pool.query(`SELECT * FROM INVITATIONS WHERE guest_id=?`, [guestId]);
     return guest[0];
 };
@@ -36,4 +39,4 @@ async function getGuestInvitationByToken(token) {
     return guest[0];
 };
 
-module.exports = {initInvitationModel, createInvitation, getGuestInvitation, getGuestInvitationByToken};
+module.exports = {initInvitationModel, createInvitation, getGuestInvitationById, getGuestInvitationByToken};
