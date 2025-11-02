@@ -4,6 +4,7 @@ const EventController = require('../controllers/event.controller');
 const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
 
 router.post('/create-event',authenticateToken, requireRole('admin'), EventController.create_Event);
+router.get('/all-events',authenticateToken, EventController.getAllEvents);
 router.get('/:eventId',authenticateToken, EventController.getEventBy_Id);
 router.get('/organizer/:organizerId',authenticateToken, EventController.getOrganizerEvents);
 router.put('/:eventId',authenticateToken, EventController.updateEventBy_Id);

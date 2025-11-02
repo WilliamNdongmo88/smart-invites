@@ -5,7 +5,7 @@ const initInvitationModel = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS INVITATIONS (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        guest_id INT NOT NULL,
+        guest_id INT UNIQUE,
         token VARCHAR(255) NOT NULL UNIQUE,
         qr_code_url TEXT,
         status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
@@ -30,13 +30,13 @@ async function createInvitation(guestId, token, qrCodeUrl) {
 };
 
 async function getGuestInvitationById(guestId) {
-    const guest = await pool.query(`SELECT * FROM INVITATIONS WHERE guest_id=?`, [guestId]);
-    return guest[0];
+    const result = await pool.query(`SELECT * FROM INVITATIONS WHERE guest_id=?`, [guestId]);
+    return result[0];
 };
 
 async function getGuestInvitationByToken(token) {
-    const guest = await pool.query(`SELECT * FROM INVITATIONS WHERE token=?`, [token]);
-    return guest[0];
+    const result = await pool.query(`SELECT * FROM INVITATIONS WHERE token=?`, [token]);
+    return result[0];
 };
 
 async function deleteGuestInvitation(guestId) {

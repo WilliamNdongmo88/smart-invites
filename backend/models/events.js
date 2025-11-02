@@ -29,6 +29,28 @@ async function createEvent(organizerId, title, description, eventDate,
     return result.insertId;
 }
 
+async function getEventWithTotalGuest() {
+        const result = await pool.query(`
+        SELECT
+            e.id AS event_id,
+            e.title,
+            e.description,
+            e.event_date,
+            e.event_location,
+            e.max_guests,
+            e.status,
+            COUNT(g.id) AS total_guests,
+            SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
+            SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
+            SUM(CASE WHEN g.rsvp_status = 'DECLINED' THEN 1 ELSE 0 END) AS declined_count
+        FROM EVENTS e
+        LEFT JOIN GUESTS g ON g.event_id = e.id
+        GROUP BY e.id
+    `
+    );
+    return result[0];
+}
+
 async function getEventById(eventId) {
     const [event] = await pool.query(`SELECT * FROM EVENTS WHERE id = ?`, [eventId]);
     return event[0];
@@ -38,6 +60,29 @@ async function getEventsByOrganizerId(organizerId) {
     const [event] = await pool.query(`SELECT * FROM EVENTS WHERE organizer_id = ?`, [organizerId]);
     console.log("event: ", event);
     return event;
+}
+
+async function getEventWithTotalGuestById(eventId) {
+    const result = await pool.query(`
+        SELECT
+            e.id AS event_id,
+            e.title,
+            e.description,
+            e.event_date,
+            e.event_location,
+            e.max_guests,
+            e.status,
+            COUNT(g.id) AS total_guests,
+            SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
+            SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
+            SUM(CASE WHEN g.rsvp_status = 'DECLINED' THEN 1 ELSE 0 END) AS declined_count
+        FROM EVENTS e
+        LEFT JOIN GUESTS g ON g.event_id = e.id
+        WHERE e.id = ?
+        GROUP BY e.id
+    `, [eventId]
+    );
+    return result[0];
 }
 
 async function updateEvent(eventId, events) {
@@ -65,5 +110,6 @@ async function deleteEvents(eventId) {
 
 module.exports = {
     initEventsModel, createEvent, updateEvent,updateEventStatus,
-    getEventById, getEventsByOrganizerId,deleteEvents
+    getEventById, getEventsByOrganizerId,deleteEvents,
+    getEventWithTotalGuestById, getEventWithTotalGuest
 };

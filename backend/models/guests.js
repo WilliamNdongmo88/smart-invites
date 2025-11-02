@@ -41,6 +41,46 @@ async function getGuestByEventId(eventId) {
     return event;
 }
 
+async function getGuestAndEventRelatedById(guestId) {
+    const result = await pool.query(`
+        SELECT 
+            g.id AS guest_id,
+            g.full_name,
+            g.email,
+            g.phone_number,
+            e.id AS event_id,
+            e.title AS event_title
+        FROM GUESTS g
+        LEFT JOIN EVENTS e ON e.id=g.event_id
+        WHERE g.id=?
+    `, [guestId]);
+    return result[0];
+}
+
+async function getGuestAndInvitationRelatedById(guestId) {
+    const result = await pool.query(`
+        SELECT 
+            g.id AS guest_id,
+            g.full_name,
+            g.email,
+            g.phone_number,
+            g.rsvp_status,
+            g.has_plus_one,
+            g.plus_one_name,
+            g.notes,
+            g.updated_at AS response_date,
+            i.id AS invitation_id,
+            i.token,
+            i.qr_code_url,
+            i.created_at AS invitation_sent_date
+        FROM GUESTS g
+        LEFT JOIN INVITATIONS i ON i.guest_id=g.id
+        WHERE g.id=?
+    `, [guestId]
+    );
+    return result[0];
+}
+
 async function update_guest(guestId, eventId, fullName, email, phoneNumber, 
             rsvpStatus, hasPlusOne, plusOneName, notes) {
     await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, email=?, phone_number=?, 
@@ -59,4 +99,5 @@ async function delete_guest(guestId) {
 
 module.exports = {initGuestModel, createGuest, getGuestById,
     getGuestByEventId, update_guest, updateRsvpStatusGuest, delete_guest,
+    getGuestAndEventRelatedById, getGuestAndInvitationRelatedById
 }

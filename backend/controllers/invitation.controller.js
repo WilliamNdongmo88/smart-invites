@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const { getGuestById, updateRsvpStatusGuest} = require("../models/guests");
+const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById} = require("../models/guests");
 const {createInvitation, getGuestInvitationById, 
     getGuestInvitationByToken, deleteGuestInvitation} = require('../models/invitations');
 const { generateGuestQr } = require("../services/qrCodeService");
@@ -11,14 +11,14 @@ const genererInvitation = async (req, res) => {
   try {
     const guest = await getGuestById(req.params.guestId);
     if (!guest) return res.status(404).json({ error: "Invité introuvable" });
-
+    const guest_event_related = await getGuestAndEventRelatedById(req.params.guestId);
+    console.log('guest_event_related:', guest_event_related[0].event_title);
     const invitations = await getGuestInvitationById(req.params.guestId);
-    // console.log('Invitation:', invitations);
     if (invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
     
     let token =req.params.guestId +':'+ uuidv4();
     const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.jpg");
-    const buffer = await generateGuestPdf(guest);
+    const buffer = await generateGuestPdf(guest_event_related[0]);
     const pdfUrl = await uploadPdfToFirebase(guest, buffer);
 
     await createInvitation(req.params.guestId, token, qrUrl);

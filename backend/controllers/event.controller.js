@@ -1,6 +1,6 @@
 const {getUserById} = require('../models/users');
 const {createEvent, getEventById,updateEvent,updateEventStatus,
-getEventsByOrganizerId, deleteEvents} = require('../models/events')
+getEventWithTotalGuest, deleteEvents, getEventWithTotalGuestById} = require('../models/events')
 
 const create_Event = async (req, res) => {
     try {
@@ -24,21 +24,34 @@ const create_Event = async (req, res) => {
     }
 };
 
+const getAllEvents = async (req, res) => {
+    try {
+        const result = await getEventWithTotalGuest();
+        if(!result) return res.status(404).json({error: "Aucun Evénement trouvé!"});
+        return res.status(200).json({result});
+    } catch (error) {
+        console.error('GET EVENT BY ID ERROR:', error.message);
+        res.status(500).json({ error: error.message});
+    }
+}
+
   const getEventBy_Id = async (req, res) => {
     try {
-        const event = await getEventById(req.params.eventId);
+        // const event = await getEventById(req.params.eventId);
+        const event = await getEventWithTotalGuestById(req.params.eventId);
+        console.log('event:', event);
         if(!event) res.status(401).json({ error: 'Aucun Evénement trouvé' });
         console.log("event :: ", event);
         return res.status(200).json({ event });
     } catch (error) {
         console.error('GET EVENT BY ID ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: error.message});
     }
   };
 
   const getOrganizerEvents = async (req, res) => {
     try {
-        const organizerEvent = await getEventsByOrganizerId(req.params.organizerId);
+        const organizerEvent = await getEventWithTotalGuestById(req.params.organizerId);
         if(organizerEvent.length == 0) return res.status(401).json({ error: 'Aucun Evénement trouvé' });
         console.log('organizerEvent:', organizerEvent);
         return res.status(200).json({ events: organizerEvent });
@@ -88,7 +101,8 @@ const create_Event = async (req, res) => {
   }
 
 module.exports = {
-    create_Event, 
+    create_Event,
+    getAllEvents, 
     getEventBy_Id,
     getOrganizerEvents,
     updateEventBy_Id,

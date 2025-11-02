@@ -1,6 +1,9 @@
 const { getEventById } = require('../models/events');
-const {createGuest, getGuestById, getGuestByEventId,
-    update_guest, updateRsvp_status, delete_guest} = require('../models/guests');
+const {
+        createGuest, getGuestById, getGuestByEventId,
+        update_guest, updateRsvpStatusGuest, delete_guest,
+        getGuestAndInvitationRelatedById
+    } = require('../models/guests');
 
 const addGuest = async (req, res) => {
     try {
@@ -27,7 +30,8 @@ const addGuest = async (req, res) => {
 
 const getGuest = async (req, res) => {
     try {
-        const guest = await getGuestById(req.params.guestId);
+        // const guest = await getGuestById(req.params.guestId);
+        const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         return res.status(200).json({guest}); 
     } catch (error) {
@@ -75,7 +79,7 @@ const updateRsvpStatus = async (req, res) => {
         const {rsvpStatus} = req.body;
         const guest = await getGuestById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
-        await updateRsvp_status(req.params.guestId, rsvpStatus);
+        await updateRsvpStatusGuest(req.params.guestId, rsvpStatus);
         const updatedGuest = await getGuestById(req.params.guestId);
         return res.status(200).json({updatedGuest});
     } catch (error) {

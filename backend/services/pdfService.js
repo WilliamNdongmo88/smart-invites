@@ -34,7 +34,7 @@ async function generateGuestPdf(guest) {
     doc.moveDown(1);
     doc.font("Helvetica").fontSize(13).fillColor("#444")
        .text(
-         `C’est avec un immense bonheur que nous vous invitons à célébrer notre union lors de l’événement "${guest.event_name}".`,
+         `C’est avec un immense bonheur que nous vous invitons à célébrer notre union lors de l’événement "${guest.event_title}".`,
          { align: "center", lineGap: 6 }
        );
 
