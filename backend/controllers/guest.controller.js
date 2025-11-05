@@ -1,11 +1,11 @@
 const { getEventById } = require('../models/events');
 const {
-        createGuest, getGuestById, getGuestByEventId,
+        createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
         update_guest, updateRsvpStatusGuest, delete_guest,
-        getGuestAndInvitationRelatedById
+        getAllGuestAndInvitationRelated,getGuestAndInvitationRelatedById
     } = require('../models/guests');
 
-const addGuest = async (req, res) => {
+const addGuest = async (req, res, next) => {
     try {
         const {
             eventId,
@@ -24,25 +24,35 @@ const addGuest = async (req, res) => {
             rsvpStatus, hasPlusOne, plusOneName, notes});
     } catch (error) {
         console.error('CREATE GUEST ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
+        next(error);
     }
 };
 
-const getGuest = async (req, res) => {
+const getAllGuest = async (req, res, next) => {
     try {
-        // const guest = await getGuestById(req.params.guestId);
+        const guests = await getAllGuestAndInvitationRelated();
+        if(!guests[0]) return res.status(401).json({error: "Aucun invité trouvé!"});
+        return res.status(200).json({guests}); 
+    } catch (error) {
+        console.error('GET GUEST ERROR:', error.message);
+        next(error);
+    }
+};
+
+const getGuest = async (req, res, next) => {
+    try {
         const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         return res.status(200).json({guest}); 
     } catch (error) {
         console.error('GET GUEST ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
+        next(error);
     }
 };
 
 const getGuestsByEvent = async (req, res) => {
     try {
-        const guests = await getGuestByEventId(req.params.eventId);
+        const guests = await getAllGuestAndInvitationRelatedByEventId(req.params.eventId);
         if(guests.length == 0) return res.status(401).json({error: "Aucun invité n'est lié a cette événement! "});
         return res.status(200).json({guests});
     } catch (error) {
@@ -51,7 +61,7 @@ const getGuestsByEvent = async (req, res) => {
     }
 };
 
-const updateGuest = async (req, res) => {
+const updateGuest = async (req, res, next) => {
     try {
         const {
             eventId,
@@ -70,11 +80,11 @@ const updateGuest = async (req, res) => {
         return res.status(200).json({updatedGuest});
     } catch (error) {
         console.error('UPDATE GUEST ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
+        next(error);
     }
 }
 
-const updateRsvpStatus = async (req, res) => {
+const updateRsvpStatus = async (req, res, next) => {
     try {
         const {rsvpStatus} = req.body;
         const guest = await getGuestById(req.params.guestId);
@@ -84,11 +94,11 @@ const updateRsvpStatus = async (req, res) => {
         return res.status(200).json({updatedGuest});
     } catch (error) {
         console.error('UPDATE RSVP GUEST ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
+        next(error)
     }
 };
 
-const deleteGuest = async (req, res) => {
+const deleteGuest = async (req, res, next) => {
     try {
         const guest = await getGuestById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
@@ -96,8 +106,9 @@ const deleteGuest = async (req, res) => {
         return res.status(200).json({message: `Invité ${req.params.guestId} supprimé avec succès!`});
     } catch (error) {
         console.error('DELETE GUEST ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
+        next(error);
     }
 }
 
-module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, updateRsvpStatus, deleteGuest};
+module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, 
+    updateRsvpStatus, deleteGuest, getAllGuest};

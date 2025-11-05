@@ -155,7 +155,7 @@ const resetPassword = async (req, res) => {
     }
 }
 
-const refresh = async (req, res) => {
+const refresh = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) return res.status(400).json({ error: 'Refresh token requis' });
