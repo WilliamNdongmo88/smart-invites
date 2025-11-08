@@ -11,6 +11,7 @@ const errorHandler = require('../backend/middlewares/errorHandler')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const setupSwagger = require('./docs/swagger');
 
 // Autorise les requêtes venant d'Angular
 app.use(cors({
@@ -26,6 +27,9 @@ app.use('/api/guest', guestRoutes);
 app.use('/api/invitation', invitationRoutes);
 
 app.use(errorHandler);
+
+setupSwagger(app); 
+
 let server; // Stocke l'instance du serveur HTTP
 
 const startServer = async () => {
