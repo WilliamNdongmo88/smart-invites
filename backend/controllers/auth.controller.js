@@ -23,19 +23,18 @@ function signRefreshToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 }
 
-const getMe = async (req, res) => {
+const getMe = async (req, res, next) => {
   try {
     const user = await getUserByFk(req.user.id);
     if(!user) return res.json({message: "Utilisateur non trouvé"})
     return res.json({id: user.id, name: user.name, email: user.email})
   } catch (error) {
     console.error('GET ME ERROR:', error.message);
-    res.status(500).json({ error: 'Erreur serveur' });
-    // next(error);
+    next(error);
   }
 }
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
@@ -47,12 +46,11 @@ const register = async (req, res) => {
     res.status(201).json({ id: userId, name, email });
   } catch (error) {
     console.error('REGISTER ERROR:', error.message);
-    res.status(500).json({ error: 'Erreur serveur' });
-    // next(error);
+    next(error);
   }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     console.log("---Body---: ", req.body)
     const { email, password } = req.body;
@@ -92,11 +90,11 @@ const login = async (req, res) => {
 
   } catch (error) {
     console.error('LOGIN ERROR:', error.message);
-    return res.status(500).json({ error: 'Erreur serveur lors de la connexion' });
+    next(error);
   }
 };
 
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -122,11 +120,10 @@ const forgotPassword = async (req, res) => {
 
   } catch (error) {
     console.error('RESET PASSWORD ERROR:', error.message);
-    return res.status(500).json({ error: 'Erreur lors de la réinitialisation du mot de passe' });
-  }
+    next(error);  }
 };
 
-const checkCode = async (req, res) => {
+const checkCode = async (req, res, next) => {
     try {
         console.log("---Body---: ", req.body)
         const { email, code } = req.body;
@@ -137,11 +134,11 @@ const checkCode = async (req, res) => {
         return res.status(200).json({ message: 'Code valide', userId: user.id });
     } catch (error) {
         console.error('CHECK CODE ERROR:', error.message);
-        return res.status(500).json({ error: 'Erreur lors de la vérification du code' });
+        next(error);
     }
 }
 
-const resetPassword = async (req, res) => {
+const resetPassword = async (req, res, next) => {
     try {
         console.log("---Body---: ", req.body)
         const { email, newpassword } = req.body;
@@ -151,7 +148,7 @@ const resetPassword = async (req, res) => {
         return res.status(200).json({ message: 'Mot de passe réinitialisé avec succès', userId: user.id });
     } catch (error) {
         console.error('RESET PASSWORD ERROR:', error.message);
-        return res.status(500).json({ error: 'Erreur lors de la réinitialisation du mot de passe' });
+        next(error);
     }
 }
 

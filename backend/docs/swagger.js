@@ -57,6 +57,98 @@ const options = {
                         },
                     },
                 },
+                ReqRefresh: {
+                    type: "object",
+                    properties: {
+                        refreshToken: {
+                            type: "string",
+                            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaW...",
+                        }
+                    },
+                },
+                ResRefresh: {
+                    type: "object",
+                    properties: {
+                        accessToken: {
+                            type: "string",
+                            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ3aWxsaWFtbmRvbmdtbzg5OUBnbWFpbC5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NjI3MjQyMDAsImV4cCI6MTc2MjgxMDYwMH0.oCGFOtFjwqR7YFFch5ut0tugMox1G199Di8HJCSRBvU",
+                        },
+                        refreshToken: {
+                            type: "string",
+                            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzYyNzI0MjAwLCJleHAiOjE3NjMzMjkwMDB9.Y7EEgaK8pXCCg0ptIjCozLpnh3CMpVgKcFqdGVpjXCI",
+                        },
+                    },
+                },
+                ReqForgotPass: {
+                    type: "object",
+                    properties: {
+                        email: {
+                            type: "string",
+                            example: "will@example.com",
+                        }
+                    },
+                },
+                ResForgotPass: {
+                    type: "object",
+                    properties: {
+                        message: {
+                            type: "string",
+                            example: "Code de vérification envoyé par email",
+                        }
+                    },
+                },
+                ReqCheckCode: {
+                    type: "object",
+                    properties: {
+                        email: {
+                            type: "string",
+                            example: "will@example.com",
+                        },
+                        code: {
+                            type: "string",
+                            example: "404653",
+                        }
+                    },
+                },
+                ResCheckCode: {
+                    type: "object",
+                    properties: {
+                        message: {
+                            type: "string",
+                            example: "Code valide",
+                        },
+                        userId: {
+                            type: "number",
+                            example: 1,
+                        }
+                    },
+                },
+                ReqResetPassword: {
+                    type: "object",
+                    properties: {
+                        email: {
+                            type: "string",
+                            example: "will@example.com",
+                        },
+                        newpassword: {
+                            type: "string",
+                            example: "newpassword123",
+                        }
+                    },
+                },
+                ResResetPassword: {
+                    type: "object",
+                    properties: {
+                        message: {
+                            type: "string",
+                            example: "Mot de passe réinitialisé avec succès",
+                        },
+                        userId: {
+                            type: "number",
+                            example: 1,
+                        }
+                    },
+                },
                 MeResponse: {
                 type: "object",
                     properties: {

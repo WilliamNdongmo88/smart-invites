@@ -77,10 +77,102 @@ router.post('/register', AuthController.register);
  *         description: Identifiants invalides
  */
 router.post('/login', loginLimiter, AuthController.login);
+
+/**
+ * @swagger
+ * /api/auth/refresh-token:
+ *   post:
+ *     summary: Rafraichir le token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ReqRefresh'
+ *     responses:
+ *       200:
+ *         description: Refresh réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ResRefresh'
+ *       401:
+ *         description: Refresh token invalide
+ */
 router.post('/refresh-token', AuthController.refresh);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Mot de passe oublié
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ReqForgotPass'
+ *     responses:
+ *       200:
+ *         description: Code de vérification envoyé par email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ResForgotPass'
+ *       401:
+ *         description: Utilisateur non trouvé!
+ */
 router.post('/forgot-password', AuthController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/auth/check-code:
+ *   post:
+ *     summary: Vérification du code
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ReqCheckCode'
+ *     responses:
+ *       200:
+ *         description: Code valide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ResCheckCode'
+ *       401:
+ *         description: Code de vérification invalide!
+ */
 router.post('/check-code', AuthController.checkCode);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Réinitialisation du mot de passe
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ReqResetPassword'
+ *     responses:
+ *       200:
+ *         description: Mot de passe réinitialisé avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ResResetPassword'
+ *       401:
+ *         description: Utilisateur non trouvé!
+ */
 router.post('/reset-password', AuthController.resetPassword);
-router.post('/add-guest', AuthController.register);
+router.post('/add-user', AuthController.register);
 
 module.exports = router ;
