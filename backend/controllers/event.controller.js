@@ -58,13 +58,27 @@ const getAllEvents = async (req, res, next) => {
 
   const updateEventBy_Id = async (req, res, next) => {
     try {
-        const {organizerId} = req.body
-        console.log('organizerId:', organizerId);
+        let { organizerId, title, description, eventDate, 
+            eventLocation, maxGuests, hasPlusOne, footRestriction, status 
+        } = req.body;
+
         const event = await getEventById(req.params.eventId);
         if(!event) return res.status(404).json({error: "Cet Evénement n'existe pas"});
+
+        if(organizerId == null){ organizerId = event.organizer_id};
+        if(title == null){ title = event.title};
+        if(description == null){ description = event.description};
+        if(eventDate == null){ eventDate = event.event_date};
+        if(eventLocation == null){ eventLocation = event.event_location};
+        if(maxGuests == null){ maxGuests = event.max_guests};
+        if(hasPlusOne == null){ hasPlusOne = event.has_plus_one};
+        if(footRestriction == null){ footRestriction = event.foot_restriction};
+        if(status == null){ status = event.status};
+
         const organizer = await getUserById(organizerId);
         if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
-        await updateEvent(req.params.eventId, req.body);
+        await updateEvent(req.params.eventId, organizerId, title, description, eventDate, 
+            eventLocation, maxGuests, hasPlusOne, footRestriction, status );
         const updatedEvent = await getEventById(req.params.eventId)
         return res.status(200).json({updatedEvent})
     } catch (error) {

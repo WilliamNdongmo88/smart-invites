@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "cross-env NODE_ENV=test jest --runInBand",
     "start": "nodemon backend/server.js"
   },
   "keywords": [],
@@ -31,6 +31,17 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tslib": "^2.8.1",
-    "uuid": "^13.0.0"
+    "uuid": "^8.3.2"
+  },
+  "jest": {
+    "setupFilesAfterEnv": [
+      "<rootDir>/backend/tests/jest.setup.js"
+    ],
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
   }
 }

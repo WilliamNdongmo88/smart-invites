@@ -74,5 +74,4 @@ const closeServer = async () => {
 
 // L'appel de startServer() n'est pas faite ici pour permettre à Jest de contrôler le démarrage.
 module.exports = { app, startServer, closeServer, pool }; 
-// Exporter l'application, les fonctions de contrôle et le pool pour les tests
 

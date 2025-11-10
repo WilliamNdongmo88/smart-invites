@@ -104,17 +104,9 @@ async function getEventWithTotalGuestById(eventId) {
     return result[0];
 }
 
-async function updateEvent(eventId, events) {
-    const {
-            organizerId,
-            title,
-            description,
-            eventDate,
-            eventLocation,
-            maxGuests,
-            hasPlusOne, footRestriction,
-            status
-    } = events
+async function updateEvent(eventId, organizerId, title, description, eventDate, 
+            eventLocation, maxGuests, hasPlusOne, footRestriction, status ) {
+
     await pool.query(`UPDATE EVENTS SET organizer_id=?, title=?, description=?, event_date=?, 
         event_location=?, max_guests=?,has_plus_one=?, foot_restriction=?, status=? WHERE id=?`, [organizerId, title, description, eventDate, 
             eventLocation, maxGuests,hasPlusOne, footRestriction, status, eventId]);
