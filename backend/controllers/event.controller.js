@@ -33,10 +33,9 @@ const getAllEvents = async (req, res, next) => {
 
   const getEventBy_Id = async (req, res, next) => {
     try {
-        // const event = await getEventById(req.params.eventId);
         const event = await getEventWithTotalGuestById(req.params.eventId);
         // console.log('event:', event);
-        if(!event) res.status(401).json({ error: 'Aucun Evénement trouvé' });
+        if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
         console.log("### event :: ", event);
         return res.status(200).json({ event });
     } catch (error) {
@@ -48,7 +47,7 @@ const getAllEvents = async (req, res, next) => {
   const getOrganizerEvents = async (req, res, next) => {
     try {
         const organizerEvent = await getEventsByOrganizerId(req.params.organizerId);
-        if(organizerEvent.length == 0) return res.status(401).json({ error: 'Aucun Evénement trouvé' });
+        if(organizerEvent.length == 0) return res.status(404).json({ error: 'Aucun Evénement trouvé' });
         console.log('organizerEvent:', organizerEvent);
         return res.status(200).json({ events: organizerEvent });
     } catch (error) {
@@ -59,8 +58,12 @@ const getAllEvents = async (req, res, next) => {
 
   const updateEventBy_Id = async (req, res, next) => {
     try {
+        const {organizerId} = req.body
+        console.log('organizerId:', organizerId);
         const event = await getEventById(req.params.eventId);
-        if(!event) return res.status(401).json({error: "Cet Evénement n'existe pas"});
+        if(!event) return res.status(404).json({error: "Cet Evénement n'existe pas"});
+        const organizer = await getUserById(organizerId);
+        if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
         await updateEvent(req.params.eventId, req.body);
         const updatedEvent = await getEventById(req.params.eventId)
         return res.status(200).json({updatedEvent})
@@ -74,7 +77,7 @@ const getAllEvents = async (req, res, next) => {
     try {
         const {status} = req.body;
         const event = await getEventById(req.params.eventId);
-        if(!event) return res.status(401).json({error: `Aucun Evénement trouvé avec l'id: ${req.params.eventId}`});
+        if(!event) return res.status(404).json({error: `Aucun Evénement trouvé avec l'id: ${req.params.eventId}`});
         await updateEventStatus(req.params.eventId, status);
         const updatedEvent = await getEventById(req.params.eventId);
         return res.status(200).json({updatedEvent});
@@ -87,9 +90,9 @@ const getAllEvents = async (req, res, next) => {
   const deleteEvent = async (req, res, next) => {
     try {
         const event = await getEventById(req.params.eventId);
-        if(!event) return res.status(401).json({error: `Evénement non trouvé!`});
+        if(!event) return res.status(404).json({error: `Evénement non trouvé!`});
         await deleteEvents(req.params.eventId);
-        return res.status(200).json({error: `Evénement ${req.params.eventId} supprimé avec succès!`})
+        return res.status(200).json({message: `Evénement ${req.params.eventId} supprimé avec succès!`})
     } catch (error) {
         console.error('DELETE EVENT ERROR:', error.message);
         next(error);

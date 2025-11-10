@@ -166,6 +166,101 @@ const options = {
                         },
                     },
                 },
+                ReqDataEvent: {
+                    type: "object",
+                    properties: {
+                        organizerId: {
+                            type: "number",
+                            example: 1,
+                        },
+                        title: {
+                            type: "string",
+                            example: "Mariage de William et Gloria"
+                        },
+                        description: {
+                            type: "string",
+                            example: "Nous avons le plaisir de vous inviter à célébrer notre mariage. Ce sera une journée inoubliable remplie de joie, d'amour et de moments précieux en compagnie de nos proches."
+                        },
+                        eventDate: {
+                            type: "string",
+                            example: "2026-06-06"
+                        },
+                        eventLocation: {
+                            type: "string",
+                            example: "Djamena"
+                        },
+                        maxGuests: {
+                            type: "number",
+                            example: 150
+                        },
+                        hasPlusOne: {
+                            type: "boolean",
+                            example: false
+                        },
+                        footRestriction: {
+                            type: "boolean",
+                            example: false
+                        },
+                        status: {
+                            type: "string",
+                            example: "PLANNED"
+                        },
+                    }
+                },
+                ResDataEvent: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "number",
+                            example: 1,
+                        },
+                        organizerId: {
+                            type: "number",
+                            example: 1,
+                        },
+                        title: {
+                            type: "string",
+                            example: "Mariage de William et Gloria"
+                        },
+                        description: {
+                            type: "string",
+                            example: "Nous avons le plaisir de vous inviter à célébrer notre mariage. Ce sera une journée inoubliable remplie de joie, d'amour et de moments précieux en compagnie de nos proches."
+                        },
+                        eventDate: {
+                            type: "string",
+                            example: "2026-06-06"
+                        },
+                        eventLocation: {
+                            type: "string",
+                            example: "Djamena"
+                        },
+                        maxGuests: {
+                            type: "number",
+                            example: 150
+                        },
+                        hasPlusOne: {
+                            type: "boolean",
+                            example: false
+                        },
+                        footRestriction: {
+                            type: "boolean",
+                            example: false
+                        },
+                        status: {
+                            type: "string",
+                            example: "PLANNED"
+                        },
+                    }
+                },
+                ReqStatusEvent: {
+                    type: "object",
+                    properties: {
+                        status: {
+                            type: "string",
+                            example: "ACTIVE"
+                        }
+                    }
+                },
             }
         }
     },

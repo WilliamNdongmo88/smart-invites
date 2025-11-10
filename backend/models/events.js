@@ -106,7 +106,7 @@ async function getEventWithTotalGuestById(eventId) {
 
 async function updateEvent(eventId, events) {
     const {
-        organizerId,
+            organizerId,
             title,
             description,
             eventDate,
