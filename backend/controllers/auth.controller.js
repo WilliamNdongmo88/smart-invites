@@ -104,7 +104,7 @@ const forgotPassword = async (req, res, next) => {
     // Vérifie si l’utilisateur existe
     const user = await getUserByEmail(email);
     if (!user) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé!' });
+      return res.status(404).json({ error: 'Utilisateur non trouvé !' });
     }
 
     // Génère un code à 6 chiffres
