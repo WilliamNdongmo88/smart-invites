@@ -1,6 +1,10 @@
 process.env.NODE_ENV = "test";
 require("dotenv").config({path: ".env.test"});
 
+jest.mock('axios');
+axios.post.mockResolvedValue({ data: { message: 'Email envoyé' } });
+
+
 const request = require("supertest");
 const { app, startServer, closeServer } = require("../app");
 
