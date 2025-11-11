@@ -20,6 +20,7 @@ describe("Auth API", () => {
         test("REGISTER USER", async () => {
             const res = await request(app).post('/api/auth/register').send(userData);
 
+            console.log("# REGISTER RES:", res.body);
             expect(res.statusCode).toBe(201);
         });
 
@@ -52,6 +53,7 @@ describe("Auth API", () => {
             const res = await request(app)
             .post("/api/auth/forgot-password").send({email: user.email});
 
+            console.log("# FORGOT PASSWORD RES:", res.body);
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty("message");
         });
