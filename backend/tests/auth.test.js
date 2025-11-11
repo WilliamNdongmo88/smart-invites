@@ -50,7 +50,7 @@ describe("Auth API", () => {
             await request(app).post('/api/auth/register').send(user);
 
             const res = await request(app)
-            .post("/api/auth/forgot-password").send({email: email});
+            .post("/api/auth/forgot-password").send({email: user.email});
 
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty("message");
