@@ -25,7 +25,7 @@ describe("Auth API", () => {
 
         test("LOGIN USER", async () => {
             const res = await request(app).post("/api/auth/login").send(userData);
-            // console.log("LOGIN RESPONSE:", res.body);
+            console.log("LOGIN RESPONSE:", res.body);
             token = res.body.accessToken;
             refreshToken = res.body.refreshToken;
             email = res.body.user.email;
