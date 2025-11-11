@@ -114,7 +114,13 @@ const forgotPassword = async (req, res, next) => {
     await saveResetCode(user.id, code);
 
     // Envoie du mail via Brevo
-    await sendEmailCode(user, code);
+    try {
+      await sendEmailCode(user, code);
+      res.status(200).json({ message: 'Email envoyé' });
+    } catch (error) {
+      console.error("SEND EMAIL ERROR:", error.message);
+      next(error);
+    }
 
     return res.status(200).json({ message: 'Code de vérification envoyé par email' });
 
