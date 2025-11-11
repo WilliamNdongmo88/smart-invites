@@ -1,14 +1,9 @@
-process.env.NODE_ENV = "test";
-require("dotenv").config({path: ".env.test"});
-
-// Mock d'Axios
 jest.mock('axios');
 const axios = require('axios');
-
-// Définir le comportement par défaut pour post
 axios.post.mockResolvedValue({ data: { message: 'Email envoyé' } });
 
-
+process.env.NODE_ENV = "test";
+require("dotenv").config({path: ".env.test"});
 
 const request = require("supertest");
 const { app, startServer, closeServer } = require("../app");
