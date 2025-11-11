@@ -15,7 +15,7 @@ describe("Auth API", () => {
     });
 
     describe("Test", () => {
-        const userData = {email: "williamndongmo88@gmail.com", password: "Will@fr123"};
+        const userData = {email: "williamndongmo88@gmail.com", password: "Will@fr123", role: "admin"};
 
         test("REGISTER USER", async () => {
             const res = await request(app).post('/api/auth/register').send(userData);
@@ -44,6 +44,7 @@ describe("Auth API", () => {
         });
 
         test("FORGOT PASSWORD USER", async () => {
+            console.log("# EMAIL :", email);
             const res = await request(app)
             .post("/api/auth/forgot-password").send({email: email});
 
@@ -61,7 +62,7 @@ describe("Auth API", () => {
         // });
 
         test("RESET PASSWORD USER", async () => {
-            console.log("# EMAIL :", email);
+            // console.log("# EMAIL :", email);
             const res = await request(app)
             .post("/api/auth/reset-password").send({email: email, newpassword: "Will@fr123"});
 
