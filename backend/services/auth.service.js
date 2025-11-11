@@ -5,7 +5,7 @@ const {getUserByEmail, updateUserPassword} = require('../models/users')
 // Fonction utilitaire pour envoyer le mail via Brevo
 async function sendEmailCode(user, code) {
   const brevo = new Brevo.TransactionalEmailsApi();
-  brevo.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+  brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
 
   const sendSmtpEmail = {
     to: [{ email: user.email, name: user.name }],
