@@ -61,8 +61,9 @@ describe("Auth API", () => {
         // });
 
         test("RESET PASSWORD USER", async () => {
+            console.log("# EMAIL :", email);
             const res = await request(app)
-            .post("/api/auth/reset-password").send({email: email, newpassword: "newpassword123"});
+            .post("/api/auth/reset-password").send({email: email, newpassword: "Will@fr123"});
 
             console.log("res:: ", res.body)
             expect(res.statusCode).toBe(200);
