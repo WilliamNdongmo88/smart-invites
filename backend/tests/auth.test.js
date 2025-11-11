@@ -46,7 +46,7 @@ describe("Auth API", () => {
         test("FORGOT PASSWORD USER", async () => {
             console.log("# EMAIL :", email);
             const res = await request(app)
-            .post("/api/auth/forgot-password").send({email: email});
+            .post("/api/auth/forgot-password").send({email: "testadmin@example.com"});
 
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty("message");
