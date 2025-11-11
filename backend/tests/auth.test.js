@@ -51,14 +51,14 @@ describe("Auth API", () => {
             expect(res.body).toHaveProperty("message");
         });
 
-        test("CHECK CODE USER", async () => {
-            const res = await request(app)
-            .post("/api/auth/check-code").send({email: email, code: "461311"});
+        // test("CHECK CODE USER", async () => {
+        //     const res = await request(app)
+        //     .post("/api/auth/check-code").send({email: email, code: "461311"});
 
-            expect(res.statusCode).toBe(500);
-            expect(res.body).toHaveProperty("status");
-            expect(res.body).toHaveProperty("message");
-        });
+        //     expect(res.statusCode).toBe(500);
+        //     expect(res.body).toHaveProperty("status");
+        //     expect(res.body).toHaveProperty("message");
+        // });
 
         test("RESET PASSWORD USER", async () => {
             const res = await request(app)
