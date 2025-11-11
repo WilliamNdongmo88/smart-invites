@@ -15,7 +15,7 @@ describe("Auth API", () => {
     });
 
     describe("Test", () => {
-        const userData = {email: "williamndongmo88@gmail.com", password: "Will@fr123", role: "admin"};
+        const userData = {email: "will@example.com", password: "Willfr123", role: "admin"};
 
         test("REGISTER USER", async () => {
             const res = await request(app).post('/api/auth/register').send(userData);
