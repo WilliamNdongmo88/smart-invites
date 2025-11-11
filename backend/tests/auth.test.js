@@ -1,6 +1,6 @@
-jest.mock('axios');
-const axios = require('axios');
-axios.post.mockResolvedValue({ data: { message: 'Email envoyé' } });
+// jest.mock('axios');
+// const axios = require('axios');
+// axios.post.mockResolvedValue({ data: { message: 'Email envoyé' } });
 
 process.env.NODE_ENV = "test";
 require("dotenv").config({path: ".env.test"});
