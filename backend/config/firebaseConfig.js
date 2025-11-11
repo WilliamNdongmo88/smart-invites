@@ -22,14 +22,14 @@ if (process.env.NODE_ENV === 'test') {
     client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40solsolutionpdf.iam.gserviceaccount.com",
     universe_domain: "googleapis.com"
   };
+
+  
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: process.env.FIREBASE_BUCKET_NAME 
+  });
+
+  const bucket = admin.storage().bucket();
+
+  module.exports = { admin, bucket };
 }
-// const serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: process.env.FIREBASE_BUCKET_NAME 
-});
-
-const bucket = admin.storage().bucket();
-
-module.exports = { admin, bucket };
