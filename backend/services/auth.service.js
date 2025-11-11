@@ -63,7 +63,7 @@ async function checkUserByCode(email, code) {
 async function resetUserPassword(email, newpassword) {
   const user = await getUserByEmail(email);
   if (!user) {
-    throw new Error('Utilisateur non trouvé');
+    throw new Error('###[resetUserPassword] Utilisateur non trouvé');
   }
   await updateUserPassword(email, newpassword);
   const userUpdate = await getUserByEmail(email);

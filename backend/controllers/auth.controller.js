@@ -119,7 +119,7 @@ const forgotPassword = async (req, res, next) => {
     return res.status(200).json({ message: 'Code de vérification envoyé par email' });
 
   } catch (error) {
-    console.error('RESET PASSWORD ERROR:', error.message);
+    console.error('FORGOT PASSWORD ERROR:', error.message);
     next(error);  }
 };
 
