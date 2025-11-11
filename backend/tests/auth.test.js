@@ -15,7 +15,7 @@ describe("Auth API", () => {
     });
 
     describe("Test", () => {
-        const userData = {email: "williamndongmo88@gmail.com", password: "Willfr123", role: "admin"};
+        const userData = {email: "will@example.com", password: "Willfr123", role: "admin"};
 
         test("REGISTER USER", async () => {
             const res = await request(app).post('/api/auth/register').send(userData);
@@ -53,14 +53,14 @@ describe("Auth API", () => {
             expect(res.body).toHaveProperty("message");
         });
 
-        // test("CHECK CODE USER", async () => {
-        //     const res = await request(app)
-        //     .post("/api/auth/check-code").send({email: email, code: "461311"});
+        test("CHECK CODE USER", async () => {
+            const res = await request(app)
+            .post("/api/auth/check-code").send({email: email, code: "461311"});
 
-        //     expect(res.statusCode).toBe(500);
-        //     expect(res.body).toHaveProperty("status");
-        //     expect(res.body).toHaveProperty("message");
-        // });
+            expect(res.statusCode).toBe(500);
+            expect(res.body).toHaveProperty("status");
+            expect(res.body).toHaveProperty("message");
+        });
 
         test("RESET PASSWORD USER", async () => {
             // console.log("# EMAIL :", email);
