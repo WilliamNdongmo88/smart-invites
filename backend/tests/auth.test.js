@@ -1,7 +1,3 @@
-// jest.mock('axios');
-// const axios = require('axios');
-// axios.post.mockResolvedValue({ data: { message: 'Email envoyé' } });
-
 process.env.NODE_ENV = "test";
 require("dotenv").config({path: ".env.test"});
 
@@ -19,7 +15,7 @@ describe("Auth API", () => {
     });
 
     describe("Test", () => {
-        const userData = {email: "will@example.com", password: "Willfr123", role: "admin"};
+        const userData = {email: "williamndongmo88@gmail.com", password: "Willfr123", role: "admin"};
 
         test("REGISTER USER", async () => {
             const res = await request(app).post('/api/auth/register').send(userData);
@@ -49,13 +45,8 @@ describe("Auth API", () => {
         });
 
         test("FORGOT PASSWORD USER", async () => {
-            const user = { email: "forgot@example.com", password: "Willfr123", role: "admin" };
-    
-            // Utilisateur créé spécifiquement pour ce test
-            await request(app).post('/api/auth/register').send(user);
-
             const res = await request(app)
-            .post("/api/auth/forgot-password").send({email: user.email});
+            .post("/api/auth/forgot-password").send({email:email});
 
             console.log("# FORGOT PASSWORD RES:", res.body);
             expect(res.statusCode).toBe(200);
