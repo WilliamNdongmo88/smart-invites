@@ -44,7 +44,11 @@ describe("Auth API", () => {
         });
 
         test("FORGOT PASSWORD USER", async () => {
-            console.log("# EMAIL :", email);
+            const user = { email: "forgot@example.com", password: "Willfr123", role: "admin" };
+    
+            // Utilisateur crée spécifiquement pour ce test
+            await request(app).post('/api/auth/register').send(user);
+
             const res = await request(app)
             .post("/api/auth/forgot-password").send({email: email});
 
