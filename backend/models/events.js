@@ -25,7 +25,7 @@ const initEventsModel = async () => {
 
 async function createEvent(organizerId, title, description, eventDate, 
             eventLocation, maxGuests, hasPlusOne, footRestriction, status) {
-    const [result] = await pool.query(`INSERT INTO EVENTS (organizer_id, title, description, 
+    const [result] = await pool.execute(`INSERT INTO EVENTS (organizer_id, title, description, 
         event_date, event_location, max_guests,has_plus_one, foot_restriction, status) VALUES(?,?,?,?,?,?,?,?,?)`,
     [organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, footRestriction, status]);
     return result.insertId;

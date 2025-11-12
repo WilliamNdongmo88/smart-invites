@@ -33,7 +33,7 @@ describe("Events API", () => {
         });
 
         test("CREATE EVENT", async () => {
-            const eventData = {
+            const eventDatas = [{
                 organizerId,
                 title: "Mariage de William et Gloria",
                 description: "Nous avons le plaisir de vous inviter à célébrer notre mariage. Ce sera une journée inoubliable remplie de joie, d'amour et de moments précieux en compagnie de nos proches.",
@@ -43,18 +43,18 @@ describe("Events API", () => {
                 hasPlusOne: false,
                 footRestriction: false,
                 status: "PLANNED"
-            };
+            }];
             
             const res = await request(app)
             .post("/api/event/create-event")
-            .send(eventData)
+            .send(eventDatas)
             .set("Authorization", `Bearer ${token}`);
 
             // console.log("CREATE EVENT RESPONSE:", res.body);
-            eventId = res.body.id;
+            eventId = res.body[0].id;
             expect(res.statusCode).toBe(201);
-            expect(res.body).toHaveProperty("organizerId");
-            expect(res.body.organizerId).toBe(2);
+            expect(res.body[0]).toHaveProperty("organizerId");
+            expect(res.body[0].organizerId).toBe(2);
         });
 
         test("GET ALL EVENT", async () => {

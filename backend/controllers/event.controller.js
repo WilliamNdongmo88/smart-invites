@@ -4,16 +4,23 @@ getEventWithTotalGuest, deleteEvents, getEventWithTotalGuestById} = require('../
 
 const create_Event = async (req, res, next) => {
     try {
-        console.log('req.body: ', req.body) ;
-        const { 
-            organizerId,title,description,eventDate,eventLocation, 
-            maxGuests, hasPlusOne, footRestriction, status} = req.body;
-        const existing = await getUserById(organizerId);
+        if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
+        let eventDatas = req.body;
+        console.log('eventDatas :: ', eventDatas);
+        const existing = await getUserById(eventDatas[0].organizerId);
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
-        const eventId = await createEvent(organizerId, title, description, eventDate, 
-            eventLocation, maxGuests,hasPlusOne, footRestriction, status);
-        return res.status(201).json({ id: eventId, organizerId, title, description, eventDate, 
-            eventLocation, maxGuests, hasPlusOne, footRestriction, status });
+        let returnDatas = [];
+        for (const key in eventDatas) {            
+            const data = eventDatas[key];
+            const {organizerId, title, description, eventDate, 
+            eventLocation, maxGuests,hasPlusOne, footRestriction, status} = data;
+            const eventId = await createEvent(organizerId, title, description, eventDate, 
+                                              eventLocation, maxGuests,hasPlusOne, footRestriction, status);
+            returnDatas.push({id: eventId, organizerId, title, description, eventDate, 
+                                              eventLocation, maxGuests,hasPlusOne, footRestriction, status})
+            
+        }
+        return res.status(201).json(returnDatas);
     } catch (error) {
         console.error('CREATE EVENT ERROR:', error.message);
         next(error);
