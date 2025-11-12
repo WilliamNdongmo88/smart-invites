@@ -24,7 +24,7 @@ async function createInvitation(guestId, token, qrCodeUrl) {
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-    const [result] = await pool.query(`INSERT INTO INVITATIONS (guest_id, token, qr_code_url, expires_at) 
+    const [result] = await pool.execute(`INSERT INTO INVITATIONS (guest_id, token, qr_code_url, expires_at) 
         VALUES(?,?,?,?)`, [guestId, token, qrCodeUrl, expiresAt]);
     return result.insertId;
 };

@@ -7,21 +7,27 @@ const {
 
 const addGuest = async (req, res, next) => {
     try {
-        const {
+        if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
+        let guestDatas = req.body;
+        console.log('guestDatas :: ', guestDatas);
+        const event = await getEventById(guestDatas[0].eventId);
+        if(!event) return res.status(401).json({error: `Evénement avec l'id ${eventId} non trouvé!`});
+        let returnDatas = [];
+        for (const key in guestDatas) {
+            const data = guestDatas[key];
+            const {
             eventId,
             fullName,
             email,
             phoneNumber,
             rsvpStatus,
-            hasPlusOne,
-            plusOneName,
-            notes} = req.body;
-        const event = await getEventById(eventId);
-        if(!event) return res.status(401).json({error: `Evénement avec l'id ${eventId} non trouvé!`});
-        const guest = await createGuest(eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes);
-        return res.status(201).json({eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes});
+            hasPlusOne} = data;
+            const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
+                                              rsvpStatus, hasPlusOne);
+            returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
+                              rsvpStatus, hasPlusOne});
+        }
+        return res.status(201).json(returnDatas);
     } catch (error) {
         console.error('CREATE GUEST ERROR:', error.message);
         next(error);

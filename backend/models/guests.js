@@ -23,16 +23,16 @@ const initGuestModel = async () => {
 };
 
 async function createGuest(eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes) {
-    const [result] = await pool.query(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
-        rsvp_status, has_plus_one, plus_one_name, notes) VALUES(?,?,?,?,?,?,?,?)`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, notes]);
+            rsvpStatus, hasPlusOne) {
+    const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
+        rsvp_status, has_plus_one) VALUES(?,?,?,?,?,?)`, 
+        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne]);
     console.log("result :: ", result.insertId);
     return result.insertId;
 }
 
 async function getGuestById(id) {
-    const [event] = await pool.query(`SELECT * FROM GUESTS WHERE id=?`, [id]);
+    const [event] = await pool.execute(`SELECT * FROM GUESTS WHERE id=?`, [id]);
     return event[0];
 }
 
@@ -42,7 +42,7 @@ async function getGuestByEventId(eventId) {
 }
 
 async function getGuestAndEventRelatedById(guestId) {
-    const result = await pool.query(`
+    const result = await pool.execute(`
         SELECT 
             g.id AS guest_id,
             g.full_name,

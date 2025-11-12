@@ -7,7 +7,35 @@ const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfServic
 const {deleteGuestFiles} = require('../services/invitation.service');
 const { bucket } = require('../config/firebaseConfig');
 
-const genererInvitation = async (req, res) => {
+const genererSeveralInvitations = async (req, res, next) => {
+  try {
+    if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
+    let guestsIdList = req.body;
+    let returnDatas = [];
+    for (const key in guestsIdList) {
+        const guestId = guestsIdList[key];
+        const guest = await getGuestById(guestId);
+        if (!guest) return res.status(404).json({ error: `Invité ${guestId} introuvable` });
+        const guest_event_related = await getGuestAndEventRelatedById(guestId);
+        console.log('guest_event_related:', guest_event_related[0].event_title);
+        const invitations = await getGuestInvitationById(guestId);
+        if (invitations[0]) return res.status(409).json({ error: `Invitation déjà invoyé a l'invité ${guestId}` });
+        let token = guestId +':'+ uuidv4();
+        const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.jpg");
+        const buffer = await generateGuestPdf(guest_event_related[0]);
+        const pdfUrl = await uploadPdfToFirebase(guest, buffer);
+
+        await createInvitation(guestId, token, qrUrl);
+        returnDatas.push({message: "QR code et PDF générés", id: guestId, qrUrl, pdfUrl});
+    }
+    return res.json(returnDatas);
+  } catch (err) {
+    console.error("Erreur génération :", err.message);
+    next(err)
+  }
+};
+
+const genererInvitation = async (req, res, next) => {
   try {
     const guest = await getGuestById(req.params.guestId);
     if (!guest) return res.status(404).json({ error: "Invité introuvable" });
@@ -25,8 +53,8 @@ const genererInvitation = async (req, res) => {
 
     return res.json({ message: "QR code et PDF générés", qrUrl, pdfUrl });
   } catch (err) {
-    console.error("Erreur génération :", err);
-    res.status(500).json({ error: err.message });
+    console.error("Erreur génération :", err.message);
+    next(err)
   }
 };
 
@@ -100,6 +128,6 @@ const deleteInvitation = async (req, res) => {
     }
 }
 
-module.exports = {genererInvitation, viewInvitation, viewQrCode, 
+module.exports = {genererInvitation, genererSeveralInvitations, viewInvitation, viewQrCode, 
                     rsvpGuestStatus, deleteInvitation
                 };
