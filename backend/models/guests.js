@@ -36,6 +36,11 @@ async function getGuestById(id) {
     return event[0];
 }
 
+async function getGuestByEmail(email) {
+    const [event] = await pool.execute(`SELECT * FROM GUESTS WHERE email=?`, [email]);
+    return event[0];
+}
+
 async function getGuestByEventId(eventId) {
     const [event] = await pool.query(`SELECT * FROM GUESTS WHERE event_id=?`, [eventId]);
     return event;
@@ -123,7 +128,7 @@ async function delete_guest(guestId) {
     await pool.query(`DELETE FROM GUESTS WHERE id=?`, [guestId]);
 }
 
-module.exports = {initGuestModel, createGuest, getGuestById,
+module.exports = {initGuestModel, createGuest, getGuestById,getGuestByEmail,
     getGuestByEventId, update_guest, updateRsvpStatusGuest, delete_guest,
     getGuestAndEventRelatedById, getAllGuestAndInvitationRelatedByEventId, getGuestAndInvitationRelatedById
 }

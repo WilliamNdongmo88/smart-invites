@@ -1,7 +1,7 @@
 const { getEventById } = require('../models/events');
 const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
-        update_guest, updateRsvpStatusGuest, delete_guest,
+        update_guest, updateRsvpStatusGuest, delete_guest, getGuestByEmail,
         getAllGuestAndInvitationRelated,getGuestAndInvitationRelatedById
     } = require('../models/guests');
 
@@ -9,7 +9,7 @@ const addGuest = async (req, res, next) => {
     try {
         if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
         let guestDatas = req.body;
-        console.log('guestDatas :: ', guestDatas);
+        // console.log('guestDatas :: ', guestDatas);
         const event = await getEventById(guestDatas[0].eventId);
         if(!event) return res.status(401).json({error: `Evénement avec l'id ${eventId} non trouvé!`});
         let returnDatas = [];
@@ -22,6 +22,9 @@ const addGuest = async (req, res, next) => {
             phoneNumber,
             rsvpStatus,
             hasPlusOne} = data;
+            // console.log('hasPlusOne :: ', hasPlusOne, ' | type:', typeof hasPlusOne);
+            const guest = await getGuestByEmail(email);
+            if(guest) return res.status(409).json({error: `L'invité ${email} existe déjà`});
             const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
                                               rsvpStatus, hasPlusOne);
             returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
