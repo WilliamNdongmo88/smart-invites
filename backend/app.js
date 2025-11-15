@@ -37,7 +37,6 @@ const startServer = async () => {
     // 1 Vérifier la connexion à MySQL
     const [rows] = await pool.query('SELECT NOW() AS now');
     console.log('🕐 MySQL test query result:', rows[0]);
-    console.log("###API_URL:: ", process.env.API_URL);
     // 2 Initialiser toutes les tables
     await initModels();
     await createDefaultAdmin();
@@ -48,7 +47,9 @@ const startServer = async () => {
     });
 
     server = app.listen(PORT, () => {
-      console.log(`✅ Serveur lancé sur http://localhost:${PORT}`);
+      console.log(`✅ Serveur lancé sur ${process.env.BASE_URL}`);
+      console.log("✅ BASE_URL:: ", process.env.BASE_URL);
+      console.log("✅ API_URL:: ", process.env.API_URL);
     });
     return server; // Retourne l'instance du serveur
   } catch (err) {

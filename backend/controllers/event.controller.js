@@ -8,6 +8,7 @@ const create_Event = async (req, res, next) => {
         let eventDatas = req.body;
         console.log('eventDatas :: ', eventDatas);
         const existing = await getUserById(eventDatas[0].organizerId);
+        console.log('existing :: ', existing);
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
         for (const key in eventDatas) {            
