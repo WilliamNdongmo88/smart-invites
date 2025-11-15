@@ -1,4 +1,5 @@
 const Brevo = require('@getbrevo/brevo');
+const axios = require('axios');
 require('dotenv').config();
 
 async function sendGuestEmail(guest, event, token) {
@@ -51,7 +52,61 @@ async function sendGuestEmail(guest, event, token) {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email envoyé à ${guest.email}`);
+  console.log(`✅ Email(Invitation) envoyé à ${guest.email}`);
 };
 
-module.exports = {sendGuestEmail};
+async function sendInvitationToGuest(guest, qrCodeUrl) {
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+    // 1 Télécharger l’image du QR code sous forme de binaire
+    const qrResponse = await axios.get(qrCodeUrl, {
+        responseType: "arraybuffer",
+    });
+
+    // 2 La convertir en base64
+    const qrBase64 = Buffer.from(qrResponse.data).toString("base64");
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif;">
+        <h2 style="color:#d63384;">💖 Merci d'avoir confirmé votre présence au mariage !</h2>
+
+        <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+
+        <p>
+          Nous sommes ravis que vous ayez accepté notre invitation à notre mariage.
+          Votre présence compte énormément pour nous ❤️.
+        </p>
+
+        <p>
+          Vous trouverez ci-joint votre <strong>QR-code d’accès</strong> que vous pourrez
+          présenter le jour de l’événement.
+        </p>
+
+        <p>
+          Si vous avez des questions, n’hésitez surtout pas à nous contacter.
+        </p>
+
+        <p style="margin-top:20px;">À très bientôt,</p>
+        <p><strong>Les futurs mariés 💍</strong></p>
+      </div>
+    `;
+
+    const sendSmtpEmail = {
+      sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+      to: [{ email: guest.email, name: guest.full_name }],
+      subject: "🎉 Merci d'avoir confirmé votre présence !",
+      htmlContent,
+      attachment: [
+        {
+          name: "qr-code-mariage.png",
+          content: qrBase64
+        }
+      ]
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Email(qr-code) envoyé à ${guest.email}`);
+}
+
+module.exports = {sendGuestEmail, sendInvitationToGuest};

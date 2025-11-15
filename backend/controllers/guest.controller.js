@@ -1,5 +1,7 @@
 const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
+const { getGuestInvitationById } = require('../models/invitations');
+const { sendInvitationToGuest } = require('../services/notification.service');
 const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
         update_guest, updateRsvpStatusGuest, delete_guest, getGuestByEmail,
@@ -95,7 +97,19 @@ const updateGuest = async (req, res, next) => {
         if(fullName==null) fullName = guest.full_name;
         if(email==null) email = guest.email;
         if(phoneNumber==null) phoneNumber = guest.phone_number;
-        if(rsvpStatus==null) rsvpStatus = guest.rsvp_status;
+        if(rsvpStatus==null){
+            rsvpStatus = guest.rsvp_status;
+        }else if(rsvpStatus!=null && rsvpStatus=='confirmed'){
+            const invitation = await getGuestInvitationById(req.params.guestId);
+            console.log('invitation:', invitation[0]);
+            if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
+            try {
+                await sendInvitationToGuest(guest, invitation[0].qr_code_url);
+            } catch (error) {
+                console.error('sendInvitationToGuest ERROR:', error.message);
+                next(error);
+            }
+        }
         if(hasPlusOne==null) hasPlusOne = guest.has_plus_pne;
         if(plusOneName==null) plusOneName = guest.plus_one_name;
         if(notes==null) notes = guest.notes;
