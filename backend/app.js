@@ -15,7 +15,7 @@ const setupSwagger = require('./docs/swagger');
 
 // Autorise les requêtes venant d'Angular
 app.use(cors({
-  origin: 'http://localhost:4200',
+  origin: process.env.API_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -37,7 +37,7 @@ const startServer = async () => {
     // 1 Vérifier la connexion à MySQL
     const [rows] = await pool.query('SELECT NOW() AS now');
     console.log('🕐 MySQL test query result:', rows[0]);
-
+    console.log("###API_URL:: ", process.env.API_URL);
     // 2 Initialiser toutes les tables
     await initModels();
     await createDefaultAdmin();

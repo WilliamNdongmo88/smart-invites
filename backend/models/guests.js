@@ -46,21 +46,75 @@ async function getGuestByEventId(eventId) {
     return event;
 }
 
-async function getGuestAndEventRelatedById(guestId) {
-    const result = await pool.execute(`
+async function getEventByGuestId(guestId) {
+    const result = await pool.query(`
         SELECT 
-            g.id AS guest_id,
-            g.full_name,
-            g.email,
-            g.phone_number,
-            e.id AS event_id,
-            e.title AS event_title
+            g.id AS guestId,
+            g.full_name AS guestName,
+            g.email AS guestEmail,
+            g.phone_number AS guestPhone,
+            g.rsvp_status AS rsvpStatus,
+            g.has_plus_one AS guestHasPlusOne,
+            g.plus_one_name AS plusOneName,
+            g.notes AS notes,
+            e.id AS eventId,
+            e.title AS eventTitle,
+            e.description AS description,
+            e.has_plus_one AS eventHasPlusOne,
+            e.event_date AS eventDate,
+            e.event_location AS eventLocation
         FROM GUESTS g
         LEFT JOIN EVENTS e ON e.id=g.event_id
         WHERE g.id=?
     `, [guestId]);
     return result[0];
 }
+
+async function getGuestAndEventRelatedById(guestId) {
+    const result = await pool.query(`
+        SELECT 
+            g.id AS guestId,
+            g.full_name,
+            g.email,
+            g.phone_number,
+            g.rsvp_status,
+            g.notes AS notes,
+            e.id AS eventId,
+            e.title AS event_title,
+            e.description,
+            e.event_date,
+            e.event_location
+        FROM GUESTS g
+        LEFT JOIN EVENTS e ON e.id=g.event_id
+        WHERE g.id=?
+    `, [guestId]);
+    return result[0];
+}
+
+async function getAllGuestAndInvitationRelated() {
+    const result = await pool.query(`
+        SELECT 
+            g.id AS guest_id,
+            g.event_id AS event_id,
+            g.full_name,
+            g.email,
+            g.phone_number,
+            g.rsvp_status,
+            g.has_plus_one,
+            g.plus_one_name,
+            g.notes,
+            g.updated_at AS response_date,
+            i.id AS invitation_id,
+            i.token,
+            i.qr_code_url,
+            i.created_at AS invitation_sent_date
+        FROM GUESTS g
+        LEFT JOIN INVITATIONS i ON i.guest_id=g.id
+        GROUP BY g.id
+    `
+    );
+    return result[0];
+};
 
 async function getAllGuestAndInvitationRelatedByEventId(eventId) {
     const result = await pool.query(`
@@ -89,7 +143,7 @@ async function getAllGuestAndInvitationRelatedByEventId(eventId) {
 }
 
 async function getGuestAndInvitationRelatedById(guestId) {
-    const result = await pool.query(`
+    const result = await pool.execute(`
         SELECT 
             g.id AS guest_id,
             g.full_name,
@@ -130,5 +184,6 @@ async function delete_guest(guestId) {
 
 module.exports = {initGuestModel, createGuest, getGuestById,getGuestByEmail,
     getGuestByEventId, update_guest, updateRsvpStatusGuest, delete_guest,
-    getGuestAndEventRelatedById, getAllGuestAndInvitationRelatedByEventId, getGuestAndInvitationRelatedById
+    getEventByGuestId, getAllGuestAndInvitationRelated,getGuestAndEventRelatedById,
+    getAllGuestAndInvitationRelatedByEventId, getGuestAndInvitationRelatedById
 }

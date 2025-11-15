@@ -58,6 +58,20 @@ async function getEventById(eventId) {
     return event[0];
 }
 
+async function getGuestEmailRelatedToEvent(email, eventId) {
+    const [event] = await pool.query(`
+        SELECT 
+        e.id AS eventId,
+        e.title,
+        g.id AS guestId,
+        g.email
+        FROM EVENTS e
+        LEFT JOIN GUESTS g ON g.event_id = e.id
+        WHERE g.email = ? AND e.id = ?
+        ORDER BY e.id`, [email, eventId]);
+    return event[0];
+}
+
 async function getEventsByOrganizerId(organizerId) {
     const [event] = await pool.query(`
         SELECT 
@@ -123,5 +137,6 @@ async function deleteEvents(eventId) {
 module.exports = {
     initEventsModel, createEvent, updateEvent,updateEventStatus,
     getEventById, getEventsByOrganizerId,deleteEvents,
-    getEventWithTotalGuestById, getEventWithTotalGuest
+    getEventWithTotalGuestById, getEventWithTotalGuest,
+    getGuestEmailRelatedToEvent
 };
