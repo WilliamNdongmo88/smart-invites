@@ -109,4 +109,72 @@ async function sendInvitationToGuest(guest, qrCodeUrl) {
     console.log(`✅ Email(qr-code) envoyé à ${guest.email}`);
 }
 
-module.exports = {sendGuestEmail, sendInvitationToGuest};
+async function sendReminderMail(guest, event) {
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+    const rsvpLink = `${process.env.API_URL}/invitations/${event.invitationToken}`;
+
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+        <div style="max-width: 600px; background-color: #fff; padding: 20px; border-radius: 8px; margin: auto;">
+            
+            <h2 style="text-align: center; color: #D4AF37;">🔔 Rappel de confirmation</h2>
+
+            <p style="font-size: 16px; color: #333;">
+            Bonjour <strong>${guest.full_name}</strong>,
+            </p>
+
+            <p style="font-size: 16px; color: #333;">
+            Nous espérons que vous allez bien.  
+            Vous aviez été invité(e) à l’événement 
+            <strong>${event.eventTitle}</strong> prévu le 
+            <strong>${new Date(event.eventDate).toLocaleDateString("fr-FR", {
+                day: "numeric", month: "long", year: "numeric"
+            })}</strong>
+            au <strong>${event.eventLocation}</strong>.
+            </p>
+
+            <p style="font-size: 16px; color: #333;">
+            Nous n’avons pas encore reçu votre réponse.  
+            Pour nous aider à finaliser l’organisation, merci de confirmer votre présence en cliquant ci-dessous :
+            </p>
+
+            <div style="text-align: center; margin: 20px 0;">
+            <a href="${rsvpLink}" 
+                style="background-color: #D4AF37; color: white; padding: 12px 24px; 
+                    border-radius: 6px; text-decoration: none; font-weight: bold;">
+                📩 Répondre à l'invitation
+            </a>
+            </div>
+
+            <p style="font-size: 14px; color: #666;">
+            Si le bouton ne s’affiche pas correctement, vous pouvez utiliser ce lien :
+            </p>
+            <p style="font-size: 14px; color: #555; word-break: break-all;">
+            <a href="${rsvpLink}" target="_blank">${rsvpLink}</a>
+            </p>
+
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+            <p style="font-size: 13px; color: #888; text-align: center;">
+            Merci d’avance pour votre retour 🙏<br>
+            Au plaisir de vous compter parmi nous,<br>
+            ${event.eventTitle.split('de')[1] || ''}
+            </p>
+
+        </div>
+    </div>
+    `;
+
+    const sendSmtpEmail = {
+        sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+        to: [{ email: guest.email, name: guest.full_name }],
+        subject: `🔔 Rappel – Merci de confirmer votre présence au ${event.eventTitle}`,
+        htmlContent
+    }
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Email(Rappel) envoyé à ${guest.email}`);
+}
+
+module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail};

@@ -9,14 +9,14 @@ const initGuestModel = async () => {
         full_name VARCHAR(255) NOT NULL,
         email VARCHAR(255),
         phone_number VARCHAR(20),
-        rsvp_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+        rsvp_status VARCHAR(50) NOT NULL DEFAULT 'pending',
         has_plus_one BOOLEAN NOT NULL DEFAULT false,
         plus_one_name VARCHAR(255),
         notes TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES EVENTS(id) ON DELETE CASCADE,
-        CONSTRAINT valid_rsvp_status CHECK (rsvp_status IN ('PENDING', 'CONFIRMED', 'DECLINED'))
+        CONSTRAINT valid_rsvp_status CHECK (rsvp_status IN ('pending', 'confirmed', 'declined'))
     )
   `);
   console.log('✅ Table GUESTS prête !');
@@ -27,7 +27,7 @@ async function createGuest(eventId, fullName, email, phoneNumber,
     const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
         rsvp_status, has_plus_one) VALUES(?,?,?,?,?,?)`, 
         [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne]);
-    console.log("result :: ", result.insertId);
+    console.log("[createGuest] result :: ", result.insertId);
     return result.insertId;
 }
 
@@ -143,7 +143,7 @@ async function getAllGuestAndInvitationRelatedByEventId(eventId) {
 }
 
 async function getGuestAndInvitationRelatedById(guestId) {
-    const result = await pool.execute(`
+    const [rows] = await pool.execute(`
         SELECT 
             g.id AS guest_id,
             g.full_name,
@@ -154,23 +154,35 @@ async function getGuestAndInvitationRelatedById(guestId) {
             g.plus_one_name,
             g.notes,
             g.updated_at AS response_date,
-            i.id AS invitation_id,
-            i.token,
-            i.qr_code_url,
-            i.created_at AS invitation_sent_date
+
+            e.id AS eventId,
+            e.title AS eventTitle,
+            e.description,
+            e.has_plus_one AS eventHasPlusOne,
+            e.event_date AS eventDate,
+            e.event_location AS eventLocation,
+
+            i.id AS invitationId,
+            i.token AS invitationToken,
+            i.qr_code_url AS qrCodeUrl,
+            i.created_at AS invitationSentDate
         FROM GUESTS g
-        LEFT JOIN INVITATIONS i ON i.guest_id=g.id
-        WHERE g.id=?
-    `, [guestId]
-    );
-    return result[0];
+        LEFT JOIN EVENTS e ON e.id = g.event_id
+        LEFT JOIN INVITATIONS i ON i.guest_id = g.id
+        WHERE g.id = ?
+        ORDER BY i.created_at DESC
+        LIMIT 1
+    `, [guestId]);
+
+    return rows[0] || null;
 }
 
+
 async function update_guest(guestId, eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes) {
+            rsvpStatus, hasPlusOne, plusOneName, notes, updateDate) {
     await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, email=?, phone_number=?, 
-        rsvp_status=?, has_plus_one=?, plus_one_name=?, notes=? WHERE id=?`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, notes, guestId]
+        rsvp_status=?, has_plus_one=?, plus_one_name=?, notes=?, updated_at=? WHERE id=?`, 
+        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, notes, updateDate, guestId]
     );
 }
 

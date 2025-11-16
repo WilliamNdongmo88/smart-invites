@@ -17,7 +17,7 @@ const initEventsModel = async () => {
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (organizer_id) REFERENCES USERS(id) ON DELETE CASCADE,
-        CONSTRAINT valid_status CHECK (status IN ('PLANNED', 'ACTIVE', 'COMPLETED'))
+        CONSTRAINT valid_status CHECK (status IN ('PLANNED', 'ACTIVE', 'COMPLETED', 'CANCELLED'))
     )
   `);
   console.log('✅ Table EVENTS prête !');
@@ -105,6 +105,11 @@ async function getEventWithTotalGuestById(eventId) {
             e.event_location,
             e.max_guests,
             e.status,
+            e.created_at,
+            e.updated_at,
+            e.organizer_id,
+            e.foot_restriction,
+            e.has_plus_one,
             COUNT(g.id) AS total_guests,
             SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
             SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,

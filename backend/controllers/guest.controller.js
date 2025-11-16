@@ -1,7 +1,7 @@
 const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById } = require('../models/invitations');
-const { sendInvitationToGuest } = require('../services/notification.service');
+const { sendInvitationToGuest, sendReminderMail } = require('../services/notification.service');
 const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
         update_guest, updateRsvpStatusGuest, delete_guest, getGuestByEmail,
@@ -29,7 +29,7 @@ const addGuest = async (req, res, next) => {
                 hasPlusOne} = data;
             // console.log('hasPlusOne :: ', hasPlusOne, ' | type:', typeof hasPlusOne);
             const result = await getGuestEmailRelatedToEvent(email, event.id);
-            console.log('result :: ', result);
+            //console.log('[addGuest] result :: ', result);
             if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
             const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
                                               rsvpStatus, hasPlusOne);
@@ -58,7 +58,7 @@ const getGuest = async (req, res, next) => {
     try {
         const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
-        return res.status(200).json({guest}); 
+        return res.status(200).json(guest); 
     } catch (error) {
         console.error('GET GUEST ERROR:', error.message);
         next(error);
@@ -91,6 +91,7 @@ const updateGuest = async (req, res, next) => {
         let {
             eventId, fullName, email, phoneNumber, 
             rsvpStatus, hasPlusOne, plusOneName, notes} = req.body;
+        let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         if(eventId==null) eventId = guest.event_id;
@@ -100,8 +101,9 @@ const updateGuest = async (req, res, next) => {
         if(rsvpStatus==null){
             rsvpStatus = guest.rsvp_status;
         }else if(rsvpStatus!=null && rsvpStatus=='confirmed'){
+            updateDate = new Date();
             const invitation = await getGuestInvitationById(req.params.guestId);
-            console.log('invitation:', invitation[0]);
+            //console.log('invitation:', invitation[0]);
             if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
             try {
                 await sendInvitationToGuest(guest, invitation[0].qr_code_url);
@@ -112,9 +114,10 @@ const updateGuest = async (req, res, next) => {
         }
         if(hasPlusOne==null) hasPlusOne = guest.has_plus_pne;
         if(plusOneName==null) plusOneName = guest.plus_one_name;
+        if(updateDate==null) updateDate = guest.updated_at;
         if(notes==null) notes = guest.notes;
         await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes);
+            rsvpStatus, hasPlusOne, plusOneName, notes, updateDate);
         const updatedGuest = await getGuestById(req.params.guestId);
         return res.status(200).json({updatedGuest});
     } catch (error) {
@@ -129,8 +132,8 @@ const updateRsvpStatus = async (req, res, next) => {
         const guest = await getGuestById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         await updateRsvpStatusGuest(req.params.guestId, rsvpStatus);
-        const updatedGuest = await getGuestById(req.params.guestId);
-        return res.status(200).json({updatedGuest});
+        const response = await getGuestById(req.params.guestId);
+        return res.status(200).json(response);
     } catch (error) {
         console.error('UPDATE RSVP GUEST ERROR:', error.message);
         next(error)
@@ -141,10 +144,10 @@ const deleteGuest = async (req, res, next) => {
     try {
         const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
         console.log('guest:', guest);
-        console.log('Id et Token:', guest[0].guest_id + ' || ' + guest[0].token);
+        console.log('Id et Token:', guest.guest_id + ' || ' + guest.invitationToken);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         await delete_guest(req.params.guestId);
-        await deleteGuestFiles(guest[0].guest_id, guest[0].token);
+        await deleteGuestFiles(guest.guest_id, guest.invitationToken);
         return res.status(200).json({message: `Invité ${req.params.guestId} supprimé avec succès!`});
     } catch (error) {
         console.error('DELETE GUEST ERROR:', error.message);
@@ -161,11 +164,11 @@ const deleteSeveralGuests = async (req, res, next) => {
         for (const key in guestIdList) {
             const id = guestIdList[key];
             const guest = await getGuestAndInvitationRelatedById(id);
-            console.log('guest:', guest);
-            console.log('Id et Token:', guest[0].guest_id + ' || ' + guest[0].token);
+            //console.log('guest:', guest);
+            console.log('Id et Token:', guest.guest_id + ' || ' + guest.invitationToken);
             if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
             await delete_guest(id);
-            await deleteGuestFiles(guest[0].guest_id, guest[0].token);
+            await deleteGuestFiles(guest.guest_id, guest.invitationToken);
             returnDatas.push(id);
         }
         return res.status(200).json({message: `Les Invités ${returnDatas} ont été supprimé avec succès!`});
@@ -175,5 +178,22 @@ const deleteSeveralGuests = async (req, res, next) => {
     }
 }
 
-module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, getEventByGuest,
-                  updateRsvpStatus, deleteGuest, deleteSeveralGuests, getAllGuest};
+const sendReminder = async (req, res, next) => {
+    try {
+        if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
+        let guests = req.body;
+        for (const key in guests) {
+            const guestId = guests[key];
+            const event = await getGuestAndInvitationRelatedById(guestId);
+            const guest = event;
+            await sendReminderMail(guest, event);
+        }
+        return res.status(200).json({success: "Email de rappel envoyé avec success!"})
+    } catch (error) {
+        next(error)
+    }
+}
+
+module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest,
+                  getEventByGuest, updateRsvpStatus, deleteGuest, 
+                  deleteSeveralGuests, getAllGuest, sendReminder};

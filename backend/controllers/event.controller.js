@@ -43,8 +43,8 @@ const getAllEvents = async (req, res, next) => {
         const event = await getEventWithTotalGuestById(req.params.eventId);
         // console.log('event:', event);
         if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
-        console.log("### event :: ", event);
-        return res.status(200).json({ event });
+        //console.log("### event :: ", event);
+        return res.status(200).json(event);
     } catch (error) {
         console.error('GET EVENT BY ID ERROR:', error.message);
         next(error);
@@ -55,7 +55,7 @@ const getAllEvents = async (req, res, next) => {
     try {
         const organizerEvent = await getEventsByOrganizerId(req.params.organizerId);
         if(organizerEvent.length == 0) return res.status(404).json({ error: 'Aucun Evénement trouvé' });
-        console.log('organizerEvent:', organizerEvent);
+        //console.log('organizerEvent:', organizerEvent);
         return res.status(200).json({ events: organizerEvent });
     } catch (error) {
         console.error('GET EVENT BY OrganizerID ERROR:', error.message);
@@ -112,6 +112,9 @@ const getAllEvents = async (req, res, next) => {
     try {
         const event = await getEventById(req.params.eventId);
         if(!event) return res.status(404).json({error: `Evénement non trouvé!`});
+        const guests = await getEventWithTotalGuestById(req.params.eventId);
+        console.log("guests: ", guests[0].total_guests);
+        if(guests[0].total_guests > 0) return res.status(409).json({error: `Impossible de supprimer cet événement car des invités y sont associés.`});
         await deleteEvents(req.params.eventId);
         return res.status(200).json({message: `Evénement ${req.params.eventId} supprimé avec succès!`})
     } catch (error) {
