@@ -46,7 +46,7 @@ async function createDefaultAdmin() {
     }
 }
 
-async function createUser({ name, email, password, role = 'user' }) {
+async function createUser({ name, email, password, role = 'admin' }) {
   const hashed = await bcrypt.hash(password, 10);
   const [result] = await pool.query(
     `INSERT INTO USERS (name, email, password, role) VALUES (?, ?, ?, ?)`,

@@ -11,23 +11,19 @@ const {
 
 const addGuest = async (req, res, next) => {
     try {
-        if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
+        if (!Array.isArray(req.body) || req.body.length === 0) {
+            return res.status(400).json({ error: "La liste ne doit pas être vide" });
+        }
         let guestDatas = req.body;
-        // console.log('guestDatas :: ', guestDatas);
-        const event = await getEventById(guestDatas[0].eventId);
-        // console.log('#### event :: ', event);
-        if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
+        //console.log('guestDatas :: ', guestDatas);
         let returnDatas = [];
-        for (const key in guestDatas) {
-            const data = guestDatas[key];
-            const {
-                eventId,
-                fullName,
-                email,
-                phoneNumber,
-                rsvpStatus,
-                hasPlusOne} = data;
+        for (const guest of guestDatas) {
+            const { eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne} = guest;
             // console.log('hasPlusOne :: ', hasPlusOne, ' | type:', typeof hasPlusOne);
+            console.log('#### data.eventId :: ', eventId);
+            const event = await getEventById(eventId);
+            console.log('#### event :: ', event);
+            if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
             const result = await getGuestEmailRelatedToEvent(email, event.id);
             //console.log('[addGuest] result :: ', result);
             if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
