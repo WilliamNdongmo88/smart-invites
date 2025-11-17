@@ -106,7 +106,7 @@ const viewQrCode = async (req, res, next) => {
         const result = await getGuestInvitationById(req.params.guestId);
         if(!result) return res.status(401).json({error: `Aucun invité trouvé`});
         
-        console.log('result:', result);
+        //console.log('result:', result);
         return res.status(200).json({qrCodeUrl: result[0].qr_code_url})
     } catch (error) {
         console.error('GET INVITATION ERROR:', error.message);

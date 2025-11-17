@@ -2,6 +2,8 @@ const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events')
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail } = require('../services/notification.service');
+const { generateGuestQr } = require("../services/qrCodeService");
+const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
         update_guest, updateRsvpStatusGuest, delete_guest, getGuestByEmail,
@@ -98,7 +100,7 @@ const updateGuest = async (req, res, next) => {
         if(phoneNumber==null) phoneNumber = guest.phone_number;
         if(rsvpStatus==null){
             rsvpStatus = guest.rsvp_status;
-        }else if(rsvpStatus!=null && rsvpStatus=='confirmed'){
+        }else if(rsvpStatus!=null && rsvpStatus=='confirmed' && hasPlusOne==false){
             updateDate = new Date();
             const invitation = await getGuestInvitationById(req.params.guestId);
             //console.log('invitation:', invitation[0]);
@@ -110,7 +112,7 @@ const updateGuest = async (req, res, next) => {
                 next(error);
             }
         }
-        if(hasPlusOne==null) hasPlusOne = guest.has_plus_pne;
+        if(hasPlusOne==null) {hasPlusOne = guest.has_plus_pne;}
         if(plusOneName==null) plusOneName = guest.plus_one_name;
         if(updateDate==null) updateDate = guest.updated_at;
         if(notes==null) notes = guest.notes;
@@ -119,6 +121,21 @@ const updateGuest = async (req, res, next) => {
         await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, 
             notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
         const updatedGuest = await getGuestById(req.params.guestId);
+        if (hasPlusOne!=null && hasPlusOne==true) {
+            try {
+                const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
+                console.log('guest:', guest);
+                if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
+                await deleteGuestFiles(guest.guest_id, guest.invitationToken);
+                await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.jpg");
+                const buffer = await generateGuestPdf(guest);
+                await uploadPdfToFirebase(guest, buffer);
+                await sendInvitationToGuest(guest, guest.qrCodeUrl);
+            } catch (error) {
+                console.error('sendInvitationToGuest ERROR:', error.message);
+                next(error);
+            }
+        }
         return res.status(200).json({updatedGuest});
     } catch (error) {
         console.error('UPDATE GUEST ERROR:', error.message);
