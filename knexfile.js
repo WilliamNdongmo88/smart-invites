@@ -1,0 +1,18 @@
+const dotenv = require('dotenv');
+dotenv.config({ path: './.env' }); // forcer le chemin
+
+module.exports = {
+  development: {
+    client: 'mysql2',
+    connection: {
+        host: process.env.MYSQL_HOST || 'localhost',
+        port: process.env.MYSQL_PORT || 3308,
+        user: process.env.MYSQL_USER || 'root',
+        password: process.env.MYSQL_PASSWORD || 'dev-root',
+        database: process.env.MYSQL_DATABASE || 'dev_smart_invite_db',
+    },
+    migrations: {
+      directory: './backend/migrations'
+    }
+  }
+};

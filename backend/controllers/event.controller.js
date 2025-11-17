@@ -12,12 +12,17 @@ const create_Event = async (req, res, next) => {
         let returnDatas = [];
         for (const key in eventDatas) {            
             const data = eventDatas[key];
-            const {organizerId, title, description, eventDate, 
-            eventLocation, maxGuests,hasPlusOne, footRestriction, status} = data;
-            const eventId = await createEvent(organizerId, title, description, eventDate, 
-                                              eventLocation, maxGuests,hasPlusOne, footRestriction, status);
-            returnDatas.push({id: eventId, organizerId, title, description, eventDate, 
-                                              eventLocation, maxGuests,hasPlusOne, footRestriction, status})
+            const {organizerId, title, description, eventDate, type, budget, eventNameConcerned1,
+                   eventNameConcerned2, eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                   status} = data;
+            const eventId = await createEvent(organizerId, title, description, eventDate,type, 
+                                              budget, eventNameConcerned1,eventNameConcerned2, 
+                                              eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                                              status);
+            returnDatas.push({id: eventId, organizerId, title, description, eventDate,type, 
+                                budget, eventNameConcerned1,eventNameConcerned2, 
+                                eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                                status})
             
         }
         return res.status(201).json(returnDatas);
@@ -65,8 +70,8 @@ const getAllEvents = async (req, res, next) => {
 
   const updateEventBy_Id = async (req, res, next) => {
     try {
-        let { organizerId, title, description, eventDate, 
-            eventLocation, maxGuests, hasPlusOne, footRestriction, status 
+        let { organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, 
+            footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2
         } = req.body;
 
         const event = await getEventById(req.params.eventId);
@@ -79,13 +84,17 @@ const getAllEvents = async (req, res, next) => {
         if(eventLocation == null){ eventLocation = event.event_location};
         if(maxGuests == null){ maxGuests = event.max_guests};
         if(hasPlusOne == null){ hasPlusOne = event.has_plus_one};
+        if(type == null){ type = event.type};
+        if(budget == null){ budget = event.budget};
+        if(eventNameConcerned1 == null){ eventNameConcerned1 = event.event_name_concerned1};
+        if(eventNameConcerned2 == null){ eventNameConcerned2 = event.event_name_concerned2};
         if(footRestriction == null){ footRestriction = event.foot_restriction};
         if(status == null){ status = event.status};
 
         const organizer = await getUserById(organizerId);
         if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
-        await updateEvent(req.params.eventId, organizerId, title, description, eventDate, 
-            eventLocation, maxGuests, hasPlusOne, footRestriction, status );
+        await updateEvent(req.params.eventId, organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, 
+            footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2 );
         const updatedEvent = await getEventById(req.params.eventId)
         return res.status(200).json({updatedEvent})
     } catch (error) {

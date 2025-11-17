@@ -85,8 +85,10 @@ const getGuestsByEvent = async (req, res) => {
 const updateGuest = async (req, res, next) => {
     try {
         let {
-            eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes} = req.body;
+            eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, 
+            notes, dietaryRestrictions, plusOneNameDietRestr
+        } = req.body;
+
         let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
@@ -112,8 +114,10 @@ const updateGuest = async (req, res, next) => {
         if(plusOneName==null) plusOneName = guest.plus_one_name;
         if(updateDate==null) updateDate = guest.updated_at;
         if(notes==null) notes = guest.notes;
-        await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes, updateDate);
+        if(dietaryRestrictions==null) dietaryRestrictions = guest.dietary_restrictions;
+        if(plusOneNameDietRestr==null) plusOneNameDietRestr = guest.plus_one_name_diet_restr;
+        await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, 
+            notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
         const updatedGuest = await getGuestById(req.params.guestId);
         return res.status(200).json({updatedGuest});
     } catch (error) {

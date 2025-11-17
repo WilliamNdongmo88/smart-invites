@@ -23,11 +23,17 @@ const initEventsModel = async () => {
   console.log('✅ Table EVENTS prête !');
 };
 
-async function createEvent(organizerId, title, description, eventDate, 
-            eventLocation, maxGuests, hasPlusOne, footRestriction, status) {
+async function createEvent(organizerId, title, description, eventDate,type, 
+                            budget, eventNameConcerned1,eventNameConcerned2, 
+                            eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                            status) {
     const [result] = await pool.execute(`INSERT INTO EVENTS (organizer_id, title, description, 
-        event_date, event_location, max_guests,has_plus_one, foot_restriction, status) VALUES(?,?,?,?,?,?,?,?,?)`,
-    [organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, footRestriction, status]);
+                                            event_date, event_location, max_guests,has_plus_one, 
+                                            foot_restriction, status, type, budget, 
+                                            event_name_concerned1, event_name_concerned2) 
+                                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [organizerId, title, description, eventDate,eventLocation, maxGuests,hasPlusOne, footRestriction, 
+        status, type, budget, eventNameConcerned1, eventNameConcerned2]);
     return result.insertId;
 }
 
@@ -41,6 +47,10 @@ async function getEventWithTotalGuest() {
             e.event_location,
             e.max_guests,
             e.status,
+            e.type,
+            e.budget,
+            e.event_name_concerned1,
+            e.event_name_concerned2,
             COUNT(g.id) AS total_guests,
             SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
             SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
@@ -63,6 +73,10 @@ async function getGuestEmailRelatedToEvent(email, eventId) {
         SELECT 
         e.id AS eventId,
         e.title,
+        e.type,
+        e.budget,
+        e.event_name_concerned1,
+        e.event_name_concerned2,
         g.id AS guestId,
         g.email
         FROM EVENTS e
@@ -82,6 +96,10 @@ async function getEventsByOrganizerId(organizerId) {
             e.event_location,
             e.max_guests,
             e.status,
+            e.type,
+            e.budget,
+            e.event_name_concerned1,
+            e.event_name_concerned2,
             COUNT(g.id) AS total_guests,
             SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
             SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
@@ -110,6 +128,10 @@ async function getEventWithTotalGuestById(eventId) {
             e.organizer_id,
             e.foot_restriction,
             e.has_plus_one,
+            e.type,
+            e.budget,
+            e.event_name_concerned1,
+            e.event_name_concerned2,
             COUNT(g.id) AS total_guests,
             SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
             SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
@@ -123,12 +145,16 @@ async function getEventWithTotalGuestById(eventId) {
     return result[0];
 }
 
-async function updateEvent(eventId, organizerId, title, description, eventDate, 
-            eventLocation, maxGuests, hasPlusOne, footRestriction, status ) {
+async function updateEvent(eventId, organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, 
+            footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2 ) {
 
     await pool.query(`UPDATE EVENTS SET organizer_id=?, title=?, description=?, event_date=?, 
-        event_location=?, max_guests=?,has_plus_one=?, foot_restriction=?, status=? WHERE id=?`, [organizerId, title, description, eventDate, 
-            eventLocation, maxGuests,hasPlusOne, footRestriction, status, eventId]);
+        event_location=?, max_guests=?,has_plus_one=?, foot_restriction=?, status=?, type=?,
+            budget=?,
+            event_name_concerned1=?,
+            event_name_concerned2=? WHERE id=?`, [organizerId, title, description, eventDate, 
+                eventLocation, maxGuests,hasPlusOne, footRestriction, status, type, budget, 
+                eventNameConcerned1, eventNameConcerned2, eventId]);
 }
 
 async function updateEventStatus(eventId, status) {

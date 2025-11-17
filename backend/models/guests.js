@@ -56,6 +56,8 @@ async function getEventByGuestId(guestId) {
             g.rsvp_status AS rsvpStatus,
             g.has_plus_one AS guestHasPlusOne,
             g.plus_one_name AS plusOneName,
+            g.dietary_restrictions AS dietaryRestrictions,
+            g.plus_one_name_diet_restr AS plusOneNameDietRestr,
             g.notes AS notes,
             e.id AS eventId,
             e.title AS eventTitle,
@@ -78,6 +80,9 @@ async function getGuestAndEventRelatedById(guestId) {
             g.email,
             g.phone_number,
             g.rsvp_status,
+            g.plus_one_name,
+            g.dietary_restrictions,
+            g.plus_one_name_diet_restr,
             g.notes AS notes,
             e.id AS eventId,
             e.title AS event_title,
@@ -102,6 +107,8 @@ async function getAllGuestAndInvitationRelated() {
             g.rsvp_status,
             g.has_plus_one,
             g.plus_one_name,
+            g.dietary_restrictions,
+            g.plus_one_name_diet_restr,
             g.notes,
             g.updated_at AS response_date,
             i.id AS invitation_id,
@@ -127,6 +134,8 @@ async function getAllGuestAndInvitationRelatedByEventId(eventId) {
             g.rsvp_status,
             g.has_plus_one,
             g.plus_one_name,
+            g.dietary_restrictions,
+            g.plus_one_name_diet_restr,
             g.notes,
             g.updated_at AS response_date,
             i.id AS invitation_id,
@@ -152,6 +161,8 @@ async function getGuestAndInvitationRelatedById(guestId) {
             g.rsvp_status,
             g.has_plus_one,
             g.plus_one_name,
+            g.dietary_restrictions,
+            g.plus_one_name_diet_restr,
             g.notes,
             g.updated_at AS response_date,
 
@@ -178,11 +189,12 @@ async function getGuestAndInvitationRelatedById(guestId) {
 }
 
 
-async function update_guest(guestId, eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne, plusOneName, notes, updateDate) {
+async function update_guest(guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, 
+    plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate) {
     await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, email=?, phone_number=?, 
-        rsvp_status=?, has_plus_one=?, plus_one_name=?, notes=?, updated_at=? WHERE id=?`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, notes, updateDate, guestId]
+        rsvp_status=?, has_plus_one=?, plus_one_name=?, notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? WHERE id=?`, 
+        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, notes, 
+            dietaryRestrictions, plusOneNameDietRestr, updateDate, guestId]
     );
 }
 
