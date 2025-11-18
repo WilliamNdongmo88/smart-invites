@@ -23,10 +23,10 @@ const initGuestModel = async () => {
 };
 
 async function createGuest(eventId, fullName, email, phoneNumber, 
-            rsvpStatus, hasPlusOne) {
+            rsvpStatus, guesthasPlusOneAutoriseByAdmin) {
     const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
-        rsvp_status, has_plus_one) VALUES(?,?,?,?,?,?)`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne]);
+        rsvp_status, guest_has_plus_one_autorise_by_admin) VALUES(?,?,?,?,?,?)`, 
+        [eventId, fullName, email, phoneNumber, rsvpStatus, guesthasPlusOneAutoriseByAdmin]);
     console.log("[createGuest] result :: ", result.insertId);
     return result.insertId;
 }
@@ -54,6 +54,7 @@ async function getEventByGuestId(guestId) {
             g.email AS guestEmail,
             g.phone_number AS guestPhone,
             g.rsvp_status AS rsvpStatus,
+            g.guest_has_plus_one_autorise_by_admin AS guestHasPlusOneAutoriseByAdmin,
             g.has_plus_one AS guestHasPlusOne,
             g.plus_one_name AS plusOneName,
             g.dietary_restrictions AS dietaryRestrictions,
@@ -166,6 +167,7 @@ async function getGuestAndInvitationRelatedById(guestId) {
             g.email,
             g.phone_number,
             g.rsvp_status,
+            g.guest_has_plus_one_autorise_by_admin,
             g.has_plus_one,
             g.plus_one_name,
             g.dietary_restrictions,
@@ -202,10 +204,10 @@ async function getGuestAndInvitationRelatedById(guestId) {
 
 
 async function update_guest(guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, 
-    plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate) {
+    guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate) {
     await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, email=?, phone_number=?, 
-        rsvp_status=?, has_plus_one=?, plus_one_name=?, notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? WHERE id=?`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, notes, 
+        rsvp_status=?, has_plus_one=?,guest_has_plus_one_autorise_by_admin=?, plus_one_name=?, notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? WHERE id=?`, 
+        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, notes, 
             dietaryRestrictions, plusOneNameDietRestr, updateDate, guestId]
     );
 }

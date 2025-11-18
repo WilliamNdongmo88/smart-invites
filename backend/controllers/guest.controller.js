@@ -20,8 +20,9 @@ const addGuest = async (req, res, next) => {
         //console.log('guestDatas :: ', guestDatas);
         let returnDatas = [];
         for (const guest of guestDatas) {
-            const { eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne} = guest;
-            // console.log('hasPlusOne :: ', hasPlusOne, ' | type:', typeof hasPlusOne);
+            const { eventId, fullName, email, phoneNumber, rsvpStatus, 
+                guesthasPlusOneAutoriseByAdmin} = guest;
+            // console.log('guesthasPlusOneAutoriseByAdmin :: ', guesthasPlusOneAutoriseByAdmin, ' | type:', typeof guesthasPlusOneAutoriseByAdmin);
             console.log('#### data.eventId :: ', eventId);
             const event = await getEventById(eventId);
             console.log('#### event :: ', event);
@@ -30,9 +31,9 @@ const addGuest = async (req, res, next) => {
             //console.log('[addGuest] result :: ', result);
             if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
             const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
-                                              rsvpStatus, hasPlusOne);
+                                              rsvpStatus, guesthasPlusOneAutoriseByAdmin);
             returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
-                              rsvpStatus, hasPlusOne});
+                              rsvpStatus, guesthasPlusOneAutoriseByAdmin});
         }
         return res.status(201).json(returnDatas);
     } catch (error) {
@@ -87,12 +88,13 @@ const getGuestsByEvent = async (req, res) => {
 const updateGuest = async (req, res, next) => {
     try {
         let {
-            eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, 
-            notes, dietaryRestrictions, plusOneNameDietRestr
+            eventId, fullName, email, phoneNumber, rsvpStatus,hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
+            notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken
         } = req.body;
-
+        console.log('req.body:', req.body);
         let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
+        console.log('guestInBd:', guest);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         if(eventId==null) eventId = guest.event_id;
         if(fullName==null) fullName = guest.full_name;
@@ -101,30 +103,45 @@ const updateGuest = async (req, res, next) => {
         if(rsvpStatus==null){
             rsvpStatus = guest.rsvp_status;
         }else if(rsvpStatus!=null && rsvpStatus=='confirmed' && hasPlusOne==false){
+            console.log('Envoi de l\'invitation car RSVP confirmé et pas de plus one');
+            // Si le RSVP est confirmé et qu'il n'y a personne qui l'accompagne
+            // Envoyer l'invitation Qr-Code déjà généré par mail
             updateDate = new Date();
             const invitation = await getGuestInvitationById(req.params.guestId);
-            //console.log('invitation:', invitation[0]);
+            console.log('invitation:', invitation[0]);
             if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
+            if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
             try {
                 await sendInvitationToGuest(guest, invitation[0].qr_code_url);
             } catch (error) {
                 console.error('sendInvitationToGuest ERROR:', error.message);
                 next(error);
             }
+        }else if(rsvpStatus=='declined'){
+            console.log('RSVP décliné, pas d\'envoi d\'invitation');
+            // Si le RSVP est décliné, ne pas envoyer l'invitation
+            updateDate = new Date();
+            const invitation = await getGuestInvitationById(req.params.guestId);
+            if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
+            if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
         }
-        if(hasPlusOne==null) {hasPlusOne = guest.has_plus_pne;}
+        if(guesthasPlusOneAutoriseByAdmin==null) {guesthasPlusOneAutoriseByAdmin = guest.guest_has_plus_one_autorise_by_admin;}
+        if(hasPlusOne==null || hasPlusOne==undefined) hasPlusOne = guest.has_plus_one;
         if(plusOneName==null) plusOneName = guest.plus_one_name;
         if(updateDate==null) updateDate = guest.updated_at;
         if(notes==null) notes = guest.notes;
         if(dietaryRestrictions==null) dietaryRestrictions = guest.dietary_restrictions;
         if(plusOneNameDietRestr==null) plusOneNameDietRestr = guest.plus_one_name_diet_restr;
-        await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, plusOneName, 
-            notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
+        await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne,
+            guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
         const updatedGuest = await getGuestById(req.params.guestId);
-        if (hasPlusOne!=null && hasPlusOne==true) {
+        console.log('updatedGuest:', updatedGuest);
+        if (hasPlusOne!=null && hasPlusOne==true && guest.has_plus_one==false) {
+            // Si le champ hasPlusOne est passé à true
+            // Supprimer l'ancienne invitation et les fichiers associés(QR code et PDF)
+            // Envoyer une nouvelle invitation en tenant compte de la personne qui l'accompagne
             try {
                 const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
-                console.log('guest:', guest);
                 if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                 await deleteGuestFiles(guest.guest_id, guest.invitationToken);
                 await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.jpg");
