@@ -6,7 +6,7 @@ const create_Event = async (req, res, next) => {
     try {
         if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
         let eventDatas = req.body;
-        console.log('eventDatas :: ', eventDatas);
+        //console.log('eventDatas :: ', eventDatas);
         const existing = await getUserById(eventDatas[0].organizerId);
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
@@ -122,7 +122,7 @@ const getAllEvents = async (req, res, next) => {
         const event = await getEventById(req.params.eventId);
         if(!event) return res.status(404).json({error: `Evénement non trouvé!`});
         const guests = await getEventWithTotalGuestById(req.params.eventId);
-        console.log("guests: ", guests[0].total_guests);
+        //console.log("guests: ", guests[0].total_guests);
         if(guests[0].total_guests > 0) return res.status(409).json({error: `Impossible de supprimer cet événement car des invités y sont associés.`});
         await deleteEvents(req.params.eventId);
         return res.status(200).json({message: `Evénement ${req.params.eventId} supprimé avec succès!`})

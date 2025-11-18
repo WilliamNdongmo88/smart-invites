@@ -42,8 +42,6 @@ async function checkUserByCode(email, code) {
   }
 
   // Compare le code fourni
-  console.log("[checkUserByCode] reset_code : ", user.reset_code);
-  console.log("[checkUserByCode] code : ", code);
   if (user.reset_code !== code) {
     throw new Error('Code de vérification invalide');
   }

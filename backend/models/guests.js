@@ -27,7 +27,7 @@ async function createGuest(eventId, fullName, email, phoneNumber,
     const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
         rsvp_status, guest_has_plus_one_autorise_by_admin) VALUES(?,?,?,?,?,?)`, 
         [eventId, fullName, email, phoneNumber, rsvpStatus, guesthasPlusOneAutoriseByAdmin]);
-    console.log("[createGuest] result :: ", result.insertId);
+    //console.log("[createGuest] result :: ", result.insertId);
     return result.insertId;
 }
 

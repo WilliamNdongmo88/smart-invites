@@ -22,13 +22,9 @@ const addGuest = async (req, res, next) => {
         for (const guest of guestDatas) {
             const { eventId, fullName, email, phoneNumber, rsvpStatus, 
                 guesthasPlusOneAutoriseByAdmin} = guest;
-            // console.log('guesthasPlusOneAutoriseByAdmin :: ', guesthasPlusOneAutoriseByAdmin, ' | type:', typeof guesthasPlusOneAutoriseByAdmin);
-            console.log('#### data.eventId :: ', eventId);
             const event = await getEventById(eventId);
-            console.log('#### event :: ', event);
             if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
             const result = await getGuestEmailRelatedToEvent(email, event.id);
-            //console.log('[addGuest] result :: ', result);
             if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
             const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
                                               rsvpStatus, guesthasPlusOneAutoriseByAdmin);
@@ -91,10 +87,10 @@ const updateGuest = async (req, res, next) => {
             eventId, fullName, email, phoneNumber, rsvpStatus,hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
             notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken
         } = req.body;
-        console.log('req.body:', req.body);
+        //console.log('req.body:', req.body);
         let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
-        console.log('guestInBd:', guest);
+        //console.log('guestInBd:', guest);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         if(eventId==null) eventId = guest.event_id;
         if(fullName==null) fullName = guest.full_name;
@@ -103,12 +99,11 @@ const updateGuest = async (req, res, next) => {
         if(rsvpStatus==null){
             rsvpStatus = guest.rsvp_status;
         }else if(rsvpStatus!=null && rsvpStatus=='confirmed' && hasPlusOne==false){
-            console.log('Envoi de l\'invitation car RSVP confirmé et pas de plus one');
             // Si le RSVP est confirmé et qu'il n'y a personne qui l'accompagne
             // Envoyer l'invitation Qr-Code déjà généré par mail
             updateDate = new Date();
             const invitation = await getGuestInvitationById(req.params.guestId);
-            console.log('invitation:', invitation[0]);
+            //console.log('invitation:', invitation[0]);
             if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
             if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
             try {
@@ -118,7 +113,7 @@ const updateGuest = async (req, res, next) => {
                 next(error);
             }
         }else if(rsvpStatus=='declined'){
-            console.log('RSVP décliné, pas d\'envoi d\'invitation');
+            //console.log('RSVP décliné, pas d\'envoi d\'invitation');
             // Si le RSVP est décliné, ne pas envoyer l'invitation
             updateDate = new Date();
             const invitation = await getGuestInvitationById(req.params.guestId);
@@ -135,7 +130,7 @@ const updateGuest = async (req, res, next) => {
         await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne,
             guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
         const updatedGuest = await getGuestById(req.params.guestId);
-        console.log('updatedGuest:', updatedGuest);
+        //console.log('updatedGuest:', updatedGuest);
         if (hasPlusOne!=null && hasPlusOne==true && guest.has_plus_one==false) {
             // Si le champ hasPlusOne est passé à true
             // Supprimer l'ancienne invitation et les fichiers associés(QR code et PDF)
@@ -177,8 +172,7 @@ const updateRsvpStatus = async (req, res, next) => {
 const deleteGuest = async (req, res, next) => {
     try {
         const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
-        console.log('guest:', guest);
-        console.log('Id et Token:', guest.guest_id + ' || ' + guest.invitationToken);
+        //console.log('guest:', guest);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         await delete_guest(req.params.guestId);
         await deleteGuestFiles(guest.guest_id, guest.invitationToken);
@@ -193,13 +187,11 @@ const deleteSeveralGuests = async (req, res, next) => {
     try {
         if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
         let guestIdList = req.body;
-        console.log('guestIdList:', guestIdList);
+        //console.log('guestIdList:', guestIdList);
         let returnDatas = [];
         for (const key in guestIdList) {
             const id = guestIdList[key];
             const guest = await getGuestAndInvitationRelatedById(id);
-            //console.log('guest:', guest);
-            console.log('Id et Token:', guest.guest_id + ' || ' + guest.invitationToken);
             if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
             await delete_guest(id);
             await deleteGuestFiles(guest.guest_id, guest.invitationToken);

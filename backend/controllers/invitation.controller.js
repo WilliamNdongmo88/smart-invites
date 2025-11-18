@@ -18,7 +18,6 @@ const genererSeveralInvitations = async (req, res, next) => {
         const guest = await getGuestById(guestId);
         if (!guest) return res.status(404).json({ error: `Invité ${guestId} introuvable` });
         const guest_event_related = await getGuestAndEventRelatedById(guestId);
-        console.log('## guest_event_related:', guest_event_related[0].event_title);
         if (!guest_event_related[0].event_title) return res.status(404).json({ error: "Donnée introuvable" });
         const invitations = await getGuestInvitationById(guestId);
         if (invitations[0]) return res.status(409).json({ error: `Invitation déjà invoyé a l'invité ${guestId}` });
@@ -47,7 +46,7 @@ const genererInvitation = async (req, res, next) => {
     const guest = await getGuestById(req.params.guestId);
     if (!guest) return res.status(404).json({ error: "Invité introuvable" });
     const guest_event_related = await getGuestAndEventRelatedById(req.params.guestId);
-    console.log('guest_event_related:', guest_event_related[0].event_title);
+    //console.log('guest_event_related:', guest_event_related[0].event_title);
     if (!guest_event_related[0].event_title) return res.status(404).json({ error: "Donnée introuvable" });
     const invitations = await getGuestInvitationById(req.params.guestId);
     if (invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
@@ -73,7 +72,7 @@ const genererInvitation = async (req, res, next) => {
 
 const viewInvitation = async (req, res, next) => {
     try {
-        console.log('guestId:', req.params.guestId);
+        //console.log('guestId:', req.params.guestId);
         const guest = await getGuestById(req.params.guestId);
         if (!guest) return res.status(404).send("Invité introuvable");
 
@@ -92,7 +91,7 @@ const viewInvitation = async (req, res, next) => {
             // Sinon, génère et renvoie à la volée
             const buffer = await generateGuestPdf(guest);
             const pdfUrl = await uploadPdfToFirebase(guest, buffer);
-            console.log('pdfUrl:', pdfUrl);
+            //console.log('pdfUrl:', pdfUrl);
             res.redirect(pdfUrl);
         }
     } catch (error) {

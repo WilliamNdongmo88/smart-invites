@@ -52,7 +52,6 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    console.log("---Body---: ", req.body)
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -60,7 +59,6 @@ const login = async (req, res, next) => {
     }
 
     const user = await getUserByEmail(email);
-    console.log("---user---: ", user)
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur non trouvé' });
     }
@@ -131,7 +129,6 @@ const forgotPassword = async (req, res, next) => {
 
 const checkCode = async (req, res, next) => {
     try {
-        console.log("---Body---: ", req.body)
         const { email, code } = req.body;
 
         // Vérification si le code est correct
@@ -146,11 +143,9 @@ const checkCode = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
     try {
-        console.log("---Body---: ", req.body)
         const { email, newpassword } = req.body;
 
         const user = await resetUserPassword(email, newpassword);
-        console.log("---user---: ", user.id);
         return res.status(200).json({ message: 'Mot de passe réinitialisé avec succès', userId: user.id });
     } catch (error) {
         console.error('RESET PASSWORD ERROR:', error.message);

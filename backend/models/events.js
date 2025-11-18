@@ -115,7 +115,7 @@ async function getEventsByOrganizerId(organizerId) {
         WHERE organizer_id = ?
         GROUP BY e.id
     `, [organizerId]);
-    console.log("event: ", event);
+    //console.log("event: ", event);
     return event;
 }
 
