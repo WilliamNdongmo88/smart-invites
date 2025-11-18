@@ -1,6 +1,7 @@
 const { startServer } = require('./app');
 const path = require('path');
 
+// Configurer Knex pour les migrations
 const environment = process.env.NODE_ENV || 'development';
 const knexfile = require(path.join(__dirname, '../knexfile'));
 
@@ -12,7 +13,7 @@ knex.migrate.latest()
     .then(() => console.log("🚀 Migrations applied"))
     .catch(err => console.error(err));
 
-
+// End migrations and start server
 
 startServer().catch(err => {
   console.error("Erreur fatale lors du démarrage du serveur:", err);
