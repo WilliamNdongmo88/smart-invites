@@ -17,19 +17,19 @@ module.exports = {
       directory: path.resolve(__dirname, "backend/migrations")
     }
   },
-  test: {
-    client: "mysql2",
-    connection: {
-      host: "localhost",
-      port: 3308,
-      user: "root",
-      password: "dev-root",
-      database: "test_smart_invite_db"
-    },
-    migrations: {
-      directory: path.resolve(__dirname, "backend/migrations")
-    }
-  },
+  // test: {
+  //   client: "mysql2",
+  //   connection: {
+  //     host: "localhost",
+  //     port: 3308,
+  //     user: "root",
+  //     password: "dev-root",
+  //     database: "test_smart_invite_db"
+  //   },
+  //   migrations: {
+  //     directory: path.resolve(__dirname, "backend/migrations")
+  //   }
+  // },
   production: {
     client: "mysql2",
     connection: {

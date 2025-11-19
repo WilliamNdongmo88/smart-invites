@@ -132,7 +132,7 @@ describe("Events API", () => {
             expect(res.body).toHaveProperty("message");
             expect(res.body.message).toBe(`Evénement ${eventId} supprimé avec succès!`);
         });
-        });
+    });
 
     afterAll(async () => {
         await closeServer();
