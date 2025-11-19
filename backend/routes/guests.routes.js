@@ -13,5 +13,6 @@ router.put('/rsvp/:guestId',authenticateToken, GuestController.updateRsvpStatus)
 router.delete('/:guestId',authenticateToken, GuestController.deleteGuest);
 router.post('/delete',authenticateToken, GuestController.deleteSeveralGuests);
 router.post('/reminde-mail',authenticateToken, requireRole('admin'), GuestController.sendReminder);
+router.post('/:guestId/send-file',authenticateToken, requireRole('admin'), GuestController.sendFileQRCode);
 
 module.exports = router;

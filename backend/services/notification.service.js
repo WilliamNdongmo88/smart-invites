@@ -177,4 +177,50 @@ async function sendReminderMail(guest, event) {
     console.log(`✅ Email(Rappel) envoyé à ${guest.email}`);
 }
 
-module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail};
+async function sendFileQRCodeMail(guest, qrCodeUrl) {
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+    // 1 Télécharger l’image du QR code sous forme de binaire
+    const qrResponse = await axios.get(qrCodeUrl, {
+        responseType: "arraybuffer",
+    });
+
+    // 2 La convertir en base64
+    const qrBase64 = Buffer.from(qrResponse.data).toString("base64");
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; font-size:14px;">
+        <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+
+        <p>
+          Votre <strong>QR-code d’accès</strong> pour le mariage est joint à ce mail.
+          Il vous servira de laissez-passer le jour de l’événement.
+        </p>
+
+        <p>
+          Merci encore pour votre présence ✨  
+        </p>
+
+        <p>Cordialement,<br><strong>Les futurs mariés</strong></p>
+      </div>
+    `;
+
+    const sendSmtpEmail = {
+      sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+      to: [{ email: guest.email, name: guest.full_name }],
+      subject: "📩 Invitation : votre QR-code d’accès",
+      htmlContent,
+      attachment: [
+        {
+          name: "qr-code-mariage.png",
+          content: qrBase64
+        }
+      ]
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Email(qr-code) envoyé à ${guest.email}`);
+}
+
+module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendFileQRCodeMail};

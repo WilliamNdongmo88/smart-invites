@@ -1,7 +1,7 @@
 const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById } = require('../models/invitations');
-const { sendInvitationToGuest, sendReminderMail } = require('../services/notification.service');
+const { sendInvitationToGuest, sendReminderMail, sendFileQRCodeMail } = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
@@ -221,6 +221,16 @@ const sendReminder = async (req, res, next) => {
     }
 }
 
-module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest,
-                  getEventByGuest, updateRsvpStatus, deleteGuest, 
-                  deleteSeveralGuests, getAllGuest, sendReminder};
+const sendFileQRCode = async (req, res, next) => {
+    try {
+        const event = await getGuestAndInvitationRelatedById(req.params.guestId);
+        const guest = event;
+        await sendFileQRCodeMail(guest, guest.qrCodeUrl);
+        return res.status(200).json({success: "Fichier Qr-Code envoyé avec success!"})
+    } catch (error) {
+        next(error)
+    }
+}
+
+module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, getEventByGuest, updateRsvpStatus, deleteGuest, 
+                  deleteSeveralGuests, getAllGuest, sendReminder, sendFileQRCode};
