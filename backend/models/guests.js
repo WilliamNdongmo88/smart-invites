@@ -4,14 +4,17 @@ const pool = require('../config/bd');
 const initGuestModel = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS GUESTS (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        event_id INT NOT NULL,
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        event_id INT UNSIGNED NOT NULL,
         full_name VARCHAR(255) NOT NULL,
         email VARCHAR(255),
         phone_number VARCHAR(20),
         rsvp_status VARCHAR(50) NOT NULL DEFAULT 'pending',
         has_plus_one BOOLEAN NOT NULL DEFAULT false,
         plus_one_name VARCHAR(255),
+        dietary_restrictions VARCHAR(255),
+        plus_one_name_diet_restr VARCHAR(255),
+        guest_has_plus_one_autorise_by_admin BOOLEAN NOT NULL DEFAULT false,
         notes TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -4,8 +4,8 @@ const pool = require('../config/bd');
 const initInvitationModel = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS INVITATIONS (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        guest_id INT UNIQUE,
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        guest_id INT UNSIGNED UNIQUE,
         token VARCHAR(255) NOT NULL UNIQUE,
         qr_code_url TEXT,
         status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',

@@ -42,7 +42,11 @@ describe("Events API", () => {
                 maxGuests: 150,
                 hasPlusOne: false,
                 footRestriction: false,
-                status: "PLANNED"
+                status: "planned",
+                type: "wedding",
+                budget: 3000,
+                eventNameConcerned1: "William",
+                eventNameConcerned2: "Gloria"
             }];
             
             const res = await request(app)
@@ -50,7 +54,7 @@ describe("Events API", () => {
             .send(eventDatas)
             .set("Authorization", `Bearer ${token}`);
 
-            // console.log("CREATE EVENT RESPONSE:", res.body);
+            console.log("CREATE EVENT RESPONSE:", res.body);
             eventId = res.body[0].id;
             expect(res.statusCode).toBe(201);
             expect(res.body[0]).toHaveProperty("organizerId");
@@ -73,8 +77,7 @@ describe("Events API", () => {
             .set("Authorization", `Bearer ${token}`);
 
             expect(res.statusCode).toBe(200);
-            expect(res.body).toHaveProperty("event");
-            expect(res.body.event.length).toBe(1);
+            expect(res.body.length).toBe(1);
         });
 
         test("GET All ORGANIZER EVENT", async () => {
@@ -129,7 +132,7 @@ describe("Events API", () => {
             expect(res.body).toHaveProperty("message");
             expect(res.body.message).toBe(`Evénement ${eventId} supprimé avec succès!`);
         });
-    });
+        });
 
     afterAll(async () => {
         await closeServer();

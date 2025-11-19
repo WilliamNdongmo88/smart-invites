@@ -4,10 +4,14 @@ const pool = require('../config/bd');
 const initEventsModel = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS EVENTS (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        organizer_id INT NOT NULL,
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        organizer_id INT UNSIGNED NOT NULL,
         title VARCHAR(255) NOT NULL,
         description TEXT,
+        type VARCHAR(50),    -- New field: type
+        budget VARCHAR(50),  -- New field: budget
+        event_name_concerned1 VARCHAR(50), -- New field: event_name_concerned1
+        event_name_concerned2 VARCHAR(50), -- New field: event_name_concerned2
         event_date TIMESTAMP NOT NULL,
         event_location VARCHAR(255),
         max_guests INTEGER,

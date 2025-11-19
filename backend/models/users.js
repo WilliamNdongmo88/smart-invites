@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const initUserModel = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS USERS (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(100),
       email VARCHAR(255) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
