@@ -1,17 +1,26 @@
-exports.up = function (knex) {
+const e = require("express");
+
+exports.up = async function (knex) {
+  const dietaryRestrictions = await knex.schema.hasColumn("GUESTS", "dietary_restrictions");
+  const plusOneNameDietRestr = await knex.schema.hasColumn("GUESTS", "plus_one_name_diet_restr");
+  const guestHasPlusOneAutoriseByAdmin = await knex.schema.hasColumn("GUESTS", "guest_has_plus_one_autorise_by_admin");
+
   return knex.schema.alterTable("GUESTS", function (table) {
-    table.string("dietary_restrictions", 255).defaultTo(null);
-    table.string("plus_one_name_diet_restr", 255).defaultTo(null);
-    table.boolean("guest_has_plus_one_autorise_by_admin")
-      .notNullable()
-      .defaultTo(false);
+    if (!dietaryRestrictions) table.string("dietary_restrictions", 50).defaultTo(null);
+    if (!plusOneNameDietRestr) table.string("plus_one_name_diet_restr", 50).defaultTo(null);
+    if (!guestHasPlusOneAutoriseByAdmin) table.boolean("guest_has_plus_one_autorise_by_admin").notNullable().defaultTo(false);
   });
 };
 
-exports.down = function (knex) {
+exports.down = async function (knex) {
+  const dietaryRestrictions = await knex.schema.hasColumn("GUESTS", "dietary_restrictions");
+  const plusOneNameDietRestr = await knex.schema.hasColumn("GUESTS", "plus_one_name_diet_restr");
+  const guestHasPlusOneAutoriseByAdmin = await knex.schema.hasColumn("GUESTS", "guest_has_plus_one_autorise_by_admin");
+
   return knex.schema.alterTable("GUESTS", function (table) {
-    table.dropColumn("dietary_restrictions");
-    table.dropColumn("plus_one_name_diet_restr");
-    table.dropColumn("guest_has_plus_one_autorise_by_admin");
+    if (dietaryRestrictions) table.dropColumn("dietary_restrictions");
+    if (plusOneNameDietRestr) table.dropColumn("plus_one_name_diet_restr");
+    if (guestHasPlusOneAutoriseByAdmin) table.dropColumn("guest_has_plus_one_autorise_by_admin");
   });
 };
+
