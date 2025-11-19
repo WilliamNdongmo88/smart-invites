@@ -87,10 +87,10 @@ const updateGuest = async (req, res, next) => {
             eventId, fullName, email, phoneNumber, rsvpStatus,hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
             notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken
         } = req.body;
-        //console.log('req.body:', req.body);
+        console.log('req.body:', req.body);
         let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
-        //console.log('guestInBd:', guest);
+        console.log('guestInBd:', guest);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         if(eventId==null) eventId = guest.event_id;
         if(fullName==null) fullName = guest.full_name;
@@ -138,6 +138,7 @@ const updateGuest = async (req, res, next) => {
             try {
                 const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
                 if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
+                if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
                 await deleteGuestFiles(guest.guest_id, guest.invitationToken);
                 await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.jpg");
                 const buffer = await generateGuestPdf(guest);
