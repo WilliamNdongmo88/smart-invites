@@ -1,17 +1,27 @@
-exports.up = function (knex) {
+exports.up = async function (knex) {
+  const hasType = await knex.schema.hasColumn("EVENTS", "type");
+  const hasBudget = await knex.schema.hasColumn("EVENTS", "budget");
+  const hasEventName1 = await knex.schema.hasColumn("EVENTS", "event_name_concerned1");
+  const hasEventName2 = await knex.schema.hasColumn("EVENTS", "event_name_concerned2");
+
   return knex.schema.alterTable("EVENTS", function (table) {
-    table.string("type", 50).defaultTo();
-    table.string("budget", 50).defaultTo();
-    table.string("event_name_concerned1", 50).defaultTo();
-    table.string("event_name_concerned2", 50).defaultTo();
+    if (!hasType) table.string("type", 50).defaultTo(null);
+    if (!hasBudget) table.string("budget", 50).defaultTo(null);
+    if (!hasEventName1) table.string("event_name_concerned1", 50).defaultTo(null);
+    if (!hasEventName2) table.string("event_name_concerned2", 50).defaultTo(null);
   });
 };
 
-exports.down = function (knex) {
+exports.down = async function (knex) {
+  const hasType = await knex.schema.hasColumn("EVENTS", "type");
+  const hasBudget = await knex.schema.hasColumn("EVENTS", "budget");
+  const hasEventName1 = await knex.schema.hasColumn("EVENTS", "event_name_concerned1");
+  const hasEventName2 = await knex.schema.hasColumn("EVENTS", "event_name_concerned2");
+
   return knex.schema.alterTable("EVENTS", function (table) {
-    table.dropColumn("type");
-    table.dropColumn("budget");
-    table.dropColumn("event_name_concerned1");
-    table.dropColumn("event_name_concerned2");
+    if (hasType) table.dropColumn("type");
+    if (hasBudget) table.dropColumn("budget");
+    if (hasEventName1) table.dropColumn("event_name_concerned1");
+    if (hasEventName2) table.dropColumn("event_name_concerned2");
   });
 };
