@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById} = require("../models/guests");
 const {createInvitation, getGuestInvitationById, 
     getGuestInvitationByToken, deleteGuestInvitation} = require('../models/invitations');
@@ -113,6 +114,22 @@ const viewQrCode = async (req, res, next) => {
     }
 };
 
+const downloadQRCode = async (req, res, next) => {
+    try {
+        const response = await axios.get(req.query.url, { responseType: "arraybuffer" });
+
+        res.set({
+            "Content-Type": "image/png",
+            "Content-Disposition": `attachment; filename="qr-code-${req.params.guestId}.png"`
+        });
+
+        res.send(response.data);
+    } catch (error) {
+        console.error('GET INVITATION ERROR:', error.message);
+        next(error);
+    }
+};
+
 const rsvpGuestStatus = async (req, res, next) => {
     try {
         const {rsvpStatus} = req.body;
@@ -141,5 +158,5 @@ const deleteInvitation = async (req, res, next) => {
 }
 
 module.exports = {genererInvitation, genererSeveralInvitations, viewInvitation, viewQrCode, 
-                    rsvpGuestStatus, deleteInvitation
+                    rsvpGuestStatus, deleteInvitation, downloadQRCode
                 };
