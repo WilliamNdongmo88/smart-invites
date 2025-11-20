@@ -271,7 +271,7 @@ const swaggerDocument = swaggerJsdoc(options);
 
 function setupSwagger(app) {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-  console.log("#: Swagger docs: http://localhost:"+process.env.PORT+"/api-docs");
+  console.log("#: Swagger docs:" + process.env.BASE_URL +process.env.PORT+"/api-docs");
 }
 
 module.exports = setupSwagger;
