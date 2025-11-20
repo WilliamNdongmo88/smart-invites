@@ -83,6 +83,8 @@ const getGuestsByEvent = async (req, res) => {
 
 const updateGuest = async (req, res, next) => {
     try {
+        let updatedGuest = {};
+        let isValid = false;
         let {
             eventId, fullName, email, phoneNumber, rsvpStatus,hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
             notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken
@@ -108,6 +110,7 @@ const updateGuest = async (req, res, next) => {
             if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
             try {
                 await sendInvitationToGuest(guest, invitation[0].qr_code_url);
+                isValid = true;
             } catch (error) {
                 console.error('sendInvitationToGuest ERROR:', error.message);
                 next(error);
@@ -115,10 +118,11 @@ const updateGuest = async (req, res, next) => {
         }else if(rsvpStatus=='declined'){
             //console.log('RSVP décliné, pas d\'envoi d\'invitation');
             // Si le RSVP est décliné, ne pas envoyer l'invitation
-            updateDate = new Date();
             const invitation = await getGuestInvitationById(req.params.guestId);
             if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
             if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
+            updateDate = new Date();
+            isValid = true;
         }
         if(guesthasPlusOneAutoriseByAdmin==null) {guesthasPlusOneAutoriseByAdmin = guest.guest_has_plus_one_autorise_by_admin;}
         if(hasPlusOne==null || hasPlusOne==undefined) hasPlusOne = guest.has_plus_one;
@@ -127,11 +131,8 @@ const updateGuest = async (req, res, next) => {
         if(notes==null) notes = guest.notes;
         if(dietaryRestrictions==null) dietaryRestrictions = guest.dietary_restrictions;
         if(plusOneNameDietRestr==null) plusOneNameDietRestr = guest.plus_one_name_diet_restr;
-        await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne,
-            guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
-        const updatedGuest = await getGuestById(req.params.guestId);
         //console.log('updatedGuest:', updatedGuest);
-        if (hasPlusOne!=null && hasPlusOne==true && guest.has_plus_one==false) {
+        if (rsvpStatus=='pending' && hasPlusOne==true && guest.has_plus_one==false) {
             // Si le champ hasPlusOne est passé à true
             // Supprimer l'ancienne invitation et les fichiers associés(QR code et PDF)
             // Envoyer une nouvelle invitation en tenant compte de la personne qui l'accompagne
@@ -144,10 +145,21 @@ const updateGuest = async (req, res, next) => {
                 const buffer = await generateGuestPdf(guest);
                 await uploadPdfToFirebase(guest, buffer);
                 await sendInvitationToGuest(guest, guest.qrCodeUrl);
+                isValid = true;
             } catch (error) {
                 console.error('sendInvitationToGuest ERROR:', error.message);
                 next(error);
             }
+        }
+        if(isValid){
+            await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne,
+            guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
+            updatedGuest = await getGuestById(req.params.guestId);
+        }else{
+            const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
+            if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
+            if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
+            console.log('Aucune mise à jour effectuée car les conditions ne sont pas remplies.');
         }
         return res.status(200).json({updatedGuest});
     } catch (error) {
