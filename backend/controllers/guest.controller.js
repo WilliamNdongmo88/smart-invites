@@ -132,7 +132,7 @@ const updateGuest = async (req, res, next) => {
         if(dietaryRestrictions==null) dietaryRestrictions = guest.dietary_restrictions;
         if(plusOneNameDietRestr==null) plusOneNameDietRestr = guest.plus_one_name_diet_restr;
         //console.log('updatedGuest:', updatedGuest);
-        if (rsvpStatus=='pending' && hasPlusOne==true && guest.has_plus_one==false) {
+        if (rsvpStatus=='confirmed' && hasPlusOne==true && guest.has_plus_one==false) {
             // Si le champ hasPlusOne est passé à true
             // Supprimer l'ancienne invitation et les fichiers associés(QR code et PDF)
             // Envoyer une nouvelle invitation en tenant compte de la personne qui l'accompagne
