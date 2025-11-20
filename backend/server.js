@@ -1,7 +1,7 @@
 const { startServer } = require('./app');
 const path = require('path');
 
-// Configurer Knex pour les migrations
+// Configuration Knex pour les migrations
 const environment = process.env.NODE_ENV || 'development';
 const knexfile = require(path.join(__dirname, '../knexfile'));
 

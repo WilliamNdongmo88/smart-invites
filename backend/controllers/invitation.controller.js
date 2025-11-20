@@ -7,6 +7,7 @@ const { generateGuestQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {deleteGuestFiles} = require('../services/invitation.service');
 const {sendGuestEmail} = require('../services/notification.service');
+const { update_guest } = require('../models/guests');
 const { bucket } = require('../config/firebaseConfig');
 
 const genererSeveralInvitations = async (req, res, next) => {
@@ -14,8 +15,7 @@ const genererSeveralInvitations = async (req, res, next) => {
     if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
     let guestsIdList = req.body;
     let returnDatas = [];
-    for (const key in guestsIdList) {
-        const guestId = guestsIdList[key];
+    for (const guestId of guestsIdList) {
         const guest = await getGuestById(guestId);
         if (!guest) return res.status(404).json({ error: `Invité ${guestId} introuvable` });
         const guest_event_related = await getGuestAndEventRelatedById(guestId);
@@ -148,6 +148,17 @@ const deleteInvitation = async (req, res, next) => {
     try {
         const invitation = await getGuestInvitationById(req.params.guestId);
         if(!invitation[0]) return res.status(404).json({error: "Invitation non trouvé!"});
+        const guest = await getGuestById(req.params.guestId);
+        //console.log('guest before delete invitation:', guest);
+        if(guest.has_plus_one){
+            guest.has_plus_one = false;
+            guest.plus_one_name = null;
+            guest.plus_one_name_diet_restr = null;
+            guest.rsvp_status = 'pending';
+            await update_guest(guest.id, guest.event_id, guest.full_name, guest.email, guest.phone_number, guest.rsvp_status, 
+                guest.has_plus_one, guest.guest_has_plus_one_autorise_by_admin, guest.plus_one_name, guest.notes, guest.dietary_restrictions, 
+                guest.plus_one_name_diet_restr, guest.updated_at);
+        }
         await deleteGuestInvitation(req.params.guestId);
         await deleteGuestFiles(req.params.guestId, invitation[0].token);
         return res.status(200).json({message: "Invitation supprimé avec succès"});
