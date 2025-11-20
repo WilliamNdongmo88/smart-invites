@@ -1,4 +1,15 @@
 const { bucket } = require('../config/firebaseConfig');
+const { updateInvitationById } = require('../models/invitations');
+
+async function validateAndUseInvitation(invitation) {
+  try {
+    invitation.status = "USED";
+    invitation.used_at = new Date();
+    await updateInvitationById(invitation.id, invitation.status, invitation.used_at);
+  } catch (error) {
+    console.log('[validateAndUseInvitation] error:', error);
+  }
+}
 
 async function deleteGuestFiles(guestId, invitationToken) {
   if (!guestId) throw new Error("Guest ID manquant pour la suppression des fichiers");
@@ -29,4 +40,4 @@ async function deleteGuestFiles(guestId, invitationToken) {
   }
 }
 
-module.exports = { deleteGuestFiles };
+module.exports = { validateAndUseInvitation, deleteGuestFiles };

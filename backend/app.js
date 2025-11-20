@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth.routes');
 const eventRoutes = require('./routes/events.routes');
 const guestRoutes = require('./routes/guests.routes');
 const invitationRoutes = require('./routes/invitations.routes');
+const checkinRoutes = require('./routes/checkin.routes');
 const errorHandler = require('../backend/middlewares/errorHandler')
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/event', eventRoutes);
 app.use('/api/guest', guestRoutes);
 app.use('/api/invitation', invitationRoutes);
+app.use('/api/checkin', checkinRoutes);
 
 app.use(errorHandler);
 

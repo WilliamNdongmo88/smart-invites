@@ -1,3 +1,4 @@
+const { initCheckinModel } = require('./checkins');
 const { initEventsModel } = require('./events');
 const { initGuestModel } = require('./guests');
 const { initInvitationModel } = require('./invitations');
@@ -9,6 +10,7 @@ const initModels = async () => {
   await initEventsModel();
   await initGuestModel();
   await initInvitationModel();
+  await initCheckinModel();
 };
 
 module.exports = {

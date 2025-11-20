@@ -209,7 +209,8 @@ async function getGuestAndInvitationRelatedById(guestId) {
 async function update_guest(guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, 
     guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate) {
     await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, email=?, phone_number=?, 
-        rsvp_status=?, has_plus_one=?,guest_has_plus_one_autorise_by_admin=?, plus_one_name=?, notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? WHERE id=?`, 
+        rsvp_status=?, has_plus_one=?,guest_has_plus_one_autorise_by_admin=?, plus_one_name=?, 
+        notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? WHERE id=?`, 
         [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, notes, 
             dietaryRestrictions, plusOneNameDietRestr, updateDate, guestId]
     );

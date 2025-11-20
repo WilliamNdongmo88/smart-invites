@@ -29,6 +29,11 @@ async function createInvitation(guestId, token, qrCodeUrl) {
     return result.insertId;
 };
 
+async function getInvitationById(invitationId) {
+    const result = await pool.query(`SELECT * FROM INVITATIONS WHERE id=?`, [invitationId]);
+    return result[0];
+};
+
 async function getGuestInvitationById(guestId) {
     const result = await pool.query(`SELECT * FROM INVITATIONS WHERE guest_id=?`, [guestId]);
     return result[0];
@@ -39,10 +44,17 @@ async function getGuestInvitationByToken(token) {
     return result[0];
 };
 
+async function updateInvitationById(invitationId, status, usedAt) {
+    const [result] = await pool.query(`UPDATE INVITATIONS SET status=?, used_at=?, updated_at=? WHRER id=?`,
+        [status, usedAt, usedAt, invitationId]
+    );
+    return result[0];
+}
+
 async function deleteGuestInvitation(guestId) {
     await pool.query(`DELETE FROM INVITATIONS WHERE guest_id=?`, [guestId]);
 };
 
-module.exports = {initInvitationModel, createInvitation, getGuestInvitationById, 
-    getGuestInvitationByToken, deleteGuestInvitation
+module.exports = {initInvitationModel, getInvitationById, createInvitation, 
+    getGuestInvitationById, getGuestInvitationByToken, updateInvitationById, deleteGuestInvitation
 };
