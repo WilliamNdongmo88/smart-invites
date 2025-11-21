@@ -45,7 +45,8 @@ async function getGuestInvitationByToken(token) {
 };
 
 async function updateInvitationById(invitationId, status, usedAt) {
-    const [result] = await pool.query(`UPDATE INVITATIONS SET status=?, used_at=?, updated_at=? WHRER id=?`,
+    //console.log('variable:', {invitationId, status, usedAt});
+    const [result] = await pool.query(`UPDATE INVITATIONS SET status=?, used_at=?, updated_at=? WHERE id=?`,
         [status, usedAt, usedAt, invitationId]
     );
     return result[0];

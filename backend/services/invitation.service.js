@@ -3,9 +3,10 @@ const { updateInvitationById } = require('../models/invitations');
 
 async function validateAndUseInvitation(invitation) {
   try {
-    invitation.status = "USED";
-    invitation.used_at = new Date();
-    await updateInvitationById(invitation.id, invitation.status, invitation.used_at);
+    console.log('invitation:', invitation);
+    invitation[0].status = "USED";
+    invitation[0].used_at = new Date();
+    await updateInvitationById(invitation[0].id, invitation[0].status, invitation[0].used_at);
   } catch (error) {
     console.log('[validateAndUseInvitation] error:', error);
   }

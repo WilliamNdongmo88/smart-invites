@@ -1,6 +1,7 @@
 const {getUserById} = require('../models/users');
-const {createEvent, getEventById,updateEvent,updateEventStatus,getEventsByOrganizerId,
-getEventWithTotalGuest, deleteEvents, getEventWithTotalGuestById} = require('../models/events')
+const {createEvent, getEventById,updateEvent,updateEventStatus,
+    getEventsByOrganizerId, getEventWithTotalGuest, deleteEvents, 
+    getEventWithTotalGuestById, getEventAndInvitationById} = require('../models/events')
 
 const create_Event = async (req, res, next) => {
     try {
@@ -54,6 +55,17 @@ const getAllEvents = async (req, res, next) => {
         next(error);
     }
   };
+
+  const getEventAndInvitationRelatedById = async (req, res, next) => {
+    try {
+        const event = await getEventAndInvitationById(req.params.eventId);
+        if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
+        return res.status(200).json(event);
+    } catch (error) {
+        console.error('GET EVENT-INVITATION BY ID ERROR:', error.message);
+        next(error);
+    }
+  }
 
   const getOrganizerEvents = async (req, res, next) => {
     try {
@@ -135,6 +147,7 @@ module.exports = {
     create_Event,
     getAllEvents, 
     getEventBy_Id,
+    getEventAndInvitationRelatedById,
     getOrganizerEvents,
     updateEventBy_Id,
     updateEvent_Status,

@@ -17,7 +17,7 @@ const initCheckinModel = async () => {
         CONSTRAINT valid_scan_status CHECK (scan_status IN ('VALID', 'INVALID', 'DUPLICATE', 'EXPIRED'))
     )
   `);
-  console.log('✅ Table GUESTS prête !');
+  console.log('✅ Table CHECKINS prête !');
 };
 
 async function createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime) {

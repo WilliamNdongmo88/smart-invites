@@ -75,6 +75,8 @@ router.get('/all-events',authenticateToken, EventController.getAllEvents);
  */
 router.get('/:eventId',authenticateToken, EventController.getEventBy_Id);
 
+router.get('/:eventId/invitation',authenticateToken, EventController.getEventAndInvitationRelatedById);
+
 /**
  * @swagger
  * /api/event/organizer/{id}:

@@ -41,6 +41,25 @@ async function createEvent(organizerId, title, description, eventDate,type,
     return result.insertId;
 }
 
+async function getEventAndInvitationById(eventId) {
+    const result = await pool.query(`
+        SELECT
+            e.id AS eventId,
+            e.title,
+            g.id AS guestId,
+            g.full_name AS guestName,
+            g.has_plus_one AS hasPlusOne,
+            g.plus_one_name AS plusOneName,
+            i.id AS invitationId,
+            i.token
+        FROM EVENTS e
+        LEFT JOIN GUESTS g ON g.event_id=e.id
+        LEFT JOIN INVITATIONS i ON i.guest_id=g.id
+        WHERE e.id = ?
+        ORDER BY e.id
+    `, [eventId]);
+    return result[0];
+}
 async function getEventWithTotalGuest() {
         const result = await pool.query(`
         SELECT
@@ -179,5 +198,5 @@ module.exports = {
     initEventsModel, createEvent, updateEvent,updateEventStatus,
     getEventById, getEventsByOrganizerId,deleteEvents,
     getEventWithTotalGuestById, getEventWithTotalGuest,
-    getGuestEmailRelatedToEvent
+    getGuestEmailRelatedToEvent, getEventAndInvitationById
 };
