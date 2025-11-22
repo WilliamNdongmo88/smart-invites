@@ -353,4 +353,49 @@ async function sendFileQRCodeMail(data, qrCodeUrl) {
     console.log(`✅ Email(qr-code) envoyé à ${guest.email}`);
 }
 
-module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendFileQRCodeMail};
+async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
+  console.log('organizer:', organizer);
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+    let subject = '';
+    let reponse = '';
+    switch (rsvpStatus) {
+      case 'confirmed':
+          subject = "✅ Reponse Invité."
+          reponse = "vient d’accepter"
+        break;
+    
+      case 'declined':
+          subject = "❌ Reponse Invité."
+          reponse = "a décliné"
+        break;
+    }
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; font-size:14px;">
+        <p>Bonjour <strong>${organizer.name}</strong>,</p>
+
+        <p>
+          Nous vous informons que l'invité <strong>${guest.full_name}</strong> ${reponse} votre invitation.
+        </p>
+        <p>
+          Vous pouvez consulter les détails dans votre espace organisateur.  
+        </p>
+
+        <p>Smart Invite</p>
+      </div>
+    `;
+
+    const sendSmtpEmail = {
+      sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+      to: [{ email: organizer.email, name: organizer.name }],
+      subject: subject,
+      htmlContent
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Email(rsvp invité) envoyé à ${guest.email}`);
+}
+
+module.exports = {sendGuestEmail, sendInvitationToGuest, 
+  sendReminderMail, sendFileQRCodeMail, sendGuestResponseToOrganizer};

@@ -64,6 +64,7 @@ async function getEventByGuestId(guestId) {
             g.plus_one_name_diet_restr AS plusOneNameDietRestr,
             g.notes AS notes,
             e.id AS eventId,
+            e.organizer_id AS organizerId,
             e.title AS eventTitle,
             e.description AS description,
             e.has_plus_one AS eventHasPlusOne,

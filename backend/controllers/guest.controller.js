@@ -1,7 +1,8 @@
 const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById } = require('../models/invitations');
-const { sendInvitationToGuest, sendReminderMail, sendFileQRCodeMail } = require('../services/notification.service');
+const { sendInvitationToGuest, sendReminderMail,
+    sendGuestResponseToOrganizer, sendFileQRCodeMail } = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
@@ -10,6 +11,7 @@ const {
         getAllGuestAndInvitationRelated,getGuestAndInvitationRelatedById,
         getEventByGuestId
     } = require('../models/guests');
+const { getUserById } = require('../models/users');
 
 const addGuest = async (req, res, next) => {
     try {
@@ -110,9 +112,12 @@ const updateGuest = async (req, res, next) => {
             if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
             try {
                 await sendInvitationToGuest(guest, invitation[0].qr_code_url);
+                const event = await getEventByGuestId(guest.id);
+                const organizer = await getUserById(event[0].organizerId);
+                await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                 isValid = true;
             } catch (error) {
-                console.error('sendInvitationToGuest ERROR:', error.message);
+                console.error('send email ERROR:', error.message);
                 next(error);
             }
         }else if(rsvpStatus=='declined'){
@@ -123,6 +128,9 @@ const updateGuest = async (req, res, next) => {
             if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
             updateDate = new Date();
             isValid = true;
+            const event = await getEventByGuestId(guest.id);
+            const organizer = await getUserById(event[0].organizerId);
+            await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
         }
         if(guesthasPlusOneAutoriseByAdmin==null) {guesthasPlusOneAutoriseByAdmin = guest.guest_has_plus_one_autorise_by_admin;}
         if(hasPlusOne==null || hasPlusOne==undefined) hasPlusOne = guest.has_plus_one;
@@ -146,6 +154,9 @@ const updateGuest = async (req, res, next) => {
                 await uploadPdfToFirebase(guest, buffer);
                 await sendInvitationToGuest(guest, guest.qrCodeUrl);
                 isValid = true;
+                const event = await getEventByGuestId(guest.guest_id);
+                const organizer = await getUserById(event[0].organizerId);
+                await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
             } catch (error) {
                 console.error('sendInvitationToGuest ERROR:', error.message);
                 next(error);
