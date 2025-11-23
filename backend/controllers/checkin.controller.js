@@ -1,6 +1,6 @@
 const { createCheckin } = require("../models/checkins");
 const { getEventById } = require("../models/events");
-const { getGuestById, getEventByGuestId } = require("../models/guests");
+const { getGuestById, getEventByGuestId, updateRsvpStatusGuest } = require("../models/guests");
 const { getInvitationById } = require("../models/invitations");
 const { getUserById } = require("../models/users");
 const { validateAndUseInvitation } = require("../services/invitation.service");
@@ -18,6 +18,7 @@ const addCheckIn = async (req, res, next) => {
         const checkin = await createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime);
         if (checkin) {
             await validateAndUseInvitation(invitation);
+            await updateRsvpStatusGuest(guestId, 'present');
             isValid = true;
         }
         if (isValid) {

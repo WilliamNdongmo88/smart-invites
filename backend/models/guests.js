@@ -19,7 +19,7 @@ const initGuestModel = async () => {
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES EVENTS(id) ON DELETE CASCADE,
-        CONSTRAINT valid_rsvp_status CHECK (rsvp_status IN ('pending', 'confirmed', 'declined'))
+        CONSTRAINT valid_rsvp_status CHECK (rsvp_status IN ('pending', 'confirmed', 'declined', 'present'))
     )
   `);
   console.log('✅ Table GUESTS prête !');
