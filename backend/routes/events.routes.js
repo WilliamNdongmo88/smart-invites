@@ -36,6 +36,8 @@ const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
  */
 router.post('/create-event',authenticateToken, requireRole('admin'), EventController.create_Event);
 
+router.post('/guest-pdf',authenticateToken, requireRole('admin'), EventController.generatePresentGuests);
+
 /**
  * @swagger
  * /api/event/all-events:

@@ -1,7 +1,8 @@
 const {getUserById} = require('../models/users');
 const {createEvent, getEventById,updateEvent,updateEventStatus,
     getEventsByOrganizerId, getEventWithTotalGuest, deleteEvents, 
-    getEventWithTotalGuestById, getEventAndInvitationById} = require('../models/events')
+    getEventWithTotalGuestById, getEventAndInvitationById} = require('../models/events');
+const { generatePresentGuestsPdf } = require('../services/pdfService');
 
 const create_Event = async (req, res, next) => {
     try {
@@ -143,6 +144,23 @@ const getAllEvents = async (req, res, next) => {
     }
   }
 
+  const generatePresentGuests = async (req, res, next) => {
+    try {
+        const guestsList = req.body.filteredGuests;
+        const event = req.body.event;
+        if (!Array.isArray(guestsList) || guestsList.length === 0) {
+            return res.status(400).json({ error: 'Le tableau d\'invités est requis' });
+        }
+        const pdfBuffer = await generatePresentGuestsPdf(guestsList, event);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "attachment; filename=invites-present.pdf");
+        res.send(pdfBuffer);
+    } catch (error) {
+        console.log('[generatePresentGuests] error:', error.message);
+        next(error);
+    }
+  }
+
 module.exports = {
     create_Event,
     getAllEvents, 
@@ -151,5 +169,6 @@ module.exports = {
     getOrganizerEvents,
     updateEventBy_Id,
     updateEvent_Status,
-    deleteEvent
+    deleteEvent,
+    generatePresentGuests
 }
