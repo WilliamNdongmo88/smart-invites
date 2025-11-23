@@ -52,7 +52,6 @@ const getAllEvents = async (req, res, next) => {
     }
 }
 
-  let scheduledJob = null;
   const getEventBy_Id = async (req, res, next) => {
     try {
         const event = await getEventWithTotalGuestById(req.params.eventId);
@@ -60,6 +59,7 @@ const getAllEvents = async (req, res, next) => {
         if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
         console.log('eventdate:', event[0].event_date);
 
+        // Sensé s'executé le lendemain du jour de l'événement.
         planSchedule(event[0].event_date);
 
         return res.status(200).json(event);
