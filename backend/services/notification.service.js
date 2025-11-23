@@ -422,6 +422,39 @@ async function sendGuestPresenceToOrganizer(organizer, guest) {
     console.log(`✅ Email(arrivé invité) envoyé à ${guest.email}`);
 }
 
+async function sendPdfByEmail(data, pdfBuffer) {
+    const user = data;
+    const event = data;
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
-module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, 
+    // 1. Convertir le Buffer du PDF en Base64
+    const base64Pdf = pdfBuffer.toString('base64');
+
+    const htmlContent = `
+            <p>Bonjour,</p>
+            <p>Veuillez trouver ci-joint le récapitulatif des invités pour l'événement <strong>${event.title}</strong>.</p>
+            
+            <p>Cordialement,</p>
+            <p>Smart Invite</p>
+        `;
+
+    const sendSmtpEmail = {
+      sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+      to: [{ email: user.email, name: user.name }],
+      subject: "📩 Votre liste d'invités récapitulative",
+      htmlContent,
+      attachment: [
+        {
+          name: "recapitulatif_invites.pdf",
+          content: base64Pdf
+        }
+      ]
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Email(pdf) envoyé à ${user.email}`);
+}
+
+module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer};

@@ -34,6 +34,23 @@ async function getInvitationById(invitationId) {
     return result[0];
 };
 
+async function getGuestByInvitationId(invitationId) {
+    const [result] = await pool.execute(`
+        SELECT 
+            i.id AS invitationId,
+            i.used_at AS usedAt,
+            g.id AS guestId,
+            g.full_name AS name,
+            g.plus_one_name AS plusOneName,
+            g.rsvp_status AS rsvpStatus
+        FROM INVITATIONS i
+        LEFT JOIN GUESTS g ON g.id=i.guest_id
+        WHERE i.id=?
+    `,[invitationId]);
+
+    return result[0];
+}
+
 async function getGuestInvitationById(guestId) {
     const result = await pool.query(`SELECT * FROM INVITATIONS WHERE guest_id=?`, [guestId]);
     return result[0];
@@ -56,6 +73,6 @@ async function deleteGuestInvitation(guestId) {
     await pool.query(`DELETE FROM INVITATIONS WHERE guest_id=?`, [guestId]);
 };
 
-module.exports = {initInvitationModel, getInvitationById, createInvitation, 
+module.exports = {initInvitationModel, getInvitationById, createInvitation, getGuestByInvitationId,
     getGuestInvitationById, getGuestInvitationByToken, updateInvitationById, deleteGuestInvitation
 };

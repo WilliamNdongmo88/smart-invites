@@ -194,9 +194,26 @@ async function deleteEvents(eventId) {
     await pool.query(`DELETE FROM EVENTS WHERE id = ?`, [eventId]);
 }
 
+async function getUserByEventId(eventId) {
+    const [result] = await pool.query(`
+        SELECT
+            e.id AS eventId,
+            e.title,
+            u.id AS organizerId,
+            u.name,
+            u.email
+        FROM EVENTS e
+        LEFT JOIN USERS u ON u.id=e.organizer_id
+        WHERE e.id=?
+    `, [eventId]);
+
+    return result[0];
+}
+
 module.exports = {
     initEventsModel, createEvent, updateEvent,updateEventStatus,
     getEventById, getEventsByOrganizerId,deleteEvents,
     getEventWithTotalGuestById, getEventWithTotalGuest,
-    getGuestEmailRelatedToEvent, getEventAndInvitationById
+    getGuestEmailRelatedToEvent, getEventAndInvitationById,
+    getUserByEventId
 };

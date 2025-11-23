@@ -26,4 +26,9 @@ async function createCheckin(eventId, invitationId, scannedBy, scanStatus, check
     return result.insertId;
 }
 
-module.exports = {initCheckinModel, createCheckin};
+async function getGuestsCheckIns() {
+  const [result] = await pool.query(`SELECT * FROM CHECKINS`);
+  return result;
+}
+
+module.exports = {initCheckinModel, createCheckin, getGuestsCheckIns};
