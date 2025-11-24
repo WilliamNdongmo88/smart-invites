@@ -11,7 +11,7 @@ const checkinRoutes = require('./routes/checkin.routes');
 const errorHandler = require('../backend/middlewares/errorHandler');
 
 const app = express();
-//app.set('trust proxy', 1);//IMPORTANT pour Railway
+//app.set('trust proxy', 1);//IMPORTANT 
 
 const PORT = process.env.PORT || 3000;
 const setupSwagger = require('./docs/swagger');
