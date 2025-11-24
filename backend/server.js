@@ -1,6 +1,5 @@
 const { startServer } = require('./app');
 const path = require('path');
-app.set('trust proxy', 1);//IMPORTANT pour Railway
 
 // Configuration Knex pour les migrations
 const environment = process.env.NODE_ENV || 'development';
