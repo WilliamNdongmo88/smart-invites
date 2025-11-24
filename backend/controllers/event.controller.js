@@ -33,6 +33,7 @@ const create_Event = async (req, res, next) => {
                                 eventLocation, maxGuests,hasPlusOne, footRestriction, 
                                 status})
             // Sensé s'executé le lendemain du jour de l'événement.
+            console.log('[create_Event] eventDate:', eventDate);
             planSchedule(eventDate);
         }
         return res.status(201).json(returnDatas);
@@ -217,7 +218,6 @@ const getAllEvents = async (req, res, next) => {
   // Créer la date cible: 6 décembre 2025 à 11:33
   //const date = new Date(2025, 10, 23, 19, 21, 0);"2025-11-22T20:56:00.000Z"
   // Attention : le mois commence à 0 => 11 = décembre
-    // const date = formatDate(eventDate);
 
   // Planifier la tâche
   function planSchedule(eventDate) {

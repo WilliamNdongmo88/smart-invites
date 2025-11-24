@@ -27,7 +27,7 @@ const initCheckinModel = async () => {
 // }
 
 async function createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime) {
-    const safeEventId = eventId ?? null;
+    const safeEventId = eventId ?? null;// Pour éviter les undefined
     const safeInvitationId = invitationId ?? null;
     const safeScannedBy = scannedBy ?? null;
     const safeScanStatus = scanStatus ?? null;
