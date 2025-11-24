@@ -20,9 +20,25 @@ const initCheckinModel = async () => {
   console.log('✅ Table CHECKINS prête !');
 };
 
+// async function createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime) {
+//     const [result] = await pool.query(`INSERT INTO CHECKINS (event_id, invitation_id, scanned_by, 
+//         scan_status, checkin_time) VALUES(?,?,?,?,?)`, [eventId, invitationId, scannedBy, scanStatus, checkinTime]);
+//     return result.insertId;
+// }
+
 async function createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime) {
-    const [result] = await pool.query(`INSERT INTO CHECKINS (event_id, invitation_id, scanned_by, 
-        scan_status, checkin_time) VALUES(?,?,?,?,?)`, [eventId, invitationId, scannedBy, scanStatus, checkinTime]);
+    const safeEventId = eventId ?? null;
+    const safeInvitationId = invitationId ?? null;
+    const safeScannedBy = scannedBy ?? null;
+    const safeScanStatus = scanStatus ?? null;
+    const safeCheckinTime = checkinTime ? new Date(checkinTime) : new Date();
+
+    const [result] = await pool.query(
+        `INSERT INTO CHECKINS (event_id, invitation_id, scanned_by, scan_status, checkin_time)
+         VALUES (?, ?, ?, ?, ?)`,
+        [safeEventId, safeInvitationId, safeScannedBy, safeScanStatus, safeCheckinTime]
+    );
+
     return result.insertId;
 }
 

@@ -8,6 +8,7 @@ const { sendGuestPresenceToOrganizer } = require("../services/notification.servi
 
 const addCheckIn = async (req, res, next) => {
     try {
+        console.log("###body: ", req.body);
         let isValid = false;
         const {eventId, invitationId, guestId, scannedBy, scanStatus, checkinTime} = req.body;
         const event = await getEventById(eventId);
