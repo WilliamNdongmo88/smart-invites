@@ -9,9 +9,10 @@ const guestRoutes = require('./routes/guests.routes');
 const invitationRoutes = require('./routes/invitations.routes');
 const checkinRoutes = require('./routes/checkin.routes');
 const errorHandler = require('../backend/middlewares/errorHandler');
-app.set('trust proxy', 1);//IMPORTANT pour Railway
 
 const app = express();
+app.set('trust proxy', 1);//IMPORTANT pour Railway
+
 const PORT = process.env.PORT || 3000;
 const setupSwagger = require('./docs/swagger');
 
