@@ -1,5 +1,4 @@
 const rateLimit = require("express-rate-limit");
-app.set('trust proxy', 1);//IMPORTANT pour Railway
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
