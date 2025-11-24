@@ -32,7 +32,8 @@ const create_Event = async (req, res, next) => {
                                 budget, eventNameConcerned1,eventNameConcerned2, 
                                 eventLocation, maxGuests,hasPlusOne, footRestriction, 
                                 status})
-            
+            // Sensé s'executé le lendemain du jour de l'événement.
+            planSchedule(eventDate);
         }
         return res.status(201).json(returnDatas);
     } catch (error) {
