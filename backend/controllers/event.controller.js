@@ -218,7 +218,6 @@ const getAllEvents = async (req, res, next) => {
   //const date = new Date(2025, 10, 23, 19, 21, 0);"2025-11-22T20:56:00.000Z"
   // Attention : le mois commence à 0 => 11 = décembre
     // const date = formatDate(eventDate);
-    // console.log("date:: ", date);
 
   // Planifier la tâche
   function planSchedule(eventDate) {
