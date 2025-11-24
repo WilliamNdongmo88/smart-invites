@@ -11,7 +11,21 @@ const checkinRoutes = require('./routes/checkin.routes');
 const errorHandler = require('../backend/middlewares/errorHandler');
 
 const app = express();
-//app.set('trust proxy', 1);//IMPORTANT 
+app.set('trust proxy', 1);//IMPORTANT pour Railway
+// -----------Start---------------
+
+// Ensuite, vous pouvez utiliser express-rate-limit
+const rateLimit = require('express-rate-limit');
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limite chaque IP à 100 requêtes par windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+// -----------End---------------
 
 const PORT = process.env.PORT || 3000;
 const setupSwagger = require('./docs/swagger');
