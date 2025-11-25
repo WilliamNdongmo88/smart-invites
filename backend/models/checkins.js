@@ -20,11 +20,6 @@ const initCheckinModel = async () => {
   console.log('✅ Table CHECKINS prête !');
 };
 
-// async function createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime) {
-//     const [result] = await pool.query(`INSERT INTO CHECKINS (event_id, invitation_id, scanned_by, 
-//         scan_status, checkin_time) VALUES(?,?,?,?,?)`, [eventId, invitationId, scannedBy, scanStatus, checkinTime]);
-//     return result.insertId;
-// }
 
 async function createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime) {
     const safeEventId = eventId ?? null;// Pour éviter les undefined
@@ -42,9 +37,24 @@ async function createCheckin(eventId, invitationId, scannedBy, scanStatus, check
     return result.insertId;
 }
 
+async function getCheckinByInvitationId(invitationId) {
+  const [result] = await pool.query(`SELECT * FROM CHECKINS WHERE invitation_id=?`,[invitationId]);
+  return result[0];
+}
+
 async function getGuestsCheckIns() {
   const [result] = await pool.query(`SELECT * FROM CHECKINS`);
   return result;
 }
 
-module.exports = {initCheckinModel, createCheckin, getGuestsCheckIns};
+async function updateCheckin(checkinId, eventId, invitationId, scannedBy, scanStatus, checkinTime) {
+  const [result] = await pool.query(`
+    UPDATE CHECKINS 
+    SET event_id=?, invitation_id=?, scanned_by=?, scan_status=?, checkin_time=?
+    WHERE id=?
+  `,[eventId, invitationId, scannedBy, scanStatus, checkinTime, checkinId]);
+
+  return result.insertId;
+}
+
+module.exports = {initCheckinModel, createCheckin, getGuestsCheckIns, getCheckinByInvitationId, updateCheckin};

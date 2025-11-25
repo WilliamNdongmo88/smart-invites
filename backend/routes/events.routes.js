@@ -191,4 +191,7 @@ router.put('/status/:eventId',authenticateToken, EventController.updateEvent_Sta
  */
 router.delete('/:eventId',authenticateToken, EventController.deleteEvent);
 
+router.post('/send-report', authenticateToken, EventController.sendSReportManually);
+router.post('/send-thank-msg', authenticateToken, EventController.sendSThankMessageManually);
+
 module.exports = router;

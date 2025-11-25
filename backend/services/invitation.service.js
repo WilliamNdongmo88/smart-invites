@@ -3,7 +3,7 @@ const { updateInvitationById } = require('../models/invitations');
 
 async function validateAndUseInvitation(invitation) {
   try {
-    console.log('invitation:', invitation);
+    //console.log('invitation:', invitation);
     invitation[0].status = "USED";
     invitation[0].used_at = new Date();
     await updateInvitationById(invitation[0].id, invitation[0].status, invitation[0].used_at);

@@ -10,6 +10,7 @@ const { generatePresentGuestsPdf, generateDualGuestListPdf } = require('../servi
 const schedule = require('node-schedule');
 const { getGuestByInvitationId } = require('../models/invitations');
 const { sendPdfByEmail } = require('../services/notification.service');
+const { sendScheduledThankMessage } = require('./checkin.controller');
 
 
 const create_Event = async (req, res, next) => {
@@ -33,7 +34,7 @@ const create_Event = async (req, res, next) => {
                                 eventLocation, maxGuests,hasPlusOne, footRestriction, 
                                 status})
             // Sensé s'executé le lendemain du jour de l'événement.
-            console.log('[create_Event] eventDate:', eventDate);
+            console.log('[create_Event] scheduledDate:', eventDate);
             planSchedule(eventDate);
         }
         return res.status(201).json(returnDatas);
@@ -59,11 +60,10 @@ const getAllEvents = async (req, res, next) => {
         const event = await getEventWithTotalGuestById(req.params.eventId);
         console.log('event:', event);
         if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
-        console.log('eventdate:', event[0].event_date);
 
         // Sensé s'executé le lendemain du jour de l'événement.
+        console.log('[getEventBy_Id] scheduledDate:', event[0].event_date);
         planSchedule(event[0].event_date);
-
         return res.status(200).json(event);
     } catch (error) {
         console.error('GET EVENT BY ID ERROR:', error.message);
@@ -169,17 +169,52 @@ const getAllEvents = async (req, res, next) => {
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", "attachment; filename=invites-present.pdf");
         res.send(pdfBuffer);
+
+        // Sensé s'executé le lendemain du jour de l'événement.
+        console.log('[generatePresentGuests] scheduledDate:', event.eventDateTime);
+        planSchedule(event.eventDateTime);
     } catch (error) {
         console.log('[generatePresentGuests] error:', error.message);
         next(error);
     }
   }
 
+  async function sendSReportManually(res, next) {
+    try {
+        await sendScheduledReport();
+        return res.status(200).json({succes: true})
+    } catch (error) {
+        next(error)
+    }
+  }
+
+  async function sendSThankMessageManually(req, res, next) {
+      try {
+          await sendScheduledThankMessage(req.body.event, req.body.organizer, req.body.guest);
+          return res.status(200).json({succes: true})
+      } catch (error) {
+          next(error)
+      }
+  }
+
+  // Créer la date cible: 6 décembre 2025 à 11:33
+  //const date = new Date(2025, 10, 23, 19, 21, 0);"2025-11-22T20:56:00.000Z"
+  // Attention : le mois commence à 0 => 11 = décembre
+
+  // Planifier la tâche
+  function planSchedule(eventDate) {
+    console.log('[schedule 1] date:', eventDate);
+    const date = formatDate(eventDate);
+    schedule.scheduleJob(date, sendScheduledReport);
+  }
+
   async function sendScheduledReport(res, next) {
+        console.log('=== Job déclenché =1=');
     try {
         let guestPresentList = [];
         let guestConfirmedList = [];
         const checkins = await getGuestsCheckIns();
+        console.log("checkins:: ", checkins);
         const data = await getUserByEventId(checkins[0].event_id);
         for (const data of checkins) {
             const timer1 = data.checkin_time.toISOString().split('T')[1]
@@ -194,7 +229,7 @@ const getAllEvents = async (req, res, next) => {
             }
             guestPresentList.push(obj);
         }
-        console.log("guestPresentList:: ", guestPresentList);
+        //console.log("guestPresentList:: ", guestPresentList);
         const results = await getGuestByEventIdAndConfirmedRsvp(checkins[0].event_id);
         for (const elt of results) {
             const data = {
@@ -213,16 +248,6 @@ const getAllEvents = async (req, res, next) => {
         console.log('[sendScheduledReport] error:', error);
         next(error);
     }
-  }
-
-  // Créer la date cible: 6 décembre 2025 à 11:33
-  //const date = new Date(2025, 10, 23, 19, 21, 0);"2025-11-22T20:56:00.000Z"
-  // Attention : le mois commence à 0 => 11 = décembre
-
-  // Planifier la tâche
-  function planSchedule(eventDate) {
-    const date = formatDate(eventDate);
-    schedule.scheduleJob(date, sendScheduledReport);
   }
 
   function formatDate(iso){
@@ -253,5 +278,8 @@ module.exports = {
     updateEventBy_Id,
     updateEvent_Status,
     deleteEvent,
-    generatePresentGuests
+    generatePresentGuests,
+    sendSReportManually,
+    sendSThankMessageManually,
+    formatDate
 }

@@ -397,7 +397,7 @@ async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
 }
 
 async function sendGuestPresenceToOrganizer(organizer, guest) {
-  console.log('guest:', guest);
+  //console.log('guest:', guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
@@ -456,5 +456,99 @@ async function sendPdfByEmail(data, pdfBuffer) {
     console.log(`✅ Email(pdf) envoyé à ${user.email}`);
 }
 
+async function sendThankYouMailToPresentGuests(event, guest) {
+  //console.log('guest:', guest);
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+  let sentences = '';
+  let concerned = '';
+  let eventType = '';
+  switch (event.type) {
+    case 'wedding':
+        eventType = 'mariage'
+        sentences = `Nous tenons à vous remercier chaleureusement pour votre présence à notre ${eventType}`
+        concerned = `Le couple ${event.event_name_concerned1} et ${event.event_name_concerned2}`
+      break;
+    case 'engagement':
+        eventType = 'fiançailles'
+        sentences = `Nous tenons à vous remercier chaleureusement pour votre présence à nos ${eventType}`
+        concerned = `Les futurs mariés ${event.event_name_concerned1} et ${event.event_name_concerned2}`
+      break;
+    case 'anniversary':
+        eventType = 'anniversaire de mariage'
+        sentences = `Nous tenons à vous remercier chaleureusement pour votre présence à notre ${eventType}`
+        concerned = `Le couple ${event.event_name_concerned1} et ${event.event_name_concerned2}`
+      break;
+    case 'birthday':
+        eventType = 'anniversaire'
+        sentences = `Je tiens à vous remercier chaleureusement pour votre présence à mon ${eventType}`
+        concerned = event.event_name_concerned1
+      break;
+  }
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; font-size:14px; color:#333;">
+      <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+
+      <p>
+        ${sentences}
+      </p>
+      <p>
+        Votre participation a contribué à rendre cette événement mémorable.
+      </p>
+
+      <p>
+        Nous espérons vous revoir très bientôt lors de nos prochaines rencontres.
+      </p>
+
+      <p style="margin-top:20px;">Avec nos sincères remerciements,</p>
+
+      <p style="font-weight:bold;">${concerned}</p>
+    </div>
+  `;
+
+    const sendSmtpEmail = {
+      sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+      to: [{ email: guest.email, name: guest.full_name }],
+      subject: `✅[${guest.full_name}] – Merci d’être venu !`,
+      htmlContent
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Email(invité présent) envoyé à ${guest.email}`);
+    return true;
+}
+
+async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; font-size:14px;">
+        <p>
+          Bonjour <strong>${organizer.name}</strong>
+        </p>
+        <p>
+          Le message de remerciement automatique a bien été envoyé a tous les invités présents.
+        </p>
+
+
+        <pstyle="font-family: Arial, sans-serif; font-size:10px; color:#666;>Smart Invite</p>
+      </div>
+    `;
+
+    const sendSmtpEmail = {
+      sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+      to: [{ email: organizer.email, name: organizer.name }],
+      subject: `✅ Rapport d'envoi du message automatique`,
+      htmlContent
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Email(arrivé invité) envoyé à ${organizer.email}`);
+}
+
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
-  sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer};
+  sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
+  sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
+};

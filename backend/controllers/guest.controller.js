@@ -2,12 +2,12 @@ const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events')
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
-    sendGuestResponseToOrganizer, sendFileQRCodeMail } = require('../services/notification.service');
+    sendGuestResponseToOrganizer, sendFileQRCodeMail} = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
-        update_guest, updateRsvpStatusGuest, delete_guest, getGuestByEmail,
+        update_guest, updateRsvpStatusGuest, delete_guest,
         getAllGuestAndInvitationRelated,getGuestAndInvitationRelatedById,
         getEventByGuestId
     } = require('../models/guests');

@@ -13,8 +13,6 @@ const errorHandler = require('../backend/middlewares/errorHandler');
 const app = express();
 app.set('trust proxy', 1);//IMPORTANT pour Railway
 // -----------Start---------------
-
-// Ensuite, vous pouvez utiliser express-rate-limit
 const rateLimit = require('express-rate-limit');
 
 const limiter = rateLimit({
@@ -23,7 +21,6 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
 app.use(limiter);
 // -----------End---------------
 
