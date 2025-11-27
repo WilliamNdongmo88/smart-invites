@@ -397,7 +397,7 @@ async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
 }
 
 async function sendGuestPresenceToOrganizer(organizer, guest) {
-  //console.log('guest:', guest);
+    //console.log("###guest: ", guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
@@ -515,7 +515,7 @@ async function sendThankYouMailToPresentGuests(event, guest) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(invité présent) envoyé à ${guest.email}`);
+    console.log(`✅ Email(Remerciement) envoyé à ${guest.email}`);
     return true;
 }
 
@@ -545,7 +545,7 @@ async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(arrivé invité) envoyé à ${organizer.email}`);
+    console.log(`✅ Email(Report of thank-email) envoyé à ${organizer.email}`);
 }
 
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,

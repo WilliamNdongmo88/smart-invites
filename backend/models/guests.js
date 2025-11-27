@@ -35,8 +35,8 @@ async function createGuest(eventId, fullName, email, phoneNumber,
 }
 
 async function getGuestById(id) {
-    const [event] = await pool.execute(`SELECT * FROM GUESTS WHERE id=?`, [id]);
-    return event[0];
+    const [guest] = await pool.execute(`SELECT * FROM GUESTS WHERE id=?`, [id]);
+    return guest[0];
 }
 
 async function getGuestByEmail(email) {

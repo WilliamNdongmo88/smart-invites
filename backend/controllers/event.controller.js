@@ -11,6 +11,7 @@ const schedule = require('node-schedule');
 const { getGuestByInvitationId } = require('../models/invitations');
 const { sendPdfByEmail } = require('../services/notification.service');
 const { sendScheduledThankMessage } = require('./checkin.controller');
+const { getEventScheduleById, createEventSchedule, updateEventSchedule } = require('../models/event_schedules');
 
 
 const create_Event = async (req, res, next) => {
@@ -21,7 +22,7 @@ const create_Event = async (req, res, next) => {
         const existing = await getUserById(eventDatas[0].organizerId);
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
-        for (const event of eventDatas) {            
+        for (const event of eventDatas) {
             const {organizerId, title, description, eventDate, type, budget, eventNameConcerned1,
                    eventNameConcerned2, eventLocation, maxGuests,hasPlusOne, footRestriction, 
                    status} = event;
@@ -33,9 +34,24 @@ const create_Event = async (req, res, next) => {
                                 budget, eventNameConcerned1,eventNameConcerned2, 
                                 eventLocation, maxGuests,hasPlusOne, footRestriction, 
                                 status})
-            // Sensé s'executé le lendemain du jour de l'événement.
-            console.log('[create_Event] scheduledDate:', eventDate);
-            planSchedule(eventDate);
+            // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
+            try {
+                console.log('[create_Event] scheduledDate:', eventDate);
+                const existingSchedule = await getEventScheduleById(eventId);
+                console.log('[create_Event] existingSchedule:', existingSchedule);
+                // Une tâche existe déjà → NE PAS EN RECRÉER
+                if (existingSchedule) {
+                    console.log(`Schedule déjà existant pour event ${eventId}`);
+                    return;
+                }
+                const scheduleId = await createEventSchedule(eventId, eventDate, 0);
+                console.log('[create_Event] scheduleId:', scheduleId);
+                console.log(`Schedule créé pour event ${eventId} → Exécution : ${eventDate}`);
+                planSchedule(scheduleId, eventId, eventDate);
+            } catch (error) {
+                console.error("Erreur planification scheduler:", error);
+                next(error);
+            }
         }
         return res.status(201).json(returnDatas);
     } catch (error) {
@@ -61,9 +77,6 @@ const getAllEvents = async (req, res, next) => {
         console.log('event:', event);
         if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
 
-        // Sensé s'executé le lendemain du jour de l'événement.
-        console.log('[getEventBy_Id] scheduledDate:', event[0].event_date);
-        planSchedule(event[0].event_date);
         return res.status(200).json(event);
     } catch (error) {
         console.error('GET EVENT BY ID ERROR:', error.message);
@@ -170,9 +183,9 @@ const getAllEvents = async (req, res, next) => {
         res.setHeader("Content-Disposition", "attachment; filename=invites-present.pdf");
         res.send(pdfBuffer);
 
-        // Sensé s'executé le lendemain du jour de l'événement.
-        console.log('[generatePresentGuests] scheduledDate:', event.eventDateTime);
-        planSchedule(event.eventDateTime);
+        // // Sensé s'executé le lendemain du jour de l'événement.
+        // console.log('[generatePresentGuests] scheduledDate:', event.eventDateTime);
+        // planSchedule(event.eventDateTime);
     } catch (error) {
         console.log('[generatePresentGuests] error:', error.message);
         next(error);
@@ -202,10 +215,41 @@ const getAllEvents = async (req, res, next) => {
   // Attention : le mois commence à 0 => 11 = décembre
 
   // Planifier la tâche
-  function planSchedule(eventDate) {
-    console.log('[schedule 1] date:', eventDate);
-    const date = formatDate(eventDate);
-    schedule.scheduleJob(date, sendScheduledReport);
+  async function planSchedule(scheduleId, eventId, eventDate) {
+    try {
+        console.log('[schedule 1] eventDate (raw):', eventDate);
+
+        // Conversion finale selon ta logique métier
+        const scheduleDate = formatDate(eventDate);
+        console.log('[schedule 1] scheduleDate (réelle pour scheduler):', scheduleDate);
+
+        // Planification
+        schedule.scheduleJob(scheduleDate, async () => {
+            console.log('🚀 === Job déclenché ===');
+            await runScheduledTask(scheduleId, eventId, scheduleDate);
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur planSchedule:", error);
+    }
+  }
+
+//   function planSchedule(eventDate) {
+//     console.log('[schedule 1] date:', eventDate);
+//     const date = formatDate(eventDate);
+//     schedule.scheduleJob(date, sendScheduledReport);
+//   }
+
+
+  async function runScheduledTask(scheduleId, eventId) {
+    console.log(`Exécution du scheduler pour l'événement ${eventId}`);
+
+    // Marquer comme exécuté
+    await updateEventSchedule(scheduleId, eventId, true, false);
+
+    await sendScheduledReport();
+
+    console.log(`Scheduler terminé pour l'événement ${eventId}`);
   }
 
   async function sendScheduledReport(res, next) {
@@ -250,24 +294,24 @@ const getAllEvents = async (req, res, next) => {
     }
   }
 
-  function formatDate(iso){
+function formatDate(iso) {
     let d = new Date(iso);
 
-    // Ajouter 1 jour
-    d.setUTCDate(d.getUTCDate() + 1);
+    // Ajouter 1 jour en UTC
+    d.setDate(d.getDate() + 1);
 
-    // Maintenant on décompose
-    const year = d.getUTCFullYear();
-    const month = d.getUTCMonth(); // 0–11
-    const day = d.getUTCDate();
-    const hours = d.getUTCHours();
-    const minutes = d.getUTCMinutes();
-    const seconds = d.getUTCSeconds();
+    // Créer une date UTC propre (pas locale)
+    const utcDate = new Date(Date.UTC(
+        d.getUTCFullYear(),
+        d.getUTCMonth(),
+        d.getUTCDate(),
+        d.getUTCHours(),
+        d.getUTCMinutes(),
+        d.getUTCSeconds()
+    ));
 
-    const result = new Date(year, month, day, hours, minutes, seconds);
-
-    return result;
-  }
+    return utcDate;
+}
 
 module.exports = {
     create_Event,

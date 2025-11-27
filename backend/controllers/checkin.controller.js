@@ -1,4 +1,5 @@
 const { createCheckin, getCheckinByInvitationId, updateCheckin } = require("../models/checkins");
+const { getEventScheduleById } = require("../models/event_schedules");
 const { getEventById } = require("../models/events");
 const { getGuestById, getEventByGuestId, updateRsvpStatusGuest, getAllPresentGuest } = require("../models/guests");
 const { getInvitationById } = require("../models/invitations");
@@ -32,8 +33,19 @@ const addCheckIn = async (req, res, next) => {
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestPresenceToOrganizer(organizer, guest);
 
-                // Sensé s'executé le lendemain du jour de l'événement.
-                planSchedule(event[0], organizer, guest);
+                // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
+                const schedules = await getEventScheduleById(eventId);
+                console.log("###schedules 1: ", schedules);
+                const schedule = schedules ? schedules[0] : null;
+                console.log("###schedules 2: ", schedules);
+
+                if (!schedule || !schedule.is_checkin_executed) {
+                    const scheduleId = schedule?.id;
+                    //planSchedule(scheduleId, eventId, event.event_date);
+                    planSchedule(event[0], schedules.scheduled_for, organizer, guest);
+                    if (schedule)
+                        await updateEventSchedule(scheduleId, eventId, schedule.executed, true);
+                }
             }
             
             return res.status(201).json(checkin);
@@ -50,9 +62,9 @@ const addCheckIn = async (req, res, next) => {
 }
 
 // Planifier la tâche
-function planSchedule(event, organizer, guest) {
-        console.log('[schedule 2] date:', event.eventDate);
-    const date = formatDate(event.eventDate);
+function planSchedule(event, scheduledFor, organizer, guest) {
+        console.log('[schedule 2] date:', scheduledFor);
+    const date = formatDate(scheduledFor);
 
     // on passe une fonction anonyme qui appelle notre fonction async
     schedule.scheduleJob(date, async () => {
@@ -81,7 +93,7 @@ function formatDate(iso){
     let d = new Date(iso);
 
     // Ajouter 1 jour
-    d.setUTCDate(d.getUTCDate() + 1);
+    d.setDate(d.getDate() + 1);
 
     // Maintenant on décompose
     const year = d.getUTCFullYear();
