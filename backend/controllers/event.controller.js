@@ -258,7 +258,7 @@ const getAllEvents = async (req, res, next) => {
         let guestPresentList = [];
         let guestConfirmedList = [];
         const checkins = await getGuestsCheckIns();
-        //console.log("checkins:: ", checkins);
+        console.log("checkins:: ", checkins);
         const data = await getUserByEventId(checkins[0].event_id);
         for (const data of checkins) {
             const timer1 = data.checkin_time.toISOString().split('T')[1]
