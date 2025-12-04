@@ -12,6 +12,7 @@ const {
         getEventByGuestId
     } = require('../models/guests');
 const { getUserById } = require('../models/users');
+const { createNotification } = require('../models/notification');
 
 const addGuest = async (req, res, next) => {
     try {
@@ -115,6 +116,12 @@ const updateGuest = async (req, res, next) => {
                 const event = await getEventByGuestId(guest.id);
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                await createNotification(
+                    `✅ Reponse Invité.`,
+                    `L'invité ${guest.full_name} vient d’accepter votre invitation.`,
+                    'info',
+                    false
+                );
                 isValid = true;
             } catch (error) {
                 console.error('send email ERROR:', error.message);
@@ -131,6 +138,12 @@ const updateGuest = async (req, res, next) => {
             const event = await getEventByGuestId(guest.id);
             const organizer = await getUserById(event[0].organizerId);
             await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+            await createNotification(
+                `❌ Reponse Invité.`,
+                `L'invité ${guest.full_name} a décliné votre invitation.`,
+                'info',
+                false
+            );
         }
         if(guesthasPlusOneAutoriseByAdmin==null) {guesthasPlusOneAutoriseByAdmin = guest.guest_has_plus_one_autorise_by_admin;}
         if(hasPlusOne==null || hasPlusOne==undefined) hasPlusOne = guest.has_plus_one;
@@ -157,6 +170,12 @@ const updateGuest = async (req, res, next) => {
                 const event = await getEventByGuestId(guest.guest_id);
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                await createNotification(
+                    `✅ Reponse Invité.`,
+                    `L'invité ${guest.full_name} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
+                    'info',
+                    false
+                );
             } catch (error) {
                 console.error('sendInvitationToGuest ERROR:', error.message);
                 next(error);
