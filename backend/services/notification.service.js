@@ -1,5 +1,7 @@
 const Brevo = require('@getbrevo/brevo');
 const axios = require('axios');
+const { createNotification, getNotifications } = require('../models/notification');
+const { getEventScheduleById, updateEventSchedule } = require('../models/event_schedules');
 require('dotenv').config();
 
 async function sendGuestEmail(guest, event, token) {
@@ -456,7 +458,7 @@ async function sendPdfByEmail(data, pdfBuffer) {
     console.log(`✅ Email(pdf) envoyé à ${user.email}`);
 }
 
-async function sendThankYouMailToPresentGuests(event, guest) {
+async function sendThankYouMailToPresentGuests(event, schedules, organizer, guest) {
   //console.log('guest:', guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
@@ -515,8 +517,33 @@ async function sendThankYouMailToPresentGuests(event, guest) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
+    await notifications(schedules, organizer);
     console.log(`✅ Email(Remerciement) envoyé à ${guest.email}`);
     return true;
+}
+
+async function notifications(schedules, organizer) {
+  try {
+    const schedule_bd = await getEventScheduleById(schedules.event_id);
+    console.log('schedule_bd: ', schedule_bd);
+    if (!schedule_bd.is_checkin_executed) {
+      console.log('is_checkin_executed: ', schedule_bd.is_checkin_executed);
+      const scheduleId = schedule_bd.id;
+      const updatedSchedule = await updateEventSchedule(scheduleId, schedule_bd.event_id, schedule_bd.executed, true);
+      console.log('updatedSchedule : ', updatedSchedule);
+      await createNotification(
+        `✅ Rapport d'envoi du message automatique`,
+        `Le message de remerciement automatique a bien été envoyé a tous les invités présents.`,
+        'info',
+        false
+      );
+      await notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer);
+    }else{
+      console.log('.### Notification déjà envoyé...');
+    }
+  } catch (error) {
+    throw new Error("notifications error : " + error.message);
+  }
 }
 
 async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
@@ -551,4 +578,5 @@ async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
   sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
+  notifications
 };

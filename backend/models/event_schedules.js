@@ -37,7 +37,7 @@ async function updateEventSchedule(eventScheduledId, eventId, executed, isChecki
         UPDATE EVENT_SCHEDULES 
         SET event_id=?, executed=?, is_checkin_executed=?
         WHERE id=?
-    `,[eventId, executed, eventScheduledId, isCheckinExecuted]);
+    `,[eventId, executed,isCheckinExecuted, eventScheduledId]);
 
     return result.insertId;
 }

@@ -44,8 +44,7 @@ const create_Event = async (req, res, next) => {
                     console.log(`Schedule déjà existant pour event ${eventId}`);
                     return;
                 }
-                const scheduleId = await createEventSchedule(eventId, eventDate, 0);
-                console.log('[create_Event] scheduleId:', scheduleId);
+                const scheduleId = await createEventSchedule(eventId, eventDate, false);
                 console.log(`Schedule créé pour event ${eventId} → Exécution : ${eventDate}`);
                 planSchedule(scheduleId, eventId, eventDate);
             } catch (error) {
@@ -74,9 +73,9 @@ const getAllEvents = async (req, res, next) => {
   const getEventBy_Id = async (req, res, next) => {
     try {
         const event = await getEventWithTotalGuestById(req.params.eventId);
-        console.log('event:', event);
+        console.log('### event:', event);
         if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
-
+        //planSchedule(1, event[0].event_id, "2025-12-03 01:29:00");
         return res.status(200).json(event);
     } catch (error) {
         console.error('GET EVENT BY ID ERROR:', error.message);
@@ -182,10 +181,6 @@ const getAllEvents = async (req, res, next) => {
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", "attachment; filename=invites-present.pdf");
         res.send(pdfBuffer);
-
-        // // Sensé s'executé le lendemain du jour de l'événement.
-        // console.log('[generatePresentGuests] scheduledDate:', event.eventDateTime);
-        // planSchedule(event.eventDateTime);
     } catch (error) {
         console.log('[generatePresentGuests] error:', error.message);
         next(error);
@@ -218,11 +213,10 @@ const getAllEvents = async (req, res, next) => {
   async function planSchedule(scheduleId, eventId, eventDate) {
     try {
         console.log('[schedule 1] eventDate (raw):', eventDate);
-
+        if(eventDate==null || eventDate==undefined) throw new Error("La date est invalide");
         // Conversion finale selon ta logique métier
         const scheduleDate = formatDate(eventDate);
         console.log('[schedule 1] scheduleDate (réelle pour scheduler):', scheduleDate);
-
         // Planification
         schedule.scheduleJob(scheduleDate, async () => {
             console.log('🚀 === Job déclenché ===');
@@ -233,13 +227,6 @@ const getAllEvents = async (req, res, next) => {
         console.error("❌ Erreur planSchedule:", error);
     }
   }
-
-//   function planSchedule(eventDate) {
-//     console.log('[schedule 1] date:', eventDate);
-//     const date = formatDate(eventDate);
-//     schedule.scheduleJob(date, sendScheduledReport);
-//   }
-
 
   async function runScheduledTask(scheduleId, eventId) {
     console.log(`Exécution du scheduler pour l'événement ${eventId}`);

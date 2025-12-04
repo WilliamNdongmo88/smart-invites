@@ -1,12 +1,13 @@
 const { createCheckin, getCheckinByInvitationId, updateCheckin } = require("../models/checkins");
-const { getEventScheduleById } = require("../models/event_schedules");
+const { getEventScheduleById, updateEventSchedule } = require("../models/event_schedules");
 const { getEventById } = require("../models/events");
 const { getGuestById, getEventByGuestId, updateRsvpStatusGuest, getAllPresentGuest } = require("../models/guests");
 const { getInvitationById } = require("../models/invitations");
+const { createNotification } = require("../models/notification");
 const { getUserById } = require("../models/users");
 const { validateAndUseInvitation } = require("../services/invitation.service");
-const { sendGuestPresenceToOrganizer,sendThankYouMailToPresentGuests,
-    notifyOrganizerAboutSendThankYouMailToPresentGuests} = require("../services/notification.service");
+const { sendGuestPresenceToOrganizer,sendThankYouMailToPresentGuests
+      } = require("../services/notification.service");
 const schedule = require('node-schedule');
 
 const addCheckIn = async (req, res, next) => {
@@ -32,19 +33,17 @@ const addCheckIn = async (req, res, next) => {
                 const event = await getEventByGuestId(guestId);
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestPresenceToOrganizer(organizer, guest);
-
+                await createNotification(
+                    `✅ Arrivé Invité ${guest.full_name}`,
+                    `L'invité ${guest.full_name} vient d'arriver.`,
+                    'info',
+                    false
+                );
                 // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
                 const schedules = await getEventScheduleById(eventId);
-                console.log("###schedules 1: ", schedules);
-                const schedule = schedules ? schedules[0] : null;
-                console.log("###schedules 2: ", schedules);
-
-                if (!schedule || !schedule.is_checkin_executed) {
-                    const scheduleId = schedule?.id;
-                    //planSchedule(scheduleId, eventId, event.event_date);
-                    planSchedule(event[0], schedules.scheduled_for, organizer, guest);
-                    if (schedule)
-                        await updateEventSchedule(scheduleId, eventId, schedule.executed, true);
+                console.log('Executed ? ', schedules.executed);
+                if (!schedules.executed) {
+                    planSchedule(event[0], schedules, organizer, guest);
                 }
             }
             
@@ -62,28 +61,29 @@ const addCheckIn = async (req, res, next) => {
 }
 
 // Planifier la tâche
-function planSchedule(event, scheduledFor, organizer, guest) {
-        console.log('[schedule 2] date:', scheduledFor);
-    const date = formatDate(scheduledFor);
-
+function planSchedule(event, schedules, organizer, guest) {
+    console.log('[schedule 2] date:', schedules.scheduled_for);
+    const date = formatDate(schedules.scheduled_for);
+    
     // on passe une fonction anonyme qui appelle notre fonction async
     schedule.scheduleJob(date, async () => {
         console.log('=== Job déclenché ===');
-        await sendScheduledThankMessage(event, organizer, guest);
+        await sendScheduledThankMessage(event, schedules, organizer, guest);
     });
 }
 
-async function sendScheduledThankMessage(event, organizer, guest) {
+async function sendScheduledThankMessage(event, schedules, organizer, guest) {
     try {
-        let isOk = false;
-        console.log('[1] guest.rsvpStatus:', guest.rsvp_status);
+        console.log('[2] guest.rsvpStatus:', guest.rsvp_status);
         const guests = await getAllPresentGuest(guest.id);
-        for (const guest of guests) {
-           isOk =  await sendThankYouMailToPresentGuests(event, guest);
+        if (!guests || guests.length === 0) {
+            console.log("Aucun invité présent trouvé.");
+            return;
         }
-        if(isOk){
-            await notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer);
-        }
+        // Envoi des mails en parallèle contrôlée (plus rapide)
+        await Promise.all(
+            guests.map(g => sendThankYouMailToPresentGuests(event, schedules, organizer, g))
+        );
     } catch (error) {
         console.error("Erreur lors de l'envoi du mail:", error);
     }
