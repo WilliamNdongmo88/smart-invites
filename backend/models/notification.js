@@ -25,11 +25,16 @@ async function createNotification(title, message, type, isRead) {
 
 async function getNotifications() {
     const [result] = await pool.query(`SELECT * FROM NOTIFICATIONS`);
+    return result ?? null; // si vide → null
+}
+
+async function getNotificationById(notifId) {
+    const [result] = await pool.query(`SELECT * FROM NOTIFICATIONS WHERE id=?`, [notifId]);
     return result[0] ?? null; // si vide → null
 }
 
-async function updateNotif(notificationId, read) {
-    const [result] = await pool.query(`UPDATE NOTIFICATIONS SET read=? WHERE id=?`, [notificationId, read]);
+async function updateNotif(notificationId, isRead) {
+    const [result] = await pool.query(`UPDATE NOTIFICATIONS SET is_read=? WHERE id=?`, [isRead, notificationId]);
     return result[0];
 }
 
@@ -37,4 +42,7 @@ async function deleteNotif(notificationId) {
     await pool.query(`DELETE FROM NOTIFICATIONS WHERE id=?`, [notificationId]);
 }
 
-module.exports = {initNotificationModel, createNotification, getNotifications, updateNotif, deleteNotif}
+module.exports = {initNotificationModel, createNotification, 
+                  getNotifications, updateNotif, deleteNotif,
+                  getNotificationById
+                }
