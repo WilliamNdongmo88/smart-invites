@@ -1,6 +1,6 @@
 const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
-const { getGuestInvitationById } = require('../models/invitations');
+const { getGuestInvitationById, createInvitation } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
     sendGuestResponseToOrganizer, sendFileQRCodeMail} = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
@@ -9,10 +9,14 @@ const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
         update_guest, updateRsvpStatusGuest, delete_guest,
         getAllGuestAndInvitationRelated,getGuestAndInvitationRelatedById,
-        getEventByGuestId
+        getEventByGuestId,
+        createGuestFromLink,
+        getGuestAndEventRelatedById
     } = require('../models/guests');
 const { getUserById } = require('../models/users');
 const { createNotification } = require('../models/notification');
+const { getLinkByToken, updateLink } = require('../models/links');
+const { v4: uuidv4 } = require('uuid');
 
 const addGuest = async (req, res, next) => {
     try {
@@ -40,6 +44,85 @@ const addGuest = async (req, res, next) => {
         next(error);
     }
 };
+
+const addGuestFromLink = async (req, res, next) => {
+    try {
+        console.log('guestData :: ', req.body);
+        const { eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, 
+            dietaryRestrictions, hasPlusOne, plusOneName, token} = req.body;
+        const link = await getLinkByToken(token);
+        console.log('link :: ', link);
+
+        if(!link) return res.status(404).json({error: `Lien d'invitation introuvable`});
+        link.used_count = Number(link.used_count) || 0;
+
+        if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
+        link.used_count ++;
+
+        console.log('link.id :: ', link.id);
+        console.log('link.used_count :: ', link.used_count);
+        const updated = await updateLink(link.id, link.used_count);
+        console.log('updated :: ', updated);
+
+        const event = await getEventById(eventId);
+        if(!event) return res.status(404).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
+
+        const result = await getGuestEmailRelatedToEvent(email, event.id);
+        if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
+
+        const guestId = await createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpStatus, 
+            guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, hasPlusOne, plusOneName);
+
+        // Gestion des fichiers
+        const guest = { id: guestId };
+        let qrUrl = '';
+        const existing_invitations = await getGuestInvitationById(guestId);
+        if (existing_invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
+        const guest_event_related = await getGuestAndEventRelatedById(guestId);
+        let invitationToken =guestId +':'+ uuidv4();
+        try {
+            qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.jpg");
+            const buffer = await generateGuestPdf(guest_event_related[0]);
+            await uploadPdfToFirebase(guest, buffer);
+        } catch (error) {
+            console.error('File ERROR:', error.message);
+            next(error);
+        }
+        const invitationId = await createInvitation(guestId, invitationToken, qrUrl);
+        if(!invitationId) throw new Error({error: "Erreur lors de la création de l'invitation"});
+
+        // Notification
+        const invitation = await getGuestInvitationById(guestId);
+        try {
+            const guest = await getGuestById(guestId);
+            await sendInvitationToGuest(guest, invitation[0].qr_code_url);
+            await createNotification(
+                `✅ Invitation envoyé.`,
+                `L'invitation Qr Code a été envoyé à ${fullName}.`,
+                'info',
+                false
+            );
+            const event = await getEventByGuestId(guestId);
+            const organizer = await getUserById(event[0].organizerId);
+            await sendGuestResponseToOrganizer(organizer, guest_event_related, rsvpStatus);
+            await createNotification(
+                `✅ Reponse Invité.`,
+                `L'invité ${fullName} vient d’accepter votre invitation.`,
+                'info',
+                false
+            );
+        } catch (error) {
+            console.error('send email ERROR:', error.message);
+            next(error);
+        }
+        
+        return res.status(201).json({success: "Invité ajouter avec succès"});
+        
+    } catch (error) {
+        console.error('AddGuestFromLink ERROR:', error.message);
+        next(error);
+    }
+}
 
 const getAllGuest = async (req, res, next) => {
     try {
@@ -275,4 +358,4 @@ const sendFileQRCode = async (req, res, next) => {
 }
 
 module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, getEventByGuest, updateRsvpStatus, deleteGuest, 
-                  deleteSeveralGuests, getAllGuest, sendReminder, sendFileQRCode};
+                  deleteSeveralGuests, getAllGuest, sendReminder, sendFileQRCode, addGuestFromLink};

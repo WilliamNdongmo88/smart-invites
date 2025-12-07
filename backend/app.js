@@ -9,6 +9,7 @@ const guestRoutes = require('./routes/guests.routes');
 const invitationRoutes = require('./routes/invitations.routes');
 const checkinRoutes = require('./routes/checkin.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const linkRoutes = require('./routes/link.routes');
 const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
@@ -35,6 +36,7 @@ app.use('/api/guest', guestRoutes);
 app.use('/api/invitation', invitationRoutes);
 app.use('/api/checkin', checkinRoutes);
 app.use('/api/notification', notificationRoutes);
+app.use('/api/link', linkRoutes);
 
 app.use(errorHandler);
 

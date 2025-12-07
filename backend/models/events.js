@@ -164,9 +164,12 @@ async function getEventWithTotalGuestById(eventId) {
             COUNT(g.id) AS total_guests,
             SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
             SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
-            SUM(CASE WHEN g.rsvp_status = 'DECLINED' THEN 1 ELSE 0 END) AS declined_count
+            SUM(CASE WHEN g.rsvp_status = 'DECLINED' THEN 1 ELSE 0 END) AS declined_count,
+            u.id AS organizerId,
+            u.email AS emailOrganizer
         FROM EVENTS e
         LEFT JOIN GUESTS g ON g.event_id = e.id
+        LEFT JOIN USERS u ON u.id=e.organizer_id
         WHERE e.id = ?
         GROUP BY e.id
     `, [eventId]

@@ -75,7 +75,7 @@ router.get('/all-events',authenticateToken, EventController.getAllEvents);
  *       500:
  *         description: Erreur serveur
  */
-router.get('/:eventId',authenticateToken, EventController.getEventBy_Id);
+router.get('/:eventId', EventController.getEventBy_Id);
 
 router.get('/:eventId/invitation',authenticateToken, EventController.getEventAndInvitationRelatedById);
 
