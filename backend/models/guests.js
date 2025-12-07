@@ -34,6 +34,14 @@ async function createGuest(eventId, fullName, email, phoneNumber,
     return result.insertId;
 }
 
+async function createGuestFromLink(eventId, fullName, email, phoneNumber, 
+            rsvpStatus, guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, hasPlusOne, plusOneName) {
+    const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
+        rsvp_status, guest_has_plus_one_autorise_by_admin, dietary_restrictions, has_plus_one, plus_one_name) VALUES(?,?,?,?,?,?,?,?,?)`, 
+        [eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, hasPlusOne, plusOneName]);
+    return result.insertId;
+}
+
 async function getGuestById(id) {
     const [guest] = await pool.execute(`SELECT * FROM GUESTS WHERE id=?`, [id]);
     return guest[0];
@@ -104,9 +112,12 @@ async function getEventByGuestId(guestId) {
             e.type,
             e.event_name_concerned1,
             e.event_name_concerned2,
-            e.event_location AS eventLocation
+            e.event_location AS eventLocation,
+            u.id AS organizerId,
+            u.email AS emailOrganizer
         FROM GUESTS g
         LEFT JOIN EVENTS e ON e.id=g.event_id
+        LEFT JOIN USERS u ON u.id=e.organizer_id
         WHERE g.id=?
     `, [guestId]);
     return result[0];
@@ -259,5 +270,5 @@ module.exports = {initGuestModel, createGuest, getGuestById,getGuestByEmail,
     getGuestByEventId, update_guest, updateRsvpStatusGuest, delete_guest,
     getEventByGuestId, getAllGuestAndInvitationRelated,getGuestAndEventRelatedById,
     getAllGuestAndInvitationRelatedByEventId, getGuestAndInvitationRelatedById,
-    getGuestByEventIdAndConfirmedRsvp,getAllPresentGuest
+    getGuestByEventIdAndConfirmedRsvp, getAllPresentGuest, createGuestFromLink
 }

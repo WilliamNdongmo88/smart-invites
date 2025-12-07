@@ -1,6 +1,18 @@
-const { bucket } = require('../config/firebaseConfig');
+const { bucket} = require('../config/firebaseConfig');
 const QRCode = require('qrcode');
 const sharp = require('sharp');
+
+// Retourne l’URL Firebase directement plus légé et rapide
+async function getLogoUrlFromFirebase(filename) {
+  const file = bucket.file(`logos/${filename}`);
+
+  const [url] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + 60 * 24 * 60 * 60 * 1000, // URL valide 60 jours
+  });
+
+  return url;
+}
 
 async function getLogoFromFirebase(logoFileName) {
   const file = bucket.file(`logos/${logoFileName}`);
@@ -11,7 +23,7 @@ async function getLogoFromFirebase(logoFileName) {
 }
 
 async function generateGuestQr(guestId, token, logoFileName = null) {
-  const url = process.env.BASE_URL + "/api/invitation/view/" + guestId;// +'/'+ token;
+  const url = process.env.BASE_URL + "/api/invitation/view/" + guestId +':'+ token;
 
   const qrBuffer = await QRCode.toBuffer(url, {
     errorCorrectionLevel: "H",
@@ -42,4 +54,4 @@ async function generateGuestQr(guestId, token, logoFileName = null) {
   return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
 }
 
-module.exports = {generateGuestQr};
+module.exports = {generateGuestQr, getLogoUrlFromFirebase};

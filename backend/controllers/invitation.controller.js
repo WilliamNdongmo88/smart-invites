@@ -3,7 +3,7 @@ const axios = require('axios');
 const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById} = require("../models/guests");
 const {createInvitation, getGuestInvitationById, 
     getGuestInvitationByToken, deleteGuestInvitation} = require('../models/invitations');
-const { generateGuestQr } = require("../services/qrCodeService");
+const { generateGuestQr, getLogoUrlFromFirebase } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {deleteGuestFiles} = require('../services/invitation.service');
 const {sendGuestEmail} = require('../services/notification.service');
@@ -103,11 +103,16 @@ const viewInvitation = async (req, res, next) => {
 
 const viewQrCode = async (req, res, next) => {
     try {
-        const result = await getGuestInvitationById(req.params.guestId);
+        const result = await getGuestInvitationByToken(req.params.token);
         if(!result) return res.status(401).json({error: `Aucun invité trouvé`});
-        
-        //console.log('result:', result);
-        return res.status(200).json({qrCodeUrl: result[0].qr_code_url})
+        if(result[0] && result[0].length!=0){
+            console.log('result:', result);
+            return res.status(200).json({qrCodeUrl: result[0].qr_code_url});
+        }else{
+            const logoUrl = await getLogoUrlFromFirebase("qrcodes.png");
+            //console.log('logoUrl:', logoUrl);
+            return res.status(200).json({ imageUrl: logoUrl });
+        }
     } catch (error) {
         console.error('GET INVITATION ERROR:', error.message);
         next(error);

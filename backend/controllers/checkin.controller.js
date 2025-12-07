@@ -2,7 +2,7 @@ const { createCheckin, getCheckinByInvitationId, updateCheckin } = require("../m
 const { getEventScheduleById, updateEventSchedule } = require("../models/event_schedules");
 const { getEventById } = require("../models/events");
 const { getGuestById, getEventByGuestId, updateRsvpStatusGuest, getAllPresentGuest } = require("../models/guests");
-const { getInvitationById } = require("../models/invitations");
+const { getInvitationById, getGuestInvitationByToken } = require("../models/invitations");
 const { createNotification } = require("../models/notification");
 const { getUserById } = require("../models/users");
 const { validateAndUseInvitation } = require("../services/invitation.service");
@@ -14,7 +14,10 @@ const addCheckIn = async (req, res, next) => {
     try {
         console.log("###body: ", req.body);
         let isValid = false;
-        const {eventId, invitationId, guestId, scannedBy, scanStatus, checkinTime} = req.body;
+        const {eventId, invitationId, guestId, token, scannedBy, scanStatus, checkinTime} = req.body;
+        if(token=='undefined:undefined') return res.status(404).json({error: "Code Qr invalide !"});
+        const isValidToken = await getGuestInvitationByToken(token);
+        if(!isValidToken) return res.status(404).json({error: "Code Qr invalide !"});
         const existing = await getCheckinByInvitationId(invitationId);
         if (!existing) {
             const event = await getEventById(eventId);
