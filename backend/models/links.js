@@ -23,6 +23,12 @@ async function createLink(type, token, limitCount, link) {
   return result;
 }
 
+async function getAllLinks() {
+  const [result] = await pool.query(`SELECT * FROM LINKS`);
+
+  return result;
+}
+
 async function getLinkByToken(token) {
   const [result] = await pool.query(`
       SELECT *
@@ -43,4 +49,4 @@ async function updateLink(linkId, usedCount) {
   return result.insertId;
 }
 
-module.exports = {initLinkModel, createLink, getLinkByToken, updateLink}
+module.exports = {initLinkModel, createLink, getAllLinks, getLinkByToken, updateLink}
