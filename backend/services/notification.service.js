@@ -6,7 +6,9 @@ const { getLogoUrlFromFirebase } = require('./qrCodeService');
 require('dotenv').config();
 
 async function sendGuestEmail(guest, event, token) {
-  const brevo = new Brevo.TransactionalEmailsApi();
+  const logo = await getLogoUrlFromFirebase('logo.png');
+  if(logo){
+    const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
   const rsvpLink = `${process.env.API_URL}/invitations/${token}`;
 
@@ -120,6 +122,7 @@ async function sendGuestEmail(guest, event, token) {
 
   await brevo.sendTransacEmail(sendSmtpEmail);
   console.log(`✅ Email(Invitation) envoyé à ${guest.email}`);
+  }
 };
 
 async function sendInvitationToGuest(data, qrCodeUrl) {
