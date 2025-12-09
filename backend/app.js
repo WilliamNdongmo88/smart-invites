@@ -37,30 +37,6 @@ app.use('/api/invitation', invitationRoutes);
 app.use('/api/checkin', checkinRoutes);
 app.use('/api/notification', notificationRoutes);
 app.use('/api/link', linkRoutes);
-app.get('/api/image-proxy', async (req, res) => {
-  const imageUrl = req.query.url;
-
-  if (!imageUrl) {
-    return res.status(400).send('URL de l\'image manquante');
-  }
-
-  try {
-    // Le backend télécharge l'image
-    const response = await axios({
-      method: 'GET',
-      url: imageUrl,
-      responseType: 'stream'
-    });
-
-    // On renvoie l'image au client (frontend)
-    res.setHeader('Content-Type', response.headers['content-type']);
-    response.data.pipe(res);
-
-  } catch (error) {
-    console.error("Erreur lors de la récupération de l'image via le proxy :", error);
-    res.status(500).send('Erreur interne du serveur');
-  }
-});
 
 app.use(errorHandler);
 

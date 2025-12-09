@@ -31,4 +31,29 @@ const getLinks = async (req, res, next) => {
     }
 }
 
-module.exports = {addLink, getLinks};
+const getImage = async (req, res, next) => {
+  const imageUrl = req.query.url;
+
+  if (!imageUrl) {
+    return res.status(400).send('URL de l\'image manquante');
+  }
+
+  try {
+    // Le backend télécharge l'image
+    const response = await axios({
+      method: 'GET',
+      url: imageUrl,
+      responseType: 'stream'
+    });
+
+    // On renvoie l'image au client (frontend)
+    res.setHeader('Content-Type', response.headers['content-type']);
+    response.data.pipe(res);
+
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'image via le proxy :", error);
+    next(error);
+  }
+};
+
+module.exports = {addLink, getLinks, getImage};
