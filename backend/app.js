@@ -10,10 +10,11 @@ const invitationRoutes = require('./routes/invitations.routes');
 const checkinRoutes = require('./routes/checkin.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const linkRoutes = require('./routes/link.routes');
+const imageProxy = require('./routes/imageProxy.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
-const axios = require('axios');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV === "production") {
@@ -37,6 +38,7 @@ app.use('/api/invitation', invitationRoutes);
 app.use('/api/checkin', checkinRoutes);
 app.use('/api/notification', notificationRoutes);
 app.use('/api/link', linkRoutes);
+app.use("/api/image-proxy", imageProxy);
 
 app.use(errorHandler);
 

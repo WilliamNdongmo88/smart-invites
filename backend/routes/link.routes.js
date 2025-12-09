@@ -5,6 +5,5 @@ const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
 
 router.post('/add-link', authenticateToken, LinkController.addLink);
 router.get('/get-links', authenticateToken, LinkController.getLinks);
-router.get('/image-proxy', authenticateToken, LinkController.getImage);
 
 module.exports = router;
