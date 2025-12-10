@@ -258,6 +258,8 @@ async function sendInvitationToGuest(data, qrCodeUrl) {
 }
 
 async function sendReminderMail(guest, event) {
+  const logo = await getLogoUrlFromFirebase('logo.png');
+  if(logo){
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
     const rsvpLink = `${process.env.API_URL}/invitations/${event.invitationToken}`;
@@ -293,9 +295,28 @@ async function sendReminderMail(guest, event) {
         break;
     }
     const htmlContent = `
-        <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
-        <div style="max-width: 600px; background-color: #fff; padding: 20px; border-radius: 8px; margin: auto;">
-            
+    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+
+        <!-- HEADER -->
+        <div style="
+          background: linear-gradient(90deg, #a89147ff, #D4AF37);
+          padding: 10px 0;
+          text-align: center;
+        ">
+          <img src="${logo}"
+            alt="SmartInvite Logo"
+            style="width:180px; height:130px; margin:auto; display:block;">
+        </div>
+
+        <!-- BODY -->
+        <div style="
+          max-width: 650px;
+          background:#ffffff;
+          margin: 30px auto;
+          padding: 25px 30px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        ">
             <h2 style="text-align: center; color: #D4AF37;">🔔 Rappel de confirmation</h2>
 
             <p style="font-size: 16px; color: #333;">
@@ -339,9 +360,22 @@ async function sendReminderMail(guest, event) {
             Au plaisir de vous compter parmi nous,<br>
             ${signature}
             </p>
-
         </div>
-    </div>
+        
+        <!-- FOOTER -->
+          <div style="
+            background: linear-gradient(90deg, #a89147ff, #D4AF37);
+            padding: 25px 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 14px;
+            ">
+            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
+            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+              ${process.env.API_URL}
+            </a>
+          </div>
+      </div>
     `;
 
     const sendSmtpEmail = {
@@ -353,9 +387,12 @@ async function sendReminderMail(guest, event) {
 
     await brevo.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ Email(Rappel) envoyé à ${guest.email}`);
+  }
 }
 
 async function sendFileQRCodeMail(data, qrCodeUrl) {
+  const logo = await getLogoUrlFromFirebase('logo.png');
+  if(!logo) throw new Error("Logo non trouvé.");
     const guest = data;
     const event = data;
     const brevo = new Brevo.TransactionalEmailsApi();
@@ -400,20 +437,56 @@ async function sendFileQRCodeMail(data, qrCodeUrl) {
         break;
     }
 
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; font-size:14px;">
-        <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+    const htmlContent =
+    `<div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
 
-        <p>
-          Votre <strong>QR-code d’accès</strong> pour ${article}${eventType} est joint à ce mail.
-          Il vous servira de laissez-passer le jour de l’événement.
-        </p>
+        <!-- HEADER -->
+        <div style="
+          background: linear-gradient(90deg, #a89147ff, #D4AF37);
+          padding: 10px 0;
+          text-align: center;
+        ">
+          <img src="${logo}"
+            alt="SmartInvite Logo"
+            style="width:180px; height:130px; margin:auto; display:block;">
+        </div>
 
-        <p>
-          Merci encore pour votre présence ✨  
-        </p>
+        <!-- BODY -->
+        <div style="
+          max-width: 650px;
+          background:#ffffff;
+          margin: 30px auto;
+          padding: 25px 30px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        ">
+          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-        <p>Cordialement,<br><strong>${concerned}</strong></p>
+            <p>
+              Votre <strong>QR-code d’accès</strong> pour ${article}${eventType} est joint à ce mail.
+              Il vous servira de laissez-passer le jour de l’événement.
+            </p>
+
+            <p>
+              Merci encore pour votre présence ✨  
+            </p>
+
+          <p>Cordialement,<br><strong>${concerned}</strong></p>
+        </div>
+        
+        <!-- FOOTER -->
+          <div style="
+            background: linear-gradient(90deg, #a89147ff, #D4AF37);
+            padding: 25px 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 14px;
+            ">
+            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
+            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+              ${process.env.API_URL}
+            </a>
+          </div>
       </div>
     `;
 
@@ -437,7 +510,8 @@ async function sendFileQRCodeMail(data, qrCodeUrl) {
 async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
-
+    const logo = await getLogoUrlFromFirebase('logo.png');
+    if(!logo) throw new Error("Logo non trouvé.");
     let subject = '';
     let reponse = '';
     switch (rsvpStatus) {
@@ -452,17 +526,53 @@ async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
         break;
     }
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; font-size:14px;">
-        <p>Bonjour <strong>${organizer.name}</strong>,</p>
+    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
 
-        <p>
-          Nous vous informons que l'invité <strong>${guest.full_name}</strong> ${reponse} votre invitation.
-        </p>
-        <p>
-          Vous pouvez consulter les détails dans votre espace organisateur.  
-        </p>
+        <!-- HEADER -->
+        <div style="
+          background: linear-gradient(90deg, #a89147ff, #D4AF37);
+          padding: 10px 0;
+          text-align: center;
+        ">
+          <img src="${logo}"
+            alt="SmartInvite Logo"
+            style="width:180px; height:130px; margin:auto; display:block;">
+        </div>
 
-        <p>Smart Invite</p>
+        <!-- BODY -->
+        <div style="
+          max-width: 650px;
+          background:#ffffff;
+          margin: 30px auto;
+          padding: 25px 30px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        ">
+          <p>Bonjour <strong>${organizer.name}</strong>,</p>
+
+            <p>
+              Nous vous informons que l'invité <strong>${guest.full_name}</strong> ${reponse} votre invitation.
+            </p>
+            <p>
+              Vous pouvez consulter les détails dans votre espace organisateur.  
+            </p>
+
+          <p>Smart Invite</p>
+        </div>
+        
+        <!-- FOOTER -->
+          <div style="
+            background: linear-gradient(90deg, #a89147ff, #D4AF37);
+            padding: 25px 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 14px;
+            ">
+            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
+            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+              ${process.env.API_URL}
+            </a>
+          </div>
       </div>
     `;
 
@@ -481,14 +591,51 @@ async function sendGuestPresenceToOrganizer(organizer, guest) {
     //console.log("###guest: ", guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
-
+    const logo = await getLogoUrlFromFirebase('logo.png');
+    if(!logo) throw new Error("Logo non trouvé.");
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; font-size:14px;">
-        <p>
-          L'invité <strong>${guest.full_name}</strong> vient d'arriver.
-        </p>
+    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
 
-        <p>Smart Invite</p>
+        <!-- HEADER -->
+        <div style="
+          background: linear-gradient(90deg, #a89147ff, #D4AF37);
+          padding: 10px 0;
+          text-align: center;
+        ">
+          <img src="${logo}"
+            alt="SmartInvite Logo"
+            style="width:180px; height:130px; margin:auto; display:block;">
+        </div>
+
+        <!-- BODY -->
+        <div style="
+          max-width: 650px;
+          background:#ffffff;
+          margin: 30px auto;
+          padding: 25px 30px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        ">
+          <p>
+            L'invité <strong>${guest.full_name}</strong> vient d'arriver.
+          </p>
+
+          <p>Smart Invite</p>
+        </div>
+        
+        <!-- FOOTER -->
+          <div style="
+            background: linear-gradient(90deg, #a89147ff, #D4AF37);
+            padding: 25px 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 14px;
+            ">
+            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
+            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+              ${process.env.API_URL}
+            </a>
+          </div>
       </div>
     `;
 
@@ -509,16 +656,56 @@ async function sendPdfByEmail(data, pdfBuffer) {
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
+    const logo = await getLogoUrlFromFirebase('logo.png');
+    if(!logo) throw new Error("Logo non trouvé.");
     // 1. Convertir le Buffer du PDF en Base64
     const base64Pdf = pdfBuffer.toString('base64');
 
     const htmlContent = `
-            <p>Bonjour,</p>
+    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+
+        <!-- HEADER -->
+        <div style="
+          background: linear-gradient(90deg, #a89147ff, #D4AF37);
+          padding: 10px 0;
+          text-align: center;
+        ">
+          <img src="${logo}"
+            alt="SmartInvite Logo"
+            style="width:180px; height:130px; margin:auto; display:block;">
+        </div>
+
+        <!-- BODY -->
+        <div style="
+          max-width: 650px;
+          background:#ffffff;
+          margin: 30px auto;
+          padding: 25px 30px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        ">
+          <p>Bonjour,</p>
             <p>Veuillez trouver ci-joint le récapitulatif des invités pour l'événement <strong>${event.title}</strong>.</p>
             
             <p>Cordialement,</p>
-            <p>Smart Invite</p>
-        `;
+          <p>Smart Invite</p>
+        </div>
+        
+        <!-- FOOTER -->
+          <div style="
+            background: linear-gradient(90deg, #a89147ff, #D4AF37);
+            padding: 25px 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 14px;
+            ">
+            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
+            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+              ${process.env.API_URL}
+            </a>
+          </div>
+      </div>
+    `;
 
     const sendSmtpEmail = {
       sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
@@ -541,6 +728,9 @@ async function sendThankYouMailToPresentGuests(event, schedules, organizer, gues
   //console.log('guest:', guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+    const logo = await getLogoUrlFromFirebase('logo.png');
+    if(!logo) throw new Error("Logo non trouvé.");
 
   let sentences = '';
   let concerned = '';
@@ -568,25 +758,61 @@ async function sendThankYouMailToPresentGuests(event, schedules, organizer, gues
       break;
   }
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; font-size:14px; color:#333;">
-      <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
 
-      <p>
-        ${sentences}
-      </p>
-      <p>
-        Votre participation a contribué à rendre cette événement mémorable.
-      </p>
+        <!-- HEADER -->
+        <div style="
+          background: linear-gradient(90deg, #a89147ff, #D4AF37);
+          padding: 10px 0;
+          text-align: center;
+        ">
+          <img src="${logo}"
+            alt="SmartInvite Logo"
+            style="width:180px; height:130px; margin:auto; display:block;">
+        </div>
 
-      <p>
-        Nous espérons vous revoir très bientôt lors de nos prochaines rencontres.
-      </p>
+        <!-- BODY -->
+        <div style="
+          max-width: 650px;
+          background:#ffffff;
+          margin: 30px auto;
+          padding: 25px 30px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        ">
+          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-      <p style="margin-top:20px;">Avec nos sincères remerciements,</p>
+            <p>
+              ${sentences}
+            </p>
+            <p>
+              Votre participation a contribué à rendre cette événement mémorable.
+            </p>
 
-      <p style="font-weight:bold;">${concerned}</p>
-    </div>
-  `;
+            <p>
+              Nous espérons vous revoir très bientôt lors de nos prochaines rencontres.
+            </p>
+
+            <p style="margin-top:20px;">Avec nos sincères remerciements,</p>
+
+          <p style="font-weight:bold;">${concerned}</p>
+        </div>
+        
+        <!-- FOOTER -->
+          <div style="
+            background: linear-gradient(90deg, #a89147ff, #D4AF37);
+            padding: 25px 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 14px;
+            ">
+            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
+            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+              ${process.env.API_URL}
+            </a>
+          </div>
+      </div>
+    `;
 
     const sendSmtpEmail = {
       sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
@@ -629,17 +855,53 @@ async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
+    const logo = await getLogoUrlFromFirebase('logo.png');
+    if(!logo) throw new Error("Logo non trouvé.");
+    
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; font-size:14px;">
-        <p>
-          Bonjour <strong>${organizer.name}</strong>
-        </p>
-        <p>
-          Le message de remerciement automatique a bien été envoyé a tous les invités présents.
-        </p>
+    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
 
+        <!-- HEADER -->
+        <div style="
+          background: linear-gradient(90deg, #a89147ff, #D4AF37);
+          padding: 10px 0;
+          text-align: center;
+        ">
+          <img src="${logo}"
+            alt="SmartInvite Logo"
+            style="width:180px; height:130px; margin:auto; display:block;">
+        </div>
 
-        <pstyle="font-family: Arial, sans-serif; font-size:10px; color:#666;>Smart Invite</p>
+        <!-- BODY -->
+        <div style="
+          max-width: 650px;
+          background:#ffffff;
+          margin: 30px auto;
+          padding: 25px 30px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        ">
+          <p>
+            Bonjour <strong>${organizer.name}</strong>
+          </p>
+          <p>
+            Le message de remerciement automatique a bien été envoyé a tous les invités présents.
+          </p>
+        </div>
+        
+        <!-- FOOTER -->
+          <div style="
+            background: linear-gradient(90deg, #a89147ff, #D4AF37);
+            padding: 25px 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 14px;
+            ">
+            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
+            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+              ${process.env.API_URL}
+            </a>
+          </div>
       </div>
     `;
 

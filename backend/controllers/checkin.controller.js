@@ -16,8 +16,10 @@ const addCheckIn = async (req, res, next) => {
         let isValid = false;
         const {eventId, invitationId, guestId, token, scannedBy, scanStatus, checkinTime} = req.body;
         if(token=='undefined:undefined') return res.status(404).json({error: "Code Qr invalide !"});
-        const isValidToken = await getGuestInvitationByToken(token);
-        if(!isValidToken) return res.status(404).json({error: "Code Qr invalide !"});
+        const existingInvitation = await getGuestInvitationByToken(token);
+        console.log("###existingInvitation: ", existingInvitation);
+        console.log("###token: ", token);
+        if(existingInvitation.length==0) return res.status(404).json({error: "Code Qr invalide !"});
         const existing = await getCheckinByInvitationId(invitationId);
         if (!existing) {
             const event = await getEventById(eventId);

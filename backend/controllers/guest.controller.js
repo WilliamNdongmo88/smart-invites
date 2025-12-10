@@ -59,8 +59,6 @@ const addGuestFromLink = async (req, res, next) => {
         if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
         link.used_count ++;
 
-        console.log('link.id :: ', link.id);
-        console.log('link.used_count :: ', link.used_count);
         const updated = await updateLink(link.id, link.used_count);
         console.log('updated :: ', updated);
 
@@ -94,10 +92,10 @@ const addGuestFromLink = async (req, res, next) => {
         // Notification
         const invitation = await getGuestInvitationById(guestId);
         try {
-            const guest = await getGuestById(guestId);
+            const guest = await getGuestAndInvitationRelatedById(guestId);
             await sendInvitationToGuest(guest, invitation[0].qr_code_url);
             await createNotification(
-                `✅ Invitation envoyé.`,
+                `Invitation envoyé.`,
                 `L'invitation Qr Code a été envoyé à ${fullName}.`,
                 'info',
                 false
@@ -105,12 +103,21 @@ const addGuestFromLink = async (req, res, next) => {
             const event = await getEventByGuestId(guestId);
             const organizer = await getUserById(event[0].organizerId);
             await sendGuestResponseToOrganizer(organizer, guest_event_related, rsvpStatus);
-            await createNotification(
-                `✅ Reponse Invité.`,
-                `L'invité ${fullName} vient d’accepter votre invitation.`,
-                'info',
-                false
-            );
+            if(hasPlusOne){
+                await createNotification(
+                    `Reponse Invité.`,
+                    `L'invité ${fullName} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
+                    'info',
+                    false
+                );
+            }else{
+                await createNotification(
+                    `Reponse Invité.`,
+                    `L'invité ${fullName} vient d’accepter votre invitation.`,
+                    'info',
+                    false
+                );
+            }
         } catch (error) {
             console.error('send email ERROR:', error.message);
             next(error);
@@ -195,12 +202,13 @@ const updateGuest = async (req, res, next) => {
             if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
             if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
             try {
-                await sendInvitationToGuest(guest, invitation[0].qr_code_url);
+                const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
+                await sendInvitationToGuest(invite, invitation[0].qr_code_url);
                 const event = await getEventByGuestId(guest.id);
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                 await createNotification(
-                    `✅ Reponse Invité.`,
+                    `Reponse Invité.`,
                     `L'invité ${guest.full_name} vient d’accepter votre invitation.`,
                     'info',
                     false
@@ -254,7 +262,7 @@ const updateGuest = async (req, res, next) => {
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                 await createNotification(
-                    `✅ Reponse Invité.`,
+                    `Reponse Invité.`,
                     `L'invité ${guest.full_name} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
                     'info',
                     false
