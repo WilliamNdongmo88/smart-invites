@@ -32,12 +32,12 @@ async function getEventScheduleById(eventId) {
     return result[0];
 }
 
-async function updateEventSchedule(eventScheduledId, eventId, executed, isCheckinExecuted) {
+async function updateEventSchedule(eventScheduledId, eventId, scheduledFor, executed, isCheckinExecuted) {
     const [result] = await pool.query(`
         UPDATE EVENT_SCHEDULES 
-        SET event_id=?, executed=?, is_checkin_executed=?
+        SET event_id=?, scheduled_for=?, executed=?, is_checkin_executed=?
         WHERE id=?
-    `,[eventId, executed,isCheckinExecuted, eventScheduledId]);
+    `,[eventId, scheduledFor, executed,isCheckinExecuted, eventScheduledId]);
 
     return result.insertId;
 }

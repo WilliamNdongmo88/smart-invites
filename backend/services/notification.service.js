@@ -721,6 +721,13 @@ async function sendPdfByEmail(data, pdfBuffer) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
+    await createNotification(
+      `Votre liste d'invités récapitulative`,
+      `Vous avez reçu par mail la liste de présence de tous les invités présents a votre événement.\n
+       Veuillez consulter votre boîte mail.`,
+      'info',
+      false
+    );
     console.log(`✅ Email(pdf) envoyé à ${user.email}`);
 }
 
@@ -834,10 +841,10 @@ async function notifications(schedules, organizer) {
     if (!schedule_bd.is_checkin_executed) {
       console.log('is_checkin_executed: ', schedule_bd.is_checkin_executed);
       const scheduleId = schedule_bd.id;
-      const updatedSchedule = await updateEventSchedule(scheduleId, schedule_bd.event_id, schedule_bd.executed, true);
+      const updatedSchedule = await updateEventSchedule(scheduleId, schedule_bd.event_id, schedules.scheduled_for, true, true);
       console.log('updatedSchedule : ', updatedSchedule);
       await createNotification(
-        `✅ Rapport d'envoi du message automatique`,
+        `Rapport d'envoi du message automatique`,
         `Le message de remerciement automatique a bien été envoyé a tous les invités présents.`,
         'info',
         false

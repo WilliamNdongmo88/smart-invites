@@ -133,7 +133,13 @@ const getAllEvents = async (req, res, next) => {
         if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
         await updateEvent(req.params.eventId, organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, 
             footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2 );
-        const updatedEvent = await getEventById(req.params.eventId)
+        const updatedEvent = await getEventById(req.params.eventId);
+        
+        const existingSchedule = await getEventScheduleById(req.params.eventId);
+        const scheduleId = await updateEventSchedule(existingSchedule.id, req.params.eventId, eventDate, false, false);
+        console.log(`Schedule mis à jour pour event ${req.params.eventId} → Exécution : ${eventDate}`);
+        planSchedule(scheduleId, req.params.eventId, eventDate);
+        
         return res.status(200).json({updatedEvent})
     } catch (error) {
         console.error('UPDATE EVENT BY ID ERROR:', error.message);
@@ -220,7 +226,7 @@ const getAllEvents = async (req, res, next) => {
         // Planification
         schedule.scheduleJob(scheduleDate, async () => {
             console.log('🚀 === Job déclenché ===');
-            await runScheduledTask(scheduleId, eventId, scheduleDate);
+            await runScheduledTask(scheduleId, eventId, eventDate);
         });
 
     } catch (error) {
@@ -228,11 +234,11 @@ const getAllEvents = async (req, res, next) => {
     }
   }
 
-  async function runScheduledTask(scheduleId, eventId) {
+  async function runScheduledTask(scheduleId, eventId, scheduledFor) {
     console.log(`Exécution du scheduler pour l'événement ${eventId}`);
 
     // Marquer comme exécuté
-    await updateEventSchedule(scheduleId, eventId, true, false);
+    await updateEventSchedule(scheduleId, eventId, scheduledFor, true, false);
 
     await sendScheduledReport();
 
