@@ -1,24 +1,40 @@
 const rateLimit = require("express-rate-limit");
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 5 * 60 * 1000,
   max: 5,
   message: { error: "Trop de tentatives de connexion." }
 });
 
+const registerLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: { error: "Trop de tentatives d'inscription." }
+});
+
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limite chaque IP à 100 requêtes par windowMs
+  windowMs: 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Trop de requêtes." }
+  handler: (req, res) => {
+    res.status(429).set({
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE"
+    }).json({ error: "Trop de requêtes. Veuillez réessayer plus tard." });
+  }
 });
 
 // Middleware qui ne fait rien (désactive tout rate-limit)
-const noRateLimit = (req, res, next) => next();
+const noRateLimit = rateLimit({
+  windowMs: 1,   // fenêtre minuscule
+  max: 999999,   // quasiment aucune limite
+});
 
 module.exports = {
   loginLimiter,
+  registerLimiter,
   apiLimiter,
   noRateLimit,
 };

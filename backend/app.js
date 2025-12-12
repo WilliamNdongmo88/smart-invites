@@ -12,7 +12,7 @@ const notificationRoutes = require('./routes/notification.routes');
 const linkRoutes = require('./routes/link.routes');
 const imageProxy = require('./routes/imageProxy.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
-const { apiLimiter, noRateLimit } = require('./middlewares/rateLimiter');
+const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
@@ -20,8 +20,6 @@ const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV === "production") {
   app.set('trust proxy', 1); // obligatoire pour Railway / Render / Vercel
 }
-app.use("/api/invitation/view", noRateLimit);
-app.use(apiLimiter);
 
 // Autorise les requêtes venant d'Angular
 app.use(cors({
@@ -29,6 +27,17 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/register", registerLimiter);
+app.use("/api/auth", apiLimiter);
+app.use("/api/events", apiLimiter);
+app.use("/api/guest", apiLimiter);
+app.use("/api/link", apiLimiter);
+app.use("/api/invitation", apiLimiter);
+
+// Notifications sans rate-limit
+app.use("/api/notification", noRateLimit);
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);
