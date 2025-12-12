@@ -30,7 +30,6 @@ app.use(cors({
 
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/register", registerLimiter);
-app.use("/api/auth", apiLimiter);
 app.use("/api/events", apiLimiter);
 app.use("/api/guest", apiLimiter);
 app.use("/api/link", apiLimiter);
