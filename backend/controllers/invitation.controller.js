@@ -109,7 +109,7 @@ const viewQrCode = async (req, res, next) => {
             console.log('result:', result);
             return res.status(200).json({qrCodeUrl: result[0].qr_code_url});
         }else{
-            const logoUrl = await getLogoUrlFromFirebase("qrcodes.png");
+            const logoUrl = await getLogoUrlFromFirebase("carte.jpg");
             //console.log('logoUrl:', logoUrl);
             return res.status(200).json({ imageUrl: logoUrl });
         }

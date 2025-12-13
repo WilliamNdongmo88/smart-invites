@@ -17,7 +17,15 @@ const loginLimiter = rateLimit({
 const registerLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 5,
-  message: { error: "Trop de tentatives d'inscription." }
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).set({
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE"
+    }).json({ error: "Trop de tentatives d'inscription." });
+  }
 });
 
 const apiLimiter = rateLimit({
