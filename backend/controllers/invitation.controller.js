@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
-const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById} = require("../models/guests");
+const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById, getEventByGuestId} = require("../models/guests");
 const {createInvitation, getGuestInvitationById, 
     getGuestInvitationByToken, deleteGuestInvitation} = require('../models/invitations');
 const { generateGuestQr, getLogoUrlFromFirebase } = require("../services/qrCodeService");
@@ -9,6 +9,7 @@ const {deleteGuestFiles} = require('../services/invitation.service');
 const {sendGuestEmail} = require('../services/notification.service');
 const { update_guest } = require('../models/guests');
 const { bucket } = require('../config/firebaseConfig');
+const { getEventById } = require('../models/events');
 
 const genererSeveralInvitations = async (req, res, next) => {
   try {
@@ -106,11 +107,35 @@ const viewQrCode = async (req, res, next) => {
         const result = await getGuestInvitationByToken(req.params.token);
         if(!result) return res.status(401).json({error: `Aucun invité trouvé`});
         if(result[0] && result[0].length!=0){
-            console.log('result:', result);
-            return res.status(200).json({qrCodeUrl: result[0].qr_code_url});
+            const guestId = req.params.token.split(':')[0];
+            let logoUrl = '';
+            const event = await getEventByGuestId(guestId);
+            console.log('[viewQrCode] result:', event);
+            if(event[0].type == 'wedding'){
+                logoUrl = await getLogoUrlFromFirebase("carte.jpg");
+            }else if(event[0].type == 'engagement'){
+                logoUrl = await getLogoUrlFromFirebase("carte-fiancailles.png");
+            }else if(event[0].type == 'anniversary'){
+                logoUrl = await getLogoUrlFromFirebase("carte-anniv-mariage.png");
+            }else if(event[0].type == 'birthday'){
+                logoUrl = await getLogoUrlFromFirebase("carte-anniv.png");
+            }
+            return res.status(200).json({ imageUrl: logoUrl });
+            //return res.status(200).json({qrCodeUrl: result[0].qr_code_url});
         }else{
-            const logoUrl = await getLogoUrlFromFirebase("carte.jpg");
-            //console.log('logoUrl:', logoUrl);
+            const eventId = req.params.token.split(':')[0];
+            let logoUrl = '';
+            const event = await getEventById(eventId);
+            console.log('[viewQrCode] event:', event);
+            if(event.type == 'wedding'){
+                logoUrl = await getLogoUrlFromFirebase("carte.jpg");
+            }else if(event.type == 'engagement'){
+                logoUrl = await getLogoUrlFromFirebase("carte-fiancailles.png");
+            }else if(event.type == 'anniversary'){
+                logoUrl = await getLogoUrlFromFirebase("carte-anniv-mariage.png");
+            }else if(event.type == 'birthday'){
+                logoUrl = await getLogoUrlFromFirebase("carte-anniv.png");
+            }
             return res.status(200).json({ imageUrl: logoUrl });
         }
     } catch (error) {
