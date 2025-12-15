@@ -155,7 +155,7 @@ const downloadQRCode = async (req, res, next) => {
 
         res.send(response.data);
     } catch (error) {
-        console.error('GET INVITATION ERROR:', error.message);
+        console.error('[downloadQRCode] ERROR:', error.message);
         next(error);
     }
 };

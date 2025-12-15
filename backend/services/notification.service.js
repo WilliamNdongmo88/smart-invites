@@ -722,6 +722,7 @@ async function sendPdfByEmail(data, pdfBuffer) {
 
     await brevo.sendTransacEmail(sendSmtpEmail);
     await createNotification(
+      event.eventId,
       `Votre liste d'invités récapitulative`,
       `Vous avez reçu par mail la liste de présence de tous les invités présents a votre événement.\n
        Veuillez consulter votre boîte mail.`,
@@ -844,6 +845,7 @@ async function notifications(schedules, organizer) {
       const updatedSchedule = await updateEventSchedule(scheduleId, schedule_bd.event_id, schedules.scheduled_for, true, true);
       console.log('updatedSchedule : ', updatedSchedule);
       await createNotification(
+        schedules.event_id,
         `Rapport d'envoi du message automatique`,
         `Le message de remerciement automatique a bien été envoyé a tous les invités présents.`,
         'info',

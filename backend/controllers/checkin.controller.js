@@ -37,6 +37,7 @@ const addCheckIn = async (req, res, next) => {
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestPresenceToOrganizer(organizer, guest);
                 await createNotification(
+                    event[0].eventId,
                     `Arrivé Invité ${guest.full_name}`,
                     `L'invité ${guest.full_name} vient d'arriver.`,
                     'info',

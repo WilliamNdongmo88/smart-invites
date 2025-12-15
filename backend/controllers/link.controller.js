@@ -11,7 +11,7 @@ const addLink = async (req, res, next) => {
         const token = parts.join('-');
         console.log('token ::', token);
         const link = `${process.env.API_URL}/invitations/${eventId}:${token}`;
-        const links = await createLink(type, token, usedLimitCount, link);
+        const links = await createLink(eventId, type, token, usedLimitCount, link);
         return res.status(200).json(links);
     } catch (error) {
         console.log('[createLink] Error:', error.message);

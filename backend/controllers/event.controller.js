@@ -11,7 +11,7 @@ const schedule = require('node-schedule');
 const { getGuestByInvitationId } = require('../models/invitations');
 const { sendPdfByEmail } = require('../services/notification.service');
 const { sendScheduledThankMessage } = require('./checkin.controller');
-const { getEventScheduleById, createEventSchedule, updateEventSchedule } = require('../models/event_schedules');
+const { getEventScheduleById, createEventSchedule, updateEventSchedule, deleteEventSchedule } = require('../models/event_schedules');
 
 
 const create_Event = async (req, res, next) => {
@@ -168,6 +168,7 @@ const getAllEvents = async (req, res, next) => {
         const guests = await getEventWithTotalGuestById(req.params.eventId);
         //console.log("guests: ", guests[0].total_guests);
         if(guests[0].total_guests > 0) return res.status(409).json({error: `Impossible de supprimer cet événement car des invités y sont associés.`});
+        await deleteEventSchedule(req.params.eventId);
         await deleteEvents(req.params.eventId);
         return res.status(200).json({message: `Evénement ${req.params.eventId} supprimé avec succès!`})
     } catch (error) {

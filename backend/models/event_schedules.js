@@ -42,4 +42,9 @@ async function updateEventSchedule(eventScheduledId, eventId, scheduledFor, exec
     return result.insertId;
 }
 
-module.exports = {initEventSchedulesModel, createEventSchedule, getEventScheduleById, updateEventSchedule};
+async function deleteEventSchedule(eventId) {
+    await pool.query(`DELETE FROM EVENT_SCHEDULES WHERE id=?`, [eventId]);
+}
+
+module.exports = {initEventSchedulesModel, createEventSchedule, 
+    getEventScheduleById, updateEventSchedule, deleteEventSchedule};

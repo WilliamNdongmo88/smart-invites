@@ -92,19 +92,21 @@ const addGuestFromLink = async (req, res, next) => {
         // Notification
         const invitation = await getGuestInvitationById(guestId);
         try {
+            const event = await getEventByGuestId(guestId);
             const guest = await getGuestAndInvitationRelatedById(guestId);
             await sendInvitationToGuest(guest, invitation[0].qr_code_url);
             await createNotification(
+                event[0].eventId,
                 `Invitation envoyé.`,
                 `L'invitation Qr Code a été envoyé à ${fullName}.`,
                 'info',
                 false
             );
-            const event = await getEventByGuestId(guestId);
             const organizer = await getUserById(event[0].organizerId);
             await sendGuestResponseToOrganizer(organizer, guest_event_related, rsvpStatus);
             if(hasPlusOne){
                 await createNotification(
+                    event[0].eventId,
                     `Reponse Invité.`,
                     `L'invité ${fullName} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
                     'info',
@@ -112,6 +114,7 @@ const addGuestFromLink = async (req, res, next) => {
                 );
             }else{
                 await createNotification(
+                    event[0].eventId,
                     `Reponse Invité.`,
                     `L'invité ${fullName} vient d’accepter votre invitation.`,
                     'info',
@@ -208,6 +211,7 @@ const updateGuest = async (req, res, next) => {
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                 await createNotification(
+                    event[0].eventId,
                     `Reponse Invité.`,
                     `L'invité ${guest.full_name} vient d’accepter votre invitation.`,
                     'info',
@@ -230,6 +234,7 @@ const updateGuest = async (req, res, next) => {
             const organizer = await getUserById(event[0].organizerId);
             await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
             await createNotification(
+                event[0].eventId,
                 `❌ Reponse Invité.`,
                 `L'invité ${guest.full_name} a décliné votre invitation.`,
                 'info',
@@ -262,6 +267,7 @@ const updateGuest = async (req, res, next) => {
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                 await createNotification(
+                    event[0].eventId,
                     `Reponse Invité.`,
                     `L'invité ${guest.full_name} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
                     'info',
