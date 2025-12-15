@@ -1,3 +1,4 @@
+const { initCheckin_ParametersModel } = require('./checkin_parameters');
 const { initCheckinModel } = require('./checkins');
 const { initEventSchedulesModel } = require('./event_schedules');
 const { initEventsModel } = require('./events');
@@ -17,6 +18,7 @@ const initModels = async () => {
   await initCheckinModel();
   await initNotificationModel();
   await initLinkModel();
+  await initCheckin_ParametersModel();
 };
 
 module.exports = {
