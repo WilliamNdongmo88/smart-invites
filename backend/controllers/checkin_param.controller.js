@@ -7,7 +7,7 @@ const add_checkin_p = async (req, res, next) => {
         console.log('[add_checkin_p] existing:', existing);
         if(existing == undefined || existing == null){
             await createCheckinP(eventId, automaticCapture, confirmationSound, scannedCodes, scannedSuccess, scannedErrors);
-        }else{
+        }else if(existing){
             const existing = await getCheckinPByEventId(eventId);
             await updateCheckinP(eventId, existing.automatic_capture, existing.confirmation_sound, scannedCodes, scannedSuccess, scannedErrors)
         }
