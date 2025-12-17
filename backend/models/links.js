@@ -31,6 +31,16 @@ async function getAllLinks() {
   return result;
 }
 
+async function getLinkById(linkId) {
+  const [result] = await pool.query(`
+      SELECT *
+      FROM LINKS
+      WHERE id=?
+  `,[linkId]);
+
+  return result[0];
+}
+
 async function getLinkByToken(token) {
   const [result] = await pool.query(`
       SELECT *
@@ -41,12 +51,12 @@ async function getLinkByToken(token) {
   return result[0];
 }
 
-async function updateLink(linkId, usedCount) {
+async function updateLink(linkId, usedCount, type, usedLimitCount) {
   const [result] = await pool.query(`
     UPDATE LINKS 
-    SET used_count=?
+    SET used_count=?, type=?, limit_count=?
     WHERE id=?
-  `, [usedCount, linkId]);
+  `, [usedCount, type, usedLimitCount, linkId]);
 
   return result.insertId;
 }
@@ -55,4 +65,5 @@ async function deleteAllLink() {
     await pool.query(`DELETE FROM LINKS`);
 }
 
-module.exports = {initLinkModel, createLink, getAllLinks, getLinkByToken, updateLink, deleteAllLink}
+module.exports = {initLinkModel, createLink, getAllLinks, getLinkById,
+  getLinkByToken, updateLink, deleteAllLink}

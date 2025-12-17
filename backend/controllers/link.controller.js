@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
-const { createLink, getAllLinks } = require("../models/links");
+const { createLink, getAllLinks, updateLink, getLinkById } = require("../models/links");
 
 const addLink = async (req, res, next) => {
     try {
@@ -15,6 +15,21 @@ const addLink = async (req, res, next) => {
         return res.status(200).json(links);
     } catch (error) {
         console.log('[createLink] Error:', error.message);
+        next(error);
+    }
+}
+
+const editLink = async (req, res, next) => {
+    try {
+      console.log('req.body ::', req.body);
+        const {type, usedLimitCount} = req.body;
+        const linkId = req.params.linkId;
+        const link = await getLinkById(linkId);
+        if(!link) return res.status(404).json({error: "Lien non trouvé !"});
+        const links = await updateLink(linkId, link.used_count, type, usedLimitCount);
+        return res.status(200).json(links);
+    } catch (error) {
+        console.log('[editLink] Error:', error.message);
         next(error);
     }
 }
@@ -56,4 +71,4 @@ const getImage = async (req, res, next) => {
   }
 };
 
-module.exports = {addLink, getLinks, getImage};
+module.exports = {addLink, getLinks, getImage, editLink};

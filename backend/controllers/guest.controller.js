@@ -59,7 +59,7 @@ const addGuestFromLink = async (req, res, next) => {
         if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
         link.used_count ++;
 
-        const updated = await updateLink(link.id, link.used_count);
+        const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count);
         console.log('updated :: ', updated);
 
         const event = await getEventById(eventId);
