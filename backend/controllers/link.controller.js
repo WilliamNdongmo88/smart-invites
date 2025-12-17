@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
-const { createLink, getAllLinks, updateLink, getLinkById } = require("../models/links");
+const { createLink, getAllLinks, updateLink, getLinkById, deleteLink } = require("../models/links");
 
 const addLink = async (req, res, next) => {
     try {
@@ -71,4 +71,17 @@ const getImage = async (req, res, next) => {
   }
 };
 
-module.exports = {addLink, getLinks, getImage, editLink};
+const deleteLinks = async (req, res, next) => {
+    try {
+        const linkId = req.params.linkId;
+        const link = await getLinkById(linkId);
+        if(!link) return res.status(404).json({error: "Lien non trouvé !"});
+        await deleteLink(linkId);
+        return res.status(200).json({success: "Lien supprimé avec succes."});
+    } catch (error) {
+        console.log('[deleteLink] Error:', error.message);
+        next(error);
+    }
+}
+
+module.exports = {addLink, getLinks, getImage, editLink, deleteLinks};

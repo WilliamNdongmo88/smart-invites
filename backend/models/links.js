@@ -61,9 +61,9 @@ async function updateLink(linkId, usedCount, type, usedLimitCount) {
   return result.insertId;
 }
 
-async function deleteAllLink() {
-    await pool.query(`DELETE FROM LINKS`);
+async function deleteLink(linkId) {
+    await pool.query(`DELETE FROM LINKS WHERE id=?`, [linkId]);
 }
 
 module.exports = {initLinkModel, createLink, getAllLinks, getLinkById,
-  getLinkByToken, updateLink, deleteAllLink}
+  getLinkByToken, updateLink, deleteLink}
