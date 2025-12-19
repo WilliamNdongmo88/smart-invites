@@ -54,6 +54,8 @@ router.get('/me', authenticateToken, AuthController.getMe );
  */
 router.post('/register', AuthController.register);
 
+router.put('/:userId', AuthController.updateProfile);
+
 /**
  * @swagger
  * /api/auth/login:

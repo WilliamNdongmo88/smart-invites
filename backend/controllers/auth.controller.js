@@ -9,8 +9,10 @@ const {
   getUserById,
   saveResetCode,
   saveRefreshToken,
-  clearRefreshToken
+  clearRefreshToken,
+  updateUser
 } = require('../models/users');
+const { create } = require('qrcode');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
@@ -27,7 +29,22 @@ const getMe = async (req, res, next) => {
   try {
     const user = await getUserByFk(req.user.id);
     if(!user) return res.json({message: "Utilisateur non trouvé"})
-    return res.json({id: user.id, name: user.name, email: user.email})
+    return res.json({
+      id: user.id, 
+      name: user.name, 
+      email: user.email, 
+      role: user.role, 
+      phone: user.phone, 
+      bio: user.bio, 
+      avatar_url: user.avatar_url,
+      email_notifications: user.email_notifications,
+      attendance_notifications: user.attendance_notifications,
+      thank_notifications: user.thank_notifications,
+      event_reminders: user.event_reminders,
+      marketing_emails: user.marketing_emails,
+      created_at: user.created_at,
+      last_login_at: user.last_login_at
+    });
   } catch (error) {
     console.error('GET ME ERROR:', error.message);
     next(error);
@@ -48,6 +65,34 @@ const register = async (req, res, next) => {
     console.error('REGISTER ERROR:', error.message);
     next(error);
   }
+};
+
+const updateProfile = async (req, res, next) => {
+    try {
+        const { name, phone, bio, avatar_url,
+            email_notifications, attendance_notifications,
+            thank_notifications, event_reminders,
+            marketing_emails } = req.body;
+        const user = await getUserByFk(req.params.userId);
+        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        const updatedUser = {
+            name: name || user.name,
+            phone: phone || user.phone,
+            bio: bio || user.bio,
+            avatar_url: avatar_url || user.avatar_url,
+            email_notifications: email_notifications !== undefined ? email_notifications : user.email_notifications,
+            attendance_notifications: attendance_notifications !== undefined ? attendance_notifications : user.attendance_notifications,
+            thank_notifications: thank_notifications !== undefined ? thank_notifications : user.thank_notifications,
+            event_reminders: event_reminders !== undefined ? event_reminders : user.event_reminders,
+            marketing_emails: marketing_emails !== undefined ? marketing_emails : user.marketing_emails
+        };
+
+        const result = await updateUser(req.params.userId, updatedUser);
+        return res.status(200).json({ message: 'Utilisateur mis à jour avec succès' });
+    } catch (error) {
+        console.error('UPDATE USER ERROR:', error.message);
+        next(error);
+    }
 };
 
 const login = async (req, res, next) => {
@@ -204,4 +249,5 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { register, login, refresh, logout, getMe, forgotPassword, checkCode, resetPassword };
+module.exports = { register, login, refresh, logout, 
+  getMe, forgotPassword, checkCode, resetPassword, updateProfile };
