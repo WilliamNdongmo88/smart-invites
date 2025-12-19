@@ -198,6 +198,20 @@ const resetPassword = async (req, res, next) => {
     }
 }
 
+const updatePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newpassword } = req.body;
+        const currentUser = await getUserById(req.params.userId);
+        if (!currentUser) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        if(currentUser.password===currentPassword) return res.status(400).json({ error: "Le mot de passe actuel est incorrect" });
+        const user = await resetUserPassword(currentUser.email, newpassword);
+        return res.status(200).json({ message: 'Mot de passe réinitialisé avec succès', userId: user.id });
+    } catch (error) {
+        console.error('RESET PASSWORD ERROR:', error.message);
+        next(error);
+    }
+}
+
 const refresh = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
@@ -249,5 +263,5 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { register, login, refresh, logout, 
+module.exports = { register, login, refresh, logout, updatePassword,
   getMe, forgotPassword, checkCode, resetPassword, updateProfile };
