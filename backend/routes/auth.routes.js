@@ -175,6 +175,8 @@ router.post('/check-code', AuthController.checkCode);
  *         description: Utilisateur non trouvé!
  */
 router.post('/reset-password', AuthController.resetPassword);
+
+router.post('/update-password/:userId', AuthController.updatePassword);
 router.post('/add-user', AuthController.register);
 
 module.exports = router ;
