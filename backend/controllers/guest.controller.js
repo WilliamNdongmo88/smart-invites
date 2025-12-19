@@ -29,7 +29,9 @@ const addGuest = async (req, res, next) => {
         for (const guest of guestDatas) {
             const { eventId, fullName, email, phoneNumber, rsvpStatus, 
                 guesthasPlusOneAutoriseByAdmin} = guest;
+            console.log('guest :: ', guest);
             const event = await getEventById(eventId);
+            console.log('event :: ', event);
             if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
             const result = await getGuestEmailRelatedToEvent(email, event.id);
             if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});

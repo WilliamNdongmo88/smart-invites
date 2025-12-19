@@ -11,6 +11,14 @@ const initUserModel = async () => {
       email VARCHAR(255) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
       role VARCHAR(50) DEFAULT 'user',
+      phone VARCHAR(20),
+      bio TEXT,
+      avatar_url TEXT,
+      email_notifications BOOLEAN NOT NULL DEFAULT FALSE,
+      attendance_notifications BOOLEAN NOT NULL DEFAULT FALSE,
+      thank_notifications BOOLEAN NOT NULL DEFAULT FALSE,
+      event_reminders BOOLEAN NOT NULL DEFAULT FALSE,
+      marketing_emails BOOLEAN NOT NULL DEFAULT FALSE,
       refresh_token TEXT,
       reset_code VARCHAR(6),
       reset_code_expires DATETIME,
@@ -91,10 +99,31 @@ async function clearRefreshToken(userId) {
   await pool.query(`UPDATE USERS SET refresh_token = NULL WHERE id = ?`, [userId]);
 }
 
+async function updateUser(userId, updatedUser) {
+    const result = await pool.query(`
+      UPDATE USERS SET name=?, phone=?, bio=?, avatar_url=?, 
+      email_notifications=?, attendance_notifications=?, thank_notifications=?, event_reminders=?, marketing_emails=?
+      WHERE id=?
+  `, [  
+      updatedUser.name,
+      updatedUser.phone,
+      updatedUser.bio,  
+      updatedUser.avatar_url,
+      updatedUser.email_notifications,  
+      updatedUser.attendance_notifications,  
+      updatedUser.thank_notifications,  
+      updatedUser.event_reminders,  
+      updatedUser.marketing_emails,  
+      userId
+  ]);
+}
+
+
 module.exports = {
     initUserModel, 
     createDefaultAdmin, 
-    createUser, 
+    createUser,
+    updateUser, 
     getUserByFk,
     saveResetCode,
     getUserByEmail,
