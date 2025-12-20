@@ -36,16 +36,16 @@ const create_Event = async (req, res, next) => {
                                 status})
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
-                console.log('[create_Event] scheduledDate:', eventDate);
+                //console.log('[create_Event] scheduledDate:', eventDate);
                 const existingSchedule = await getEventScheduleById(eventId);
-                console.log('[create_Event] existingSchedule:', existingSchedule);
+                //console.log('[create_Event] existingSchedule:', existingSchedule);
                 // Une tâche existe déjà → NE PAS EN RECRÉER
                 if (existingSchedule) {
                     console.log(`Schedule déjà existant pour event ${eventId}`);
                     return;
                 }
                 const scheduleId = await createEventSchedule(eventId, eventDate, false);
-                console.log(`Schedule créé pour event ${eventId} → Exécution : ${eventDate}`);
+                //console.log(`Schedule créé pour event ${eventId} → Exécution : ${eventDate}`);
                 planSchedule(scheduleId, eventId, eventDate);
             } catch (error) {
                 console.error("Erreur planification scheduler:", error);

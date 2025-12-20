@@ -4,7 +4,7 @@ const add_checkin_p = async (req, res, next) => {
     try {
         const {eventId, automaticCapture, confirmationSound, scannedCodes, scannedSuccess, scannedErrors} = req.body;
         const existing = await getCheckinPByEventId(eventId);
-        console.log('[add_checkin_p] existing:', existing);
+        //console.log('[add_checkin_p] existing:', existing);
         if(existing == undefined || existing == null){
             await createCheckinP(eventId, automaticCapture, confirmationSound, scannedCodes, scannedSuccess, scannedErrors);
         }else{
@@ -20,7 +20,7 @@ const add_checkin_p = async (req, res, next) => {
 const get_checkin_p = async (req, res, next) => {
     try {
         const existing = await getCheckinPByEventId(req.params.eventId);
-        console.log('[get_checkin_p] existing:', existing);
+        //console.log('[get_checkin_p] existing:', existing);
         if(!existing) return res.status(404).json({error: "Donnée non trouvé!"});
         return res.status(200).json(existing);
     } catch (error) {
@@ -31,7 +31,7 @@ const get_checkin_p = async (req, res, next) => {
 
 const update_checkin_p = async (req, res, next) => {
     try {
-        console.log('Body:', req.body);
+        //console.log('Body:', req.body);
         let {eventId, automaticCapture, confirmationSound, scannedCodes, scannedSuccess, scannedErrors} = req.body;
         //const existing = await getCheckinPByEventId(eventId);
         await updateCheckinP(eventId, automaticCapture, confirmationSound, scannedCodes, scannedSuccess, scannedErrors)

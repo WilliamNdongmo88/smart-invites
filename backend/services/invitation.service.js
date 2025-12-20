@@ -25,13 +25,13 @@ async function deleteGuestFiles(guestId, invitationToken) {
     const [pdfExists] = await pdfFile.exists();
     if (pdfExists) {
       await pdfFile.delete();
-      console.log(`🗑️ PDF supprimé: ${pdfPath}`);
+      //console.log(`🗑️ PDF supprimé: ${pdfPath}`);
     }
 
     const [qrExists] = await qrFile.exists();
     if (qrExists) {
       await qrFile.delete();
-      console.log(`🗑️ QR supprimé: ${qrPath}`);
+      //console.log(`🗑️ QR supprimé: ${qrPath}`);
     }
 
     return { success: true };
