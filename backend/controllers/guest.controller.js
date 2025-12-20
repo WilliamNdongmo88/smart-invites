@@ -336,7 +336,9 @@ const deleteSeveralGuests = async (req, res, next) => {
             const guest = await getGuestAndInvitationRelatedById(id);
             if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
             await delete_guest(id);
-            await deleteGuestFiles(guest.guest_id, guest.invitationToken);
+            if(guest.invitationId) {
+                await deleteGuestFiles(guest.guest_id, guest.invitationToken);
+            }
             returnDatas.push(id);
         }
         return res.status(200).json({message: `Les Invités ${returnDatas} ont été supprimé avec succès!`});

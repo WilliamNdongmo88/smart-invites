@@ -10,9 +10,13 @@ const {
   saveResetCode,
   saveRefreshToken,
   clearRefreshToken,
-  updateUser
+  updateUser,
+  deleteAccount
 } = require('../models/users');
 const { create } = require('qrcode');
+const { getEventsByOrganizerId, deleteEvents } = require('../models/events');
+const { getGuestByEventId, getGuestAndInvitationRelatedById, delete_guest } = require('../models/guests');
+const { deleteGuestFiles } = require('../services/invitation.service');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
@@ -281,5 +285,40 @@ const logout = async (req, res) => {
   }
 };
 
+const deleteProfile = async (req, res, next) => {
+    try {
+        const user = await getUserById(req.params.userId);
+        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        const events = await getEventsByOrganizerId(req.params.userId);
+        if (events.length > 0) {
+            //console.log('USER EVENTS:', events);
+            for (const event of events) {
+              const guests = await getGuestByEventId(event.event_id);
+              if (guests.length > 0) {
+                //console.log('EVENTS GUESTS:', guests);
+                for (const g of guests) {
+                  const guest = await getGuestAndInvitationRelatedById(g.id);
+                  if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
+                  await delete_guest(guest.guest_id);
+                  if(guest.invitationId) {
+                    console.log('Deleting files for guest ID:', guest.guest_id);
+                    await deleteGuestFiles(guest.guest_id, guest.invitationToken);
+                  }
+                  console.log(`Guest with ID ${guest.guest_id} and related invitations deleted.`);
+                }
+              }
+              await deleteEvents(event.event_id);
+              console.log(`Event with ID ${event.event_id} deleted.`);
+            }
+        }
+        await deleteAccount(req.params.userId);
+        console.log(`User with ID ${req.params.userId} deleted.`);
+        return res.status(200).json({ message: 'Utilisateur supprimé avec succès' });
+    } catch (error) {
+        console.error('DELETE USER ERROR:', error.message);
+        next(error);
+    }
+};
+
 module.exports = { register, login, refresh, logout, updatePassword,
-  getMe, forgotPassword, checkCode, resetPassword, updateProfile };
+  getMe, forgotPassword, checkCode, resetPassword, updateProfile, deleteProfile };
