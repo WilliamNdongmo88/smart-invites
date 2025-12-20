@@ -12,7 +12,7 @@ const schedule = require('node-schedule');
 
 const addCheckIn = async (req, res, next) => {
     try {
-        console.log("###body: ", req.body);
+        //console.log("###body: ", req.body);
         let isValid = false;
         const {eventId, invitationId, guestId, token, scannedBy, scanStatus, checkinTime} = req.body;
         if(token=='undefined:undefined') return res.status(404).json({error: "Code Qr invalide !"});
@@ -45,7 +45,7 @@ const addCheckIn = async (req, res, next) => {
                 );
                 // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
                 const schedules = await getEventScheduleById(eventId);
-                console.log('Executed ? ', schedules.executed);
+                //console.log('Executed ? ', schedules.executed);
                 if (!schedules.executed) {
                     planSchedule(event[0], schedules, organizer, guest);
                 }
@@ -66,12 +66,12 @@ const addCheckIn = async (req, res, next) => {
 
 // Planifier la tâche
 function planSchedule(event, schedules, organizer, guest) {
-    console.log('[schedule 2] date:', schedules.scheduled_for);
+    //console.log('[schedule 2] date:', schedules.scheduled_for);
     const date = formatDate(schedules.scheduled_for);
     
     // on passe une fonction anonyme qui appelle notre fonction async
     schedule.scheduleJob(date, async () => {
-        console.log('=== Job déclenché ===');
+        //console.log('=== Job déclenché ===');
         await sendScheduledThankMessage(event, schedules, organizer, guest);
     });
 }
