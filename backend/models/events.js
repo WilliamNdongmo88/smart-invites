@@ -194,7 +194,7 @@ async function updateEventStatus(eventId, status) {
 }
 
 async function deleteEvents(eventId) {
-    await pool.query(`DELETE FROM EVENTS WHERE id = ?`, [eventId]);
+    await pool.execute(`DELETE FROM EVENTS WHERE id = ?`, [eventId]);
 }
 
 async function getUserByEventId(eventId) {

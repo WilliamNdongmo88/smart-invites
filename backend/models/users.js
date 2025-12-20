@@ -118,6 +118,9 @@ async function updateUser(userId, updatedUser) {
   ]);
 }
 
+async function deleteAccount(userId) {
+    await pool.query(`DELETE FROM USERS WHERE id = ?`, [userId]);
+}
 
 module.exports = {
     initUserModel, 
@@ -130,5 +133,6 @@ module.exports = {
     getUserById,
     saveRefreshToken,
     updateUserPassword,
-    clearRefreshToken
+    clearRefreshToken,
+    deleteAccount
 }

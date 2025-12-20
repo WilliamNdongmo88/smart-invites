@@ -263,7 +263,7 @@ async function updateRsvpStatusGuest(guestId, rsvpStatus) {
 }
 
 async function delete_guest(guestId) {
-    await pool.query(`DELETE FROM GUESTS WHERE id=?`, [guestId]);
+    await pool.execute(`DELETE FROM GUESTS WHERE id=?`, [guestId]);
 }
 
 module.exports = {initGuestModel, createGuest, getGuestById,getGuestByEmail,

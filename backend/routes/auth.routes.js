@@ -179,4 +179,6 @@ router.post('/reset-password', AuthController.resetPassword);
 router.post('/update-password/:userId', AuthController.updatePassword);
 router.post('/add-user', AuthController.register);
 
+router.delete('/delete-account/:userId', AuthController.deleteProfile);
+
 module.exports = router ;
