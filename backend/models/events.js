@@ -60,32 +60,46 @@ async function getEventAndInvitationById(eventId) {
     `, [eventId]);
     return result[0];
 }
+
 async function getEventWithTotalGuest() {
-        const result = await pool.query(`
-        SELECT
-            e.id AS event_id,
-            e.title,
-            e.description,
-            e.event_date,
-            e.event_location,
-            e.max_guests,
-            e.has_plus_one,
-            e.foot_restriction,
-            e.status,
-            e.type,
-            e.budget,
-            e.event_name_concerned1,
-            e.event_name_concerned2,
-            COUNT(g.id) AS total_guests,
-            SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
-            SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
-            SUM(CASE WHEN g.rsvp_status = 'DECLINED' THEN 1 ELSE 0 END) AS declined_count
-        FROM EVENTS e
-        LEFT JOIN GUESTS g ON g.event_id = e.id
-        GROUP BY e.id
-    `
-    );
-    return result[0];
+  const [rows] = await pool.query(`
+    SELECT
+      e.id AS event_id,
+      e.title,
+      e.description,
+      e.event_date,
+      e.event_location,
+      e.max_guests,
+      e.has_plus_one,
+      e.foot_restriction,
+      e.status,
+      e.type,
+      e.budget,
+      e.event_name_concerned1,
+      e.event_name_concerned2,
+      COUNT(g.id) AS total_guests,
+      SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
+      SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
+      SUM(CASE WHEN g.rsvp_status = 'DECLINED' THEN 1 ELSE 0 END) AS declined_count
+    FROM EVENTS e
+    LEFT JOIN GUESTS g ON g.event_id = e.id
+    GROUP BY
+      e.id,
+      e.title,
+      e.description,
+      e.event_date,
+      e.event_location,
+      e.max_guests,
+      e.has_plus_one,
+      e.foot_restriction,
+      e.status,
+      e.type,
+      e.budget,
+      e.event_name_concerned1,
+      e.event_name_concerned2
+  `);
+
+  return rows;
 }
 
 async function getEventById(eventId) {
@@ -136,7 +150,19 @@ async function getEventsByOrganizerId(organizerId) {
         FROM EVENTS e
         LEFT JOIN GUESTS g ON g.event_id = e.id
         WHERE organizer_id = ?
-        GROUP BY e.id
+        GROUP BY e.id,
+            e.title,
+            e.description,
+            e.event_date,
+            e.event_location,
+            e.max_guests,
+            e.has_plus_one,
+            e.foot_restriction,
+            e.status,
+            e.type,
+            e.budget,
+            e.event_name_concerned1,
+            e.event_name_concerned2
     `, [organizerId]);
     //console.log("event: ", event);
     return event;
@@ -171,7 +197,24 @@ async function getEventWithTotalGuestById(eventId) {
         LEFT JOIN GUESTS g ON g.event_id = e.id
         LEFT JOIN USERS u ON u.id=e.organizer_id
         WHERE e.id = ?
-        GROUP BY e.id
+        GROUP BY e.id,
+            e.title,
+            e.description,
+            e.event_date,
+            e.event_location,
+            e.max_guests,
+            e.status,
+            e.created_at,
+            e.updated_at,
+            e.organizer_id,
+            e.foot_restriction,
+            e.has_plus_one,
+            e.type,
+            e.budget,
+            e.event_name_concerned1,
+            e.event_name_concerned2,
+            u.id,
+            u.email
     `, [eventId]
     );
     return result[0];
