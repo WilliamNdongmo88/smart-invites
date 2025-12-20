@@ -24,7 +24,7 @@ const addGuest = async (req, res, next) => {
             return res.status(400).json({ error: "La liste ne doit pas être vide" });
         }
         let guestDatas = req.body;
-        //console.log('guestDatas :: ', guestDatas);
+        console.log('guestDatas :: ', guestDatas);
         let returnDatas = [];
         for (const guest of guestDatas) {
             const { eventId, fullName, email, phoneNumber, rsvpStatus, 
