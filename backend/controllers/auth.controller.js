@@ -141,6 +141,88 @@ const login = async (req, res, next) => {
   }
 };
 
+const loginWithGoogle = async (req, res, next) => {
+  try {
+    const { tokenId } = req.body;
+    if (!tokenId) {
+      return res.status(400).json({ error: 'Token ID requis' });
+    }
+    // Vérification du token avec Google
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    console.log('GOOGLE PAYLOAD:', payload);
+
+    const { email, name, sub: googleId, picture } = payload;
+    console.log('Extracted Google user info:', { email, name, googleId, picture });
+    // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
+    
+    let user = await getUserByEmail(email);
+    console.log('user info:', user);
+    if (!user) {
+      // Crée un nouvel utilisateur si non existant
+      const name = payload.name;
+      const randomPassword = Math.random().toString(36).slice(-8);
+      const userId = await createUser({ 
+        name, email, password: randomPassword, role: 'user', avatar_url: picture 
+      });
+      user = await getUserById(userId);
+    }
+    const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
+    const refreshToken = signRefreshToken({ id: user.id });
+    await saveRefreshToken(user.id, refreshToken);
+    return res.status(200).json({
+      message: 'Connexion Google réussie ✅',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      accessToken,
+      refreshToken
+    });
+  } catch (error) {
+    console.error('GOOGLE LOGIN ERROR:', error.message);
+    next(error);
+  }
+};
+
+const loginWithGoogles = async (req, res, next) => {
+  try {
+    const { tokenId } = req.body;
+
+    // Vérifier le token ID auprès de Google
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    console.log('GOOGLE PAYLOAD:', payload);
+
+    const { email, name, sub: googleId, picture } = payload;
+
+    // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
+    const user = { email, name, googleId, picture };
+    console.log('Google user info:', user);
+
+    // Générer un JWT pour ton application
+    const token = jwt.sign(user, process.env.JWT_SECRET, process.env.JWT_EXPIRES_IN || '1d');
+    console.log('Generated JWT:', token);
+
+    res.json({ token, user });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ error: 'Token Google invalide' });
+  }
+}
+
 const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -320,5 +402,5 @@ const deleteProfile = async (req, res, next) => {
     }
 };
 
-module.exports = { register, login, refresh, logout, updatePassword,
+module.exports = { register, login, loginWithGoogle, refresh, logout, updatePassword,
   getMe, forgotPassword, checkCode, resetPassword, updateProfile, deleteProfile };
