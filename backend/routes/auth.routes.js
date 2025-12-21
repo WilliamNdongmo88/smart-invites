@@ -80,6 +80,8 @@ router.put('/:userId', AuthController.updateProfile);
  */
 router.post('/login', loginLimiter, AuthController.login);
 
+router.post('/google', loginLimiter, AuthController.loginWithGoogle);
+
 /**
  * @swagger
  * /api/auth/refresh-token:

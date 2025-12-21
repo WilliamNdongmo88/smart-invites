@@ -43,7 +43,8 @@ const addGuest = async (req, res, next) => {
         return res.status(201).json(returnDatas);
     } catch (error) {
         console.error('CREATE GUEST ERROR:', error.message);
-        next(error);
+        //next(error);
+        return res.status(500).json({message: 'Le fichier des invités est vide ou invalide'} );
     }
 };
 
