@@ -3,8 +3,8 @@ const router = express.Router();
 const InvitationController = require('../controllers/invitation.controller');
 const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
 
-router.post('/generate/:guestId', authenticateToken, requireRole('admin'), InvitationController.genererInvitation);
-router.post('/generate-several', authenticateToken, requireRole('admin'), InvitationController.genererSeveralInvitations);
+router.post('/generate/:guestId', authenticateToken, InvitationController.genererInvitation);//, requireRole('admin')
+router.post('/generate-several', authenticateToken, InvitationController.genererSeveralInvitations);//, requireRole('admin')
 router.get("/view/:guestId", InvitationController.viewInvitation);
 router.get("/download/:guestId", InvitationController.downloadQRCode);
 router.get("/qrcode/view/:token", InvitationController.viewQrCode);
