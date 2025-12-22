@@ -26,8 +26,18 @@ async function createNotification(eventId, title, message, type, isRead) {
 }
 
 async function getNotifications() {
-    const [result] = await pool.query(`SELECT * FROM NOTIFICATIONS`);
-    return result ?? null; // si vide → null
+  const [result] = await pool.query(`
+    SELECT 
+      n.*,
+      u.id AS organizer_id,
+      u.name AS organizer_name,
+      u.email AS organizer_email
+    FROM NOTIFICATIONS n
+    JOIN EVENTS e ON n.event_id = e.id
+    JOIN USERS u ON e.organizer_id = u.id
+    ORDER BY n.date DESC
+  `);
+  return result ?? null;
 }
 
 async function getNotificationById(notifId) {
