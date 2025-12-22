@@ -34,9 +34,9 @@ const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
  *       409:
  *         description: Organizer not found with ID:1
  */
-router.post('/create-event',authenticateToken, requireRole('admin'), EventController.create_Event);
+router.post('/create-event',authenticateToken, EventController.create_Event);//, requireRole('admin')
 
-router.post('/guest-pdf',authenticateToken, requireRole('admin'), EventController.generatePresentGuests);
+router.post('/guest-pdf',authenticateToken, EventController.generatePresentGuests);//, requireRole('admin')
 
 /**
  * @swagger
