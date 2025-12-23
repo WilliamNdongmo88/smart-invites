@@ -16,6 +16,7 @@ const initGuestModel = async () => {
         plus_one_name_diet_restr VARCHAR(255),
         guest_has_plus_one_autorise_by_admin BOOLEAN NOT NULL DEFAULT false,
         notes TEXT,
+        table_number VARCHAR(50),
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES EVENTS(id) ON DELETE CASCADE,
