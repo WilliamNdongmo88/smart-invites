@@ -6,6 +6,7 @@ const initCheckinModel = async () => {
     CREATE TABLE IF NOT EXISTS CHECKINS (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         event_id INT UNSIGNED NOT NULL,
+        guest_id INT UNSIGNED NOT NULL,
         invitation_id INT UNSIGNED NOT NULL,
         scanned_by VARCHAR(255),
         device_id VARCHAR(255),
@@ -13,6 +14,7 @@ const initCheckinModel = async () => {
         location VARCHAR(255),
         checkin_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES EVENTS(id) ON DELETE CASCADE,
+        FOREIGN KEY (guest_id) REFERENCES GUESTS(id) ON DELETE CASCADE,
         FOREIGN KEY (invitation_id) REFERENCES INVITATIONS(id) ON DELETE CASCADE,
         CONSTRAINT valid_scan_status CHECK (scan_status IN ('VALID', 'INVALID', 'DUPLICATE', 'EXPIRED'))
     )
@@ -21,17 +23,18 @@ const initCheckinModel = async () => {
 };
 
 
-async function createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime) {
+async function createCheckin(eventId, guestId, invitationId, scannedBy, scanStatus, checkinTime) {
     const safeEventId = eventId ?? null;// Pour éviter les undefined
+    const safeGuestId = guestId ?? null;
     const safeInvitationId = invitationId ?? null;
     const safeScannedBy = scannedBy ?? null;
     const safeScanStatus = scanStatus ?? null;
     const safeCheckinTime = checkinTime ? new Date(checkinTime) : new Date();
 
     const [result] = await pool.query(
-        `INSERT INTO CHECKINS (event_id, invitation_id, scanned_by, scan_status, checkin_time)
-         VALUES (?, ?, ?, ?, ?)`,
-        [safeEventId, safeInvitationId, safeScannedBy, safeScanStatus, safeCheckinTime]
+        `INSERT INTO CHECKINS (event_id, guest_id, invitation_id, scanned_by, scan_status, checkin_time)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [safeEventId, safeGuestId, safeInvitationId, safeScannedBy, safeScanStatus, safeCheckinTime]
     );
 
     return result.insertId;
@@ -47,6 +50,38 @@ async function getGuestsCheckIns() {
   return result;
 }
 
+async function getEventAndGuestInfoByGuestId(guestId) {
+  const [rows] = await pool.query(`
+    SELECT
+      c.id AS checkinId,
+      e.id AS eventId,
+      e.title,
+      e.event_date,
+      e.organizer_id,
+      e.type,
+      e.event_name_concerned1,
+      e.event_name_concerned2,
+      g.id AS guestId,
+      g.full_name,
+      g.email,
+      g.table_number,
+      g.phone_number,
+      g.rsvp_status,
+      g.guest_has_plus_one_autorise_by_admin,
+      g.has_plus_one,
+      g.plus_one_name,
+      g.dietary_restrictions,
+      u.id AS organizerId,
+      u.email AS emailOrganizer
+    FROM CHECKINS c
+    JOIN EVENTS e ON c.event_id = e.id
+    JOIN GUESTS g ON g.id = ?
+    JOIN USERS u ON u.id = e.organizer_id
+  `, [guestId]);
+
+  return rows[0] || null;
+}
+
 async function updateCheckin(checkinId, eventId, invitationId, scannedBy, scanStatus, checkinTime) {
   const [result] = await pool.query(`
     UPDATE CHECKINS 
@@ -57,4 +92,5 @@ async function updateCheckin(checkinId, eventId, invitationId, scannedBy, scanSt
   return result.insertId;
 }
 
-module.exports = {initCheckinModel, createCheckin, getGuestsCheckIns, getCheckinByInvitationId, updateCheckin};
+module.exports = {initCheckinModel, createCheckin, getGuestsCheckIns, 
+  getCheckinByInvitationId, updateCheckin, getEventAndGuestInfoByGuestId};

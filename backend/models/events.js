@@ -220,6 +220,70 @@ async function getEventWithTotalGuestById(eventId) {
     return result[0];
 }
 
+async function getEventWithGuestByEventId(eventId, guestId) {
+    const result = await pool.query(`
+        SELECT
+            e.id AS eventId,
+            e.title,
+            e.description,
+            e.event_date,
+            e.event_location,
+            e.status,
+            e.organizer_id,
+            e.foot_restriction,
+            e.has_plus_one,
+            e.type,
+            e.event_name_concerned1,
+            e.event_name_concerned2,
+            g.id AS guestId,
+            g.full_name,
+            g.email,
+            g.table_number,
+            g.phone_number,
+            g.rsvp_status,
+            g.guest_has_plus_one_autorise_by_admin,
+            g.has_plus_one,
+            g.plus_one_name,
+            g.dietary_restrictions,
+            u.id AS organizerId,
+            u.email AS emailOrganizer
+        FROM EVENTS e
+        LEFT JOIN GUESTS g ON g.event_id = e.id
+        LEFT JOIN USERS u ON u.id=e.organizer_id
+        WHERE e.id = ? AND g.id = ?
+        GROUP BY e.id,
+            e.title,
+            e.description,
+            e.event_date,
+            e.event_location,
+            e.max_guests,
+            e.status,
+            e.created_at,
+            e.updated_at,
+            e.organizer_id,
+            e.foot_restriction,
+            e.has_plus_one,
+            e.type,
+            e.budget,
+            e.event_name_concerned1,
+            e.event_name_concerned2,
+            g.id,
+            g.full_name,
+            g.email,
+            g.table_number,
+            g.phone_number,
+            g.rsvp_status,
+            g.guest_has_plus_one_autorise_by_admin,
+            g.has_plus_one,
+            g.plus_one_name,
+            g.dietary_restrictions,
+            u.id,
+            u.email
+    `, [eventId, guestId]
+    );
+    return result[0];
+}
+
 async function updateEvent(eventId, organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, 
             footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2 ) {
 
@@ -261,5 +325,5 @@ module.exports = {
     getEventById, getEventsByOrganizerId,deleteEvents,
     getEventWithTotalGuestById, getEventWithTotalGuest,
     getGuestEmailRelatedToEvent, getEventAndInvitationById,
-    getUserByEventId
+    getUserByEventId, getEventWithGuestByEventId
 };
