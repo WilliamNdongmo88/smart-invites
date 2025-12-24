@@ -1,5 +1,5 @@
-const { createCheckin, getCheckinByInvitationId, updateCheckin } = require("../models/checkins");
-const { getEventScheduleById, updateEventSchedule } = require("../models/event_schedules");
+const { createCheckin, getCheckinByInvitationId, updateCheckin, getEventAndGuestInfoByGuestId } = require("../models/checkins");
+const { getEventScheduleById } = require("../models/event_schedules");
 const { getEventById } = require("../models/events");
 const { getGuestById, getEventByGuestId, updateRsvpStatusGuest, getAllPresentGuest } = require("../models/guests");
 const { getInvitationById, getGuestInvitationByToken } = require("../models/invitations");
@@ -25,7 +25,7 @@ const addCheckIn = async (req, res, next) => {
             const invitation = await getInvitationById(invitationId);
             if(!invitation) return res.status(404).json({error: "Invitation non trouvé !"});
             if(invitation[0].status=='USED') return res.status(409).json({error: "Code Qr déjà utilisé !"});
-            const checkin = await createCheckin(eventId, invitationId, scannedBy, scanStatus, checkinTime);
+            const checkin = await createCheckin(eventId, guestId, invitationId, scannedBy, scanStatus, checkinTime);
             if (checkin) {
                 await validateAndUseInvitation(invitation);
                 await updateRsvpStatusGuest(guestId, 'present');
@@ -50,8 +50,9 @@ const addCheckIn = async (req, res, next) => {
                     planSchedule(event[0], schedules, organizer, guest);
                 }
             }
-            
-            return res.status(201).json(checkin);
+            const event_and_guest_datas = await getEventAndGuestInfoByGuestId(guestId);
+            console.log('event_and_guest_datas:', event_and_guest_datas);
+            return res.status(201).json(event_and_guest_datas);
         } else {
             let checkinId = existing.id;
             existing.scan_status = 'DUPLICATE';

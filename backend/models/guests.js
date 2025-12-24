@@ -186,6 +186,7 @@ async function getAllGuestAndInvitationRelatedByEventId(eventId) {
             g.full_name,
             g.email,
             g.phone_number,
+            g.table_number,
             g.rsvp_status,
             g.has_plus_one,
             g.plus_one_name,
@@ -212,6 +213,7 @@ async function getGuestAndInvitationRelatedById(guestId) {
             g.id AS guest_id,
             g.full_name,
             g.email,
+            g.table_number,
             g.phone_number,
             g.rsvp_status,
             g.guest_has_plus_one_autorise_by_admin,
@@ -249,12 +251,12 @@ async function getGuestAndInvitationRelatedById(guestId) {
     return rows[0] || null;
 }
 
-async function update_guest(guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, 
+async function update_guest(guestId, eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus, hasPlusOne, 
     guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate) {
-    await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, email=?, phone_number=?, 
+    await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, table_number=?, email=?, phone_number=?, 
         rsvp_status=?, has_plus_one=?,guest_has_plus_one_autorise_by_admin=?, plus_one_name=?, 
         notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? WHERE id=?`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, notes, 
+        [eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus, hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, notes, 
             dietaryRestrictions, plusOneNameDietRestr, updateDate, guestId]
     );
 }

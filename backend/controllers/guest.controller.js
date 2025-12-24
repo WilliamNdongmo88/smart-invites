@@ -185,112 +185,124 @@ const updateGuest = async (req, res, next) => {
         let updatedGuest = {};
         let isValid = false;
         let {
-            eventId, fullName, email, phoneNumber, rsvpStatus,hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
-            notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken
+            eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus,hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
+            notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken, fromEditePage
         } = req.body;
+        console.log('fromEditePage:', fromEditePage);
         console.log('req.body:', req.body);
         let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
-        console.log('guestInBd:', guest);
-        if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
-        if(eventId==null) eventId = guest.event_id;
-        if(fullName==null) fullName = guest.full_name;
-        if(email==null) email = guest.email;
-        if(phoneNumber==null) phoneNumber = guest.phone_number;
-        if(rsvpStatus==null){
-            rsvpStatus = guest.rsvp_status;
-        }else if(rsvpStatus!=null && rsvpStatus=='confirmed' && hasPlusOne==false){
-            // Si le RSVP est confirmé et qu'il n'y a personne qui l'accompagne
-            // Envoyer l'invitation Qr-Code déjà généré par mail
-            updateDate = new Date();
-            const invitation = await getGuestInvitationById(req.params.guestId);
-            //console.log('invitation:', invitation[0]);
-            if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
-            if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
-            try {
-                const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
-                await sendInvitationToGuest(invite, invitation[0].qr_code_url);
+        // console.log('guestInBd:', guest);
+        if(!fromEditePage){
+            if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
+            if(eventId==null) eventId = guest.event_id;
+            if(fullName==null) fullName = guest.full_name;
+            if(email==null) email = guest.email;
+            if(tableNumber==null) tableNumber = guest.table_number;
+            if(phoneNumber==null) phoneNumber = guest.phone_number;
+            if(rsvpStatus==null){
+                rsvpStatus = guest.rsvp_status;
+            }else if(rsvpStatus!=null && rsvpStatus=='confirmed' && hasPlusOne==false){
+                console.log('Mise à jour pour invité sans plus-one');
+                // Si le RSVP est confirmé et qu'il n'y a personne qui l'accompagne
+                // Envoyer l'invitation Qr-Code déjà généré par mail
+                updateDate = new Date();
+                const invitation = await getGuestInvitationById(req.params.guestId);
+                console.log('invitation:', invitation[0]);
+                if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
+                if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
+                try {
+                    const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
+                    await sendInvitationToGuest(invite, invitation[0].qr_code_url);
+                    const event = await getEventByGuestId(guest.id);
+                    const organizer = await getUserById(event[0].organizerId);
+                    await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                    await createNotification(
+                        event[0].eventId,
+                        `Reponse Invité.`,
+                        `L'invité ${guest.full_name} vient d’accepter votre invitation.`,
+                        'info',
+                        false
+                    );
+                    isValid = true;
+                } catch (error) {
+                    console.error('send email ERROR:', error.message);
+                    next(error);
+                }
+            }else if(rsvpStatus=='declined'){
+                //console.log('RSVP décliné, pas d\'envoi d\'invitation');
+                // Si le RSVP est décliné, ne pas envoyer l'invitation
+                const invitation = await getGuestInvitationById(req.params.guestId);
+                if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
+                if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
+                updateDate = new Date();
+                isValid = true;
                 const event = await getEventByGuestId(guest.id);
                 const organizer = await getUserById(event[0].organizerId);
                 await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                 await createNotification(
                     event[0].eventId,
-                    `Reponse Invité.`,
-                    `L'invité ${guest.full_name} vient d’accepter votre invitation.`,
+                    `❌ Reponse Invité.`,
+                    `L'invité ${guest.full_name} a décliné votre invitation.`,
                     'info',
                     false
                 );
-                isValid = true;
-            } catch (error) {
-                console.error('send email ERROR:', error.message);
-                next(error);
             }
-        }else if(rsvpStatus=='declined'){
-            //console.log('RSVP décliné, pas d\'envoi d\'invitation');
-            // Si le RSVP est décliné, ne pas envoyer l'invitation
-            const invitation = await getGuestInvitationById(req.params.guestId);
-            if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
-            if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
-            updateDate = new Date();
-            isValid = true;
-            const event = await getEventByGuestId(guest.id);
-            const organizer = await getUserById(event[0].organizerId);
-            await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
-            await createNotification(
-                event[0].eventId,
-                `❌ Reponse Invité.`,
-                `L'invité ${guest.full_name} a décliné votre invitation.`,
-                'info',
-                false
-            );
-        }
-        if(guesthasPlusOneAutoriseByAdmin==null) {guesthasPlusOneAutoriseByAdmin = guest.guest_has_plus_one_autorise_by_admin;}
-        if(hasPlusOne==null || hasPlusOne==undefined) hasPlusOne = guest.has_plus_one;
-        if(plusOneName==null) plusOneName = guest.plus_one_name;
-        if(updateDate==null) updateDate = guest.updated_at;
-        if(notes==null) notes = guest.notes;
-        if(dietaryRestrictions==null) dietaryRestrictions = guest.dietary_restrictions;
-        if(plusOneNameDietRestr==null) plusOneNameDietRestr = guest.plus_one_name_diet_restr;
-        //console.log('updatedGuest:', updatedGuest);
-        if (rsvpStatus=='confirmed' && hasPlusOne==true && guest.has_plus_one==false) {
-            // Si le champ hasPlusOne est passé à true
-            // Supprimer l'ancienne invitation et les fichiers associés(QR code et PDF)
-            // Envoyer une nouvelle invitation en tenant compte de la personne qui l'accompagne
-            try {
+            if(guesthasPlusOneAutoriseByAdmin==null) {guesthasPlusOneAutoriseByAdmin = guest.guest_has_plus_one_autorise_by_admin;}
+            if(hasPlusOne==null || hasPlusOne==undefined) hasPlusOne = guest.has_plus_one;
+            if(plusOneName==null) plusOneName = guest.plus_one_name;
+            if(updateDate==null) updateDate = guest.updated_at;
+            if(notes==null) notes = guest.notes;
+            if(dietaryRestrictions==null) dietaryRestrictions = guest.dietary_restrictions;
+            if(plusOneNameDietRestr==null) plusOneNameDietRestr = guest.plus_one_name_diet_restr;
+            if (rsvpStatus=='confirmed' && hasPlusOne==true && guest.has_plus_one==false) {
+                console.log('Mise à jour pour invité avec plus-one');
+                // Si le champ hasPlusOne est passé à true
+                // Supprimer l'ancienne invitation et les fichiers associés(QR code et PDF)
+                // Envoyer une nouvelle invitation en tenant compte de la personne qui l'accompagne
+                try {
+                    const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
+                    if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
+                    if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
+                    await deleteGuestFiles(guest.guest_id, guest.invitationToken);
+                    await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.jpg");
+                    const buffer = await generateGuestPdf(guest);
+                    await uploadPdfToFirebase(guest, buffer);
+                    await sendInvitationToGuest(guest, guest.qrCodeUrl);
+                    isValid = true;
+                    const event = await getEventByGuestId(guest.guest_id);
+                    const organizer = await getUserById(event[0].organizerId);
+                    await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                    await createNotification(
+                        event[0].eventId,
+                        `Reponse Invité.`,
+                        `L'invité ${guest.full_name} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
+                        'info',
+                        false
+                    );
+                } catch (error) {
+                    console.error('sendInvitationToGuest ERROR:', error.message);
+                    next(error);
+                }
+            }
+            if(isValid){
+                await update_guest(req.params.guestId, eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus, hasPlusOne,
+                guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
+                updatedGuest = await getGuestById(req.params.guestId);
+            }else{
                 const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
                 if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                 if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
-                await deleteGuestFiles(guest.guest_id, guest.invitationToken);
-                await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.jpg");
-                const buffer = await generateGuestPdf(guest);
-                await uploadPdfToFirebase(guest, buffer);
-                await sendInvitationToGuest(guest, guest.qrCodeUrl);
-                isValid = true;
-                const event = await getEventByGuestId(guest.guest_id);
-                const organizer = await getUserById(event[0].organizerId);
-                await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
-                await createNotification(
-                    event[0].eventId,
-                    `Reponse Invité.`,
-                    `L'invité ${guest.full_name} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
-                    'info',
-                    false
-                );
-            } catch (error) {
-                console.error('sendInvitationToGuest ERROR:', error.message);
-                next(error);
+                console.log('Aucune mise à jour effectuée car les conditions ne sont pas remplies.');
             }
-        }
-        if(isValid){
-            await update_guest(req.params.guestId, eventId, fullName, email, phoneNumber, rsvpStatus, hasPlusOne,
+        }else{
+            updateDate = new Date();
+            await update_guest(req.params.guestId, eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus, guest.has_plus_one,
             guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate);
             updatedGuest = await getGuestById(req.params.guestId);
-        }else{
-            const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
-            if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
-            if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
-            console.log('Aucune mise à jour effectuée car les conditions ne sont pas remplies.');
         }
+        
+        //console.log('updatedGuest:', updatedGuest);
         return res.status(200).json({updatedGuest});
     } catch (error) {
         console.error('UPDATE GUEST ERROR:', error.message);
