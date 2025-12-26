@@ -51,32 +51,32 @@ async function getGuestsCheckIns() {
 }
 
 async function getEventAndGuestInfoByGuestId(guestId) {
-  const [rows] = await pool.query(`
+  const [rows] = await pool.execute(`
     SELECT
       c.id AS checkinId,
+      c.scan_status,
       e.id AS eventId,
       e.title,
+      e.event_location,
       e.event_date,
       e.organizer_id,
-      e.type,
-      e.event_name_concerned1,
-      e.event_name_concerned2,
       g.id AS guestId,
-      g.full_name,
+      g.full_name AS guestName,
       g.email,
       g.table_number,
       g.phone_number,
       g.rsvp_status,
-      g.guest_has_plus_one_autorise_by_admin,
+      g.plus_one_name_diet_restr,
       g.has_plus_one,
       g.plus_one_name,
       g.dietary_restrictions,
       u.id AS organizerId,
       u.email AS emailOrganizer
     FROM CHECKINS c
+    JOIN GUESTS g ON g.id = c.guest_id
     JOIN EVENTS e ON c.event_id = e.id
-    JOIN GUESTS g ON g.id = ?
     JOIN USERS u ON u.id = e.organizer_id
+    WHERE g.id = ? AND c.scan_status IN ('VALID', 'DUPLICATE')
   `, [guestId]);
 
   return rows[0] || null;

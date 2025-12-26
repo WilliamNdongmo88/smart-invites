@@ -925,8 +925,78 @@ async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
     console.log(`✅ Email(Report of thank-email) envoyé à ${organizer.email}`);
 }
 
+async function manualSendThankYouMailToPresentGuests(eventId, thankMessage, guest) {
+
+  const brevo = new Brevo.TransactionalEmailsApi();
+  brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+  const logo = await getLogoUrlFromFirebase('logo.png');
+  if (!logo) throw new Error("Logo non trouvé.");
+
+  const htmlContent = `
+  <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+
+    <!-- HEADER -->
+    <div style="background: linear-gradient(90deg, #a89147ff, #D4AF37); padding: 10px 0; text-align: center;">
+      <img src="${logo}" alt="SmartInvite Logo"
+        style="width:180px; height:130px; margin:auto; display:block;">
+    </div>
+
+    <!-- BODY -->
+    <div style="
+      max-width: 650px;
+      background:#ffffff;
+      margin: 30px auto;
+      padding: 25px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    ">
+
+      <!-- Message personnalisé -->
+      <div style="
+        margin: 20px 0;
+        padding: 15px;
+        background: #f9f7ef;
+        border-left: 4px solid #D4AF37;
+        font-style: italic;
+      ">
+        ${thankMessage}
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div style="
+      background: linear-gradient(90deg, #a89147ff, #D4AF37);
+      padding: 25px 0;
+      text-align: center;
+      color: #ffffff;
+      font-size: 14px;
+    ">
+      <p style="margin: 0;">Powered by <strong>Smart-Invites</strong></p>
+      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+        ${process.env.API_URL}
+      </a>
+    </div>
+
+  </div>
+  `;
+
+  const sendSmtpEmail = {
+    sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
+    to: [{ email: guest.email, name: guest.full_name }],
+    subject: `✅ Merci pour votre présence`,
+    htmlContent
+  };
+
+  await brevo.sendTransacEmail(sendSmtpEmail);
+
+  console.log(`✅ Email de remerciement envoyé à ${guest.email}`);
+  return true;
+}
+
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
   sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
-  notifications
+  notifications, manualSendThankYouMailToPresentGuests
 };
