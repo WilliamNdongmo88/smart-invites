@@ -6,7 +6,7 @@ const { getInvitationById, getGuestInvitationByToken } = require("../models/invi
 const { createNotification } = require("../models/notification");
 const { getUserById } = require("../models/users");
 const { validateAndUseInvitation } = require("../services/invitation.service");
-const { sendGuestPresenceToOrganizer,sendThankYouMailToPresentGuests
+const { sendGuestPresenceToOrganizer,sendThankYouMailToPresentGuests, manualSendThankYouMailToPresentGuests
       } = require("../services/notification.service");
 const schedule = require('node-schedule');
 
@@ -65,6 +65,35 @@ const addCheckIn = async (req, res, next) => {
     }
 }
 
+const getValidCheckIn = async (req, res, next) => {
+  try {
+    const { guestIds } = req.body;
+
+    console.log("GuestIds reçus :", guestIds);
+
+    if (!Array.isArray(guestIds) || guestIds.length === 0) {
+      return res.status(400).json({ error: "guestIds invalide ou vide" });
+    }
+
+    let event_and_guest_datas = [];
+
+    for (const guestId of guestIds) {
+      const data = await getEventAndGuestInfoByGuestId(guestId);
+      if (data) event_and_guest_datas.push(data);
+    }
+
+    if (event_and_guest_datas.length === 0) {
+      return res.status(404).json({ error: "Aucun invité trouvé" });
+    }
+
+    return res.status(200).json(event_and_guest_datas);
+
+  } catch (error) {
+    console.error('GET CHECKIN ERROR:', error);
+    next(error);
+  }
+};
+
 // Planifier la tâche
 function planSchedule(event, schedules, organizer, guest) {
     //console.log('[schedule 2] date:', schedules.scheduled_for);
@@ -94,6 +123,28 @@ async function sendScheduledThankMessage(event, schedules, organizer, guest) {
     }
 }
 
+async function sendManualThankMessage(req, res, next) {
+    try {
+        //console.log('Body:', req.body.datas);
+        const {eventId, guests, message} = req.body.datas;
+        // Envoi des mails en parallèle contrôlée (plus rapide)
+        await Promise.all(
+            guests.map(g => manualSendThankYouMailToPresentGuests(eventId, message, g)),
+              await createNotification(
+                eventId,
+                `Message de remerciement envoyé`,
+                `Le message de remerciement a été envoyé à tous les invités presents.`,
+                'info',
+                false
+            ),
+        );
+        return res.status(200).json({message: "Message de remerciement envoyé avec succès"})
+    } catch (error) {
+        console.error("Erreur lors de l'envoi du mail:", error);
+        next(error)
+    }
+}
+
 function formatDate(iso){
     let d = new Date(iso);
 
@@ -113,4 +164,4 @@ function formatDate(iso){
     return result;
 }
 
-module.exports = {addCheckIn, sendScheduledThankMessage};
+module.exports = {addCheckIn, sendScheduledThankMessage, getValidCheckIn, sendManualThankMessage};
