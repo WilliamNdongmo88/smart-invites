@@ -2,9 +2,10 @@ const { createCheckinP, getCheckinPByEventId, updateCheckinP } = require("../mod
 
 const add_checkin_p = async (req, res, next) => {
     try {
+        console.log('[add_checkin_p] body:', req.body);
         const {eventId, automaticCapture, confirmationSound, scannedCodes, scannedSuccess, scannedErrors} = req.body;
         const existing = await getCheckinPByEventId(eventId);
-        //console.log('[add_checkin_p] existing:', existing);
+        console.log('[add_checkin_p] existing:', existing);
         if(existing == undefined || existing == null){
             await createCheckinP(eventId, automaticCapture, confirmationSound, scannedCodes, scannedSuccess, scannedErrors);
         }else{

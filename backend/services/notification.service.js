@@ -1,7 +1,7 @@
 const Brevo = require('@getbrevo/brevo');
 const axios = require('axios');
 const { createNotification, getNotifications } = require('../models/notification');
-const { getEventScheduleById, updateEventSchedule } = require('../models/event_schedules');
+const { getEventScheduleByEventId, updateEventSchedule } = require('../models/event_schedules');
 const { getLogoUrlFromFirebase } = require('./qrCodeService');
 require('dotenv').config();
 
@@ -741,27 +741,37 @@ async function sendThankYouMailToPresentGuests(event, schedules, organizer, gues
     if(!logo) throw new Error("Logo non trouvé.");
 
   let sentences = '';
+  let sentences_2 = '';
+  let sentences_3 = '';
   let concerned = '';
   let eventType = '';
   switch (event.type) {
     case 'wedding':
         eventType = 'mariage'
         sentences = `Nous tenons à vous remercier chaleureusement pour votre présence à notre ${eventType}`
+        sentences_2 = "Nous espérons vous revoir très bientôt lors de nos prochaines rencontres."
+        sentences_3 = "Avec nos sincères remerciements,"
         concerned = `Le couple ${event.event_name_concerned1} et ${event.event_name_concerned2}`
       break;
     case 'engagement':
         eventType = 'fiançailles'
         sentences = `Nous tenons à vous remercier chaleureusement pour votre présence à nos ${eventType}`
+        sentences_2 = "Nous espérons vous revoir très bientôt lors de nos prochaines rencontres."
+        sentences_3 = "Avec nos sincères remerciements,"
         concerned = `Les futurs mariés ${event.event_name_concerned1} et ${event.event_name_concerned2}`
       break;
     case 'anniversary':
         eventType = 'anniversaire de mariage'
         sentences = `Nous tenons à vous remercier chaleureusement pour votre présence à notre ${eventType}`
+        sentences_2 = "Nous espérons vous revoir très bientôt lors de nos prochaines rencontres."
+        sentences_3 = "Avec nos sincères remerciements,"
         concerned = `Le couple ${event.event_name_concerned1} et ${event.event_name_concerned2}`
       break;
     case 'birthday':
         eventType = 'anniversaire'
         sentences = `Je tiens à vous remercier chaleureusement pour votre présence à mon ${eventType}`
+        sentences_2 = "J'espére vous revoir très bientôt lors de nos prochaines rencontres."
+        sentences_3 = "Avec mes sincères remerciements,"
         concerned = event.event_name_concerned1
       break;
   }
@@ -798,10 +808,10 @@ async function sendThankYouMailToPresentGuests(event, schedules, organizer, gues
             </p>
 
             <p>
-              Nous espérons vous revoir très bientôt lors de nos prochaines rencontres.
+              ${sentences_2}
             </p>
 
-            <p style="margin-top:20px;">Avec nos sincères remerciements,</p>
+            <p style="margin-top:20px;">${sentences_3}</p>
 
           <p style="font-weight:bold;">${concerned}</p>
         </div>
@@ -837,7 +847,7 @@ async function sendThankYouMailToPresentGuests(event, schedules, organizer, gues
 
 async function notifications(schedules, organizer) {
   try {
-    const schedule_bd = await getEventScheduleById(schedules.event_id);
+    const schedule_bd = await getEventScheduleByEventId(schedules.event_id);
     console.log('schedule_bd: ', schedule_bd);
     if (!schedule_bd.is_checkin_executed) {
       console.log('is_checkin_executed: ', schedule_bd.is_checkin_executed);

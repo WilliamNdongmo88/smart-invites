@@ -35,11 +35,13 @@ async function createGuest(eventId, fullName, email, phoneNumber,
     return result.insertId;
 }
 
-async function createGuestFromLink(eventId, fullName, email, phoneNumber, 
-            rsvpStatus, guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, hasPlusOne, plusOneName) {
+async function createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpStatus, 
+    guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName) {
     const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
-        rsvp_status, guest_has_plus_one_autorise_by_admin, dietary_restrictions, has_plus_one, plus_one_name) VALUES(?,?,?,?,?,?,?,?,?)`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, hasPlusOne, plusOneName]);
+        rsvp_status, guest_has_plus_one_autorise_by_admin, dietary_restrictions, plus_one_name_diet_restr, 
+        has_plus_one, plus_one_name) VALUES(?,?,?,?,?,?,?,?,?,?)`, 
+        [eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, 
+        dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName]);
     return result.insertId;
 }
 

@@ -52,7 +52,7 @@ const addGuestFromLink = async (req, res, next) => {
     try {
         console.log('guestData :: ', req.body);
         const { eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, 
-            dietaryRestrictions, hasPlusOne, plusOneName, token} = req.body;
+            dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName, token} = req.body;
         const link = await getLinkByToken(token);
         console.log('link :: ', link);
 
@@ -72,7 +72,7 @@ const addGuestFromLink = async (req, res, next) => {
         if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
 
         const guestId = await createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpStatus, 
-            guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, hasPlusOne, plusOneName);
+            guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName);
 
         // Gestion des fichiers
         const guest = { id: guestId };

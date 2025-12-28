@@ -11,7 +11,7 @@ const schedule = require('node-schedule');
 const { getGuestByInvitationId } = require('../models/invitations');
 const { sendPdfByEmail } = require('../services/notification.service');
 const { sendScheduledThankMessage } = require('./checkin.controller');
-const { getEventScheduleById, createEventSchedule, updateEventSchedule, deleteEventSchedule } = require('../models/event_schedules');
+const { getEventScheduleByEventId, createEventSchedule, updateEventSchedule, deleteEventSchedule } = require('../models/event_schedules');
 
 
 const create_Event = async (req, res, next) => {
@@ -37,7 +37,7 @@ const create_Event = async (req, res, next) => {
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
                 //console.log('[create_Event] scheduledDate:', eventDate);
-                const existingSchedule = await getEventScheduleById(eventId);
+                const existingSchedule = await getEventScheduleByEventId(eventId);
                 //console.log('[create_Event] existingSchedule:', existingSchedule);
                 // Une tâche existe déjà → NE PAS EN RECRÉER
                 if (existingSchedule) {
@@ -75,7 +75,6 @@ const getAllEvents = async (req, res, next) => {
         const event = await getEventWithTotalGuestById(req.params.eventId);
         console.log('### event:', event);
         if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
-        //planSchedule(1, event[0].event_id, "2025-12-03 01:29:00");
         return res.status(200).json(event);
     } catch (error) {
         console.error('GET EVENT BY ID ERROR:', error.message);
@@ -135,8 +134,11 @@ const getAllEvents = async (req, res, next) => {
             footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2 );
         const updatedEvent = await getEventById(req.params.eventId);
         
-        const existingSchedule = await getEventScheduleById(req.params.eventId);
+        const existingSchedule = await getEventScheduleByEventId(req.params.eventId);
+        console.log('### existing schedule:', existingSchedule);
         const scheduleId = await updateEventSchedule(existingSchedule.id, req.params.eventId, eventDate, false, false);
+        
+        console.log('### scheduleId:', scheduleId);
         console.log(`Schedule mis à jour pour event ${req.params.eventId} → Exécution : ${eventDate}`);
         planSchedule(scheduleId, req.params.eventId, eventDate);
         
@@ -219,7 +221,7 @@ const getAllEvents = async (req, res, next) => {
   // Planifier la tâche
   async function planSchedule(scheduleId, eventId, eventDate) {
     try {
-        console.log('[schedule 1] eventDate (raw):', eventDate);
+        console.log('[schedule 1] eventDate :', eventDate);
         if(eventDate==null || eventDate==undefined) throw new Error("La date est invalide");
         // Conversion finale selon ta logique métier
         const scheduleDate = formatDate(eventDate);
