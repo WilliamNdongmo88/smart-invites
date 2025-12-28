@@ -262,7 +262,7 @@ const getAllEvents = async (req, res, next) => {
                 break
             }
         }
-        //console.log('Event data:', data);
+        console.log('Event data:', data);
         for (const data of checkins) {
             if(data.event_id==eventId){
                 const timer1 = data.checkin_time.toISOString().split('T')[1]
@@ -279,7 +279,7 @@ const getAllEvents = async (req, res, next) => {
             }
         }
         //console.log("guestPresentList:: ", guestPresentList);
-        const results = await getGuestByEventIdAndConfirmedRsvp(data.event_id);
+        const results = await getGuestByEventIdAndConfirmedRsvp(data.eventId);
         for (const elt of results) {
             const data = {
                 name: elt.name,
@@ -289,7 +289,7 @@ const getAllEvents = async (req, res, next) => {
             }
             guestConfirmedList.push(data);
         }
-        //console.log("guestConfirmedList:: ", guestConfirmedList);
+        console.log("guestConfirmedList:: ", guestConfirmedList);
         const pdfBuffer = await generateDualGuestListPdf(guestPresentList, guestConfirmedList, data);
         //console.log("pdfBuffer:: ", pdfBuffer);
         await sendPdfByEmail(data, pdfBuffer);

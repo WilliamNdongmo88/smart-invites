@@ -65,7 +65,7 @@ const startServer = async () => {
     // 2 Initialiser toutes les tables
     await initModels();
     await createDefaultAdmin();
-    //await sendScheduledReport(2);
+    //await sendScheduledReport(3);
 
     // 3 Démarrer le serveur
     app.get('/', (req, res) => {
