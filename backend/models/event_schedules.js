@@ -23,10 +23,10 @@ async function createEventSchedule(eventId, scheduledFor, executed) {
     return result.insertId;
 }
 
-async function getEventScheduleById(eventId) {
+async function getEventScheduleByEventId(eventId) {
     const [result] = await pool.query(`
         SELECT * 
-        FROM EVENT_SCHEDULES WHERE id=?
+        FROM EVENT_SCHEDULES WHERE event_id=?
     `,[eventId]);
 
     return result[0];
@@ -47,4 +47,4 @@ async function deleteEventSchedule(eventId) {
 }
 
 module.exports = {initEventSchedulesModel, createEventSchedule, 
-    getEventScheduleById, updateEventSchedule, deleteEventSchedule};
+    getEventScheduleByEventId, updateEventSchedule, deleteEventSchedule};

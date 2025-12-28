@@ -1,5 +1,5 @@
 const { createCheckin, getCheckinByInvitationId, updateCheckin, getEventAndGuestInfoByGuestId } = require("../models/checkins");
-const { getEventScheduleById } = require("../models/event_schedules");
+const { getEventScheduleByEventId } = require("../models/event_schedules");
 const { getEventById } = require("../models/events");
 const { getGuestById, getEventByGuestId, updateRsvpStatusGuest, getAllPresentGuest } = require("../models/guests");
 const { getInvitationById, getGuestInvitationByToken } = require("../models/invitations");
@@ -44,7 +44,7 @@ const addCheckIn = async (req, res, next) => {
                     false
                 );
                 // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
-                const schedules = await getEventScheduleById(eventId);
+                const schedules = await getEventScheduleByEventId(eventId);
                 //console.log('Executed ? ', schedules.executed);
                 if (!schedules.executed) {
                     planSchedule(event[0], schedules, organizer, guest);
@@ -96,7 +96,7 @@ const getValidCheckIn = async (req, res, next) => {
 
 // Planifier la tâche
 function planSchedule(event, schedules, organizer, guest) {
-    //console.log('[schedule 2] date:', schedules.scheduled_for);
+    console.log('[schedule 2]scan date:', schedules.scheduled_for);
     const date = formatDate(schedules.scheduled_for);
     
     // on passe une fonction anonyme qui appelle notre fonction async
