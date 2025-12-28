@@ -36,7 +36,7 @@ const create_Event = async (req, res, next) => {
                                 status})
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
-                //console.log('[create_Event] scheduledDate:', eventDate);
+                console.log('[create_Event] eventId :', eventId);
                 const existingSchedule = await getEventScheduleByEventId(eventId);
                 //console.log('[create_Event] existingSchedule:', existingSchedule);
                 // Une tâche existe déjà → NE PAS EN RECRÉER
@@ -243,34 +243,43 @@ const getAllEvents = async (req, res, next) => {
     // Marquer comme exécuté
     await updateEventSchedule(scheduleId, eventId, scheduledFor, true, false);
 
-    await sendScheduledReport();
+    await sendScheduledReport(eventId);
 
     console.log(`Scheduler terminé pour l'événement ${eventId}`);
   }
 
-  async function sendScheduledReport(res, next) {
+  async function sendScheduledReport(eventId) {
         console.log('=== Job déclenché =1=');
     try {
         let guestPresentList = [];
         let guestConfirmedList = [];
+        let data = {};
         const checkins = await getGuestsCheckIns();
-        console.log("checkins:: ", checkins);
-        const data = await getUserByEventId(checkins[0].event_id);
-        for (const data of checkins) {
-            const timer1 = data.checkin_time.toISOString().split('T')[1]
-            const guest = await getGuestByInvitationId(data.invitation_id);
-            const timer2 = guest.usedAt.toISOString().split('T')[1]
-            const obj = {
-                name: guest.name,
-                plusOneName: guest.plusOneName,
-                rsvpStatus: guest.rsvpStatus,
-                dateTime: timer1.split(':')[0]+':'+timer1.split(':')[1].split(':')[0],
-                usedAt: timer2.split(':')[0]+':'+timer2.split(':')[1].split(':')[0],
+        //console.log("checkins:: ", checkins);
+        for (const event of checkins) {
+            if(eventId==event.event_id){
+                data = await getUserByEventId(event.event_id);
+                break
             }
-            guestPresentList.push(obj);
+        }
+        //console.log('Event data:', data);
+        for (const data of checkins) {
+            if(data.event_id==eventId){
+                const timer1 = data.checkin_time.toISOString().split('T')[1]
+                const guest = await getGuestByInvitationId(data.invitation_id);
+                const timer2 = guest.usedAt.toISOString().split('T')[1]
+                const obj = {
+                    name: guest.name,
+                    plusOneName: guest.plusOneName,
+                    rsvpStatus: guest.rsvpStatus,
+                    dateTime: timer1.split(':')[0]+':'+timer1.split(':')[1].split(':')[0],
+                    usedAt: timer2.split(':')[0]+':'+timer2.split(':')[1].split(':')[0],
+                }
+                guestPresentList.push(obj);
+            }
         }
         //console.log("guestPresentList:: ", guestPresentList);
-        const results = await getGuestByEventIdAndConfirmedRsvp(checkins[0].event_id);
+        const results = await getGuestByEventIdAndConfirmedRsvp(data.event_id);
         for (const elt of results) {
             const data = {
                 name: elt.name,
@@ -286,7 +295,6 @@ const getAllEvents = async (req, res, next) => {
         await sendPdfByEmail(data, pdfBuffer);
     } catch (error) {
         console.log('[sendScheduledReport] error:', error);
-        next(error);
     }
   }
 
@@ -321,5 +329,6 @@ module.exports = {
     generatePresentGuests,
     sendSReportManually,
     sendSThankMessageManually,
-    formatDate
+    formatDate,
+    sendScheduledReport
 }

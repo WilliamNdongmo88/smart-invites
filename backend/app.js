@@ -15,6 +15,7 @@ const imageProxy = require('./routes/imageProxy.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
+const { sendScheduledReport } = require('./controllers/event.controller');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -64,6 +65,7 @@ const startServer = async () => {
     // 2 Initialiser toutes les tables
     await initModels();
     await createDefaultAdmin();
+    //await sendScheduledReport(2);
 
     // 3 Démarrer le serveur
     app.get('/', (req, res) => {

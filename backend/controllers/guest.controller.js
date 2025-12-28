@@ -54,7 +54,7 @@ const addGuestFromLink = async (req, res, next) => {
         const { eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, 
             dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName, token} = req.body;
         const link = await getLinkByToken(token);
-        console.log('link :: ', link);
+        //console.log('link :: ', link);
 
         if(!link) return res.status(404).json({error: `Lien d'invitation introuvable`});
         link.used_count = Number(link.used_count) || 0;
