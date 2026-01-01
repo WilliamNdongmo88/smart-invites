@@ -6,11 +6,13 @@ const { initGuestModel } = require('./guests');
 const { initInvitationModel } = require('./invitations');
 const { initLinkModel } = require('./links');
 const { initNotificationModel } = require('./notification');
+const { initUserNewsModel } = require('./usernews');
 const {initUserModel} = require('./users');
 
 
 const initModels = async () => {
   await initUserModel();
+  await initUserNewsModel();
   await initEventsModel();
   await initEventSchedulesModel();
   await initGuestModel();

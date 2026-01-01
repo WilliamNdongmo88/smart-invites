@@ -17,6 +17,8 @@ const { create } = require('qrcode');
 const { getEventsByOrganizerId, deleteEvents } = require('../models/events');
 const { getGuestByEventId, getGuestAndInvitationRelatedById, delete_guest } = require('../models/guests');
 const { deleteGuestFiles } = require('../services/invitation.service');
+const { sendMailToAdmin } = require('../services/notification.service');
+const { createUserNews, getUserNewsByEmail, updateUserNews } = require('../models/usernews');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
@@ -192,34 +194,28 @@ const loginWithGoogle = async (req, res, next) => {
   }
 };
 
-const loginWithGoogles = async (req, res, next) => {
+const contactUs = async (req, res, next) => {
   try {
-    const { tokenId } = req.body;
-
-    // Vérifier le token ID auprès de Google
-    const { OAuth2Client } = require('google-auth-library');
-    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    const ticket = await client.verifyIdToken({
-      idToken: tokenId,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    console.log('GOOGLE PAYLOAD:', payload);
-
-    const { email, name, sub: googleId, picture } = payload;
-
-    // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
-    const user = { email, name, googleId, picture };
-    console.log('Google user info:', user);
-
-    // Générer un JWT pour ton application
-    const token = jwt.sign(user, process.env.JWT_SECRET, process.env.JWT_EXPIRES_IN || '1d');
-    console.log('Generated JWT:', token);
-
-    res.json({ token, user });
+    console.log("Body: ", req.body);
+    const {name, email, phone, subject, message, newsletter} = req.body;
+    if(newsletter){
+      const usernews = await getUserNewsByEmail(email);
+      if(usernews){
+        console.log("Utilisateur déjà existant.");
+        await updateUserNews(usernews.id, name, email, phone, usernews.newsletter);
+        await sendMailToAdmin(name, email, phone, subject, message);
+        return res.status(200).json({success: "Message envoyé avec succès"});
+      }
+      await createUserNews(name, email, phone, newsletter);
+      await sendMailToAdmin(name, email, phone, subject, message);
+      return res.status(200).json({success: "Message envoyé avec succès"});
+    }else{
+      await sendMailToAdmin(name, email, phone, subject, message);
+      return res.status(200).json({success: "Message envoyé avec succès"});
+    }
   } catch (err) {
-    console.error(err);
-    res.status(401).json({ error: 'Token Google invalide' });
+    console.error("ContactUs ERROR:", err.message);
+    next(err);
   }
 }
 
@@ -403,4 +399,4 @@ const deleteProfile = async (req, res, next) => {
 };
 
 module.exports = { register, login, loginWithGoogle, refresh, logout, updatePassword,
-  getMe, forgotPassword, checkCode, resetPassword, updateProfile, deleteProfile };
+  getMe, contactUs, forgotPassword, checkCode, resetPassword, updateProfile, deleteProfile };

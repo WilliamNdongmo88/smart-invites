@@ -943,6 +943,7 @@ async function manualSendThankYouMailToPresentGuests(eventId, thankMessage, gues
   const logo = await getLogoUrlFromFirebase('logo.png');
   if (!logo) throw new Error("Logo non trouvé.");
 
+  const formattedMessage = thankMessage.replace(/\n/g, '<br>');
   const htmlContent = `
   <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
 
@@ -970,7 +971,7 @@ async function manualSendThankYouMailToPresentGuests(eventId, thankMessage, gues
         border-left: 4px solid #D4AF37;
         font-style: italic;
       ">
-        ${thankMessage}
+        <p>${formattedMessage}</p>
       </div>
 
     </div>
@@ -1005,8 +1006,104 @@ async function manualSendThankYouMailToPresentGuests(eventId, thankMessage, gues
   return true;
 }
 
+async function sendMailToAdmin(name, email, phone, subject, message) {
+  const brevo = new Brevo.TransactionalEmailsApi();
+  brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+  const formattedMessage = message.replace(/\n/g, '<br>');
+  let subj = '';
+  switch (subject) {
+    case 'support':
+      subj = "Support technique"
+      break;
+    case 'sales':
+      subj = "Demande commerciale"
+      break;
+    case 'partnership':
+      subj = "Partenariat"
+      break;
+    case 'feedback':
+      subj = "Retour d'expérience"
+      break;
+    case 'other':
+      subj = "Autre"
+      break;
+  }
+  const sendSmtpEmail = {
+    to: [{ email: process.env.ADMIN_EMAIL, name: process.env.ADMIN_NAME }],
+    sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
+    subject: subj || 'Nouveau message de contact',
+    htmlContent: ` 
+      <h3>Nouveau message de contact</h3>
+      <p><strong>Nom :</strong> ${name}</p>
+      <p><strong>Email :</strong> ${email}</p>
+      <p><strong>Téléphone :</strong> ${phone || 'Non renseigné'}</p>
+      <p><strong>Message :</strong></p>
+      <p>${formattedMessage}</p>
+    `
+  };
+
+  await brevo.sendTransacEmail(sendSmtpEmail);
+  console.log(`✅ Email(Contact Us) envoyé à Admin SmartInvite`);
+};
+
+async function sendNewsLetterToUsers() {
+  console.log("Envoie de la news letter")
+  const brevo = new Brevo.TransactionalEmailsApi();
+  brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+  const rsvpLink = `${process.env.API_URL}/dashboard`;
+  const msg = `
+    Bonjour,
+
+    Nous sommes ravis de vous partager les dernières nouveautés de SmartInvite, 
+    la plateforme pensée pour simplifier l’organisation et la gestion de vos événements de mariage.
+
+    🚀 Quoi de neuf ?
+
+    ✅ Gestion améliorée des invités et confirmations (RSVP)
+
+    📱 Check-in rapide via QR Code
+
+    📊 Suivi en temps réel de la présence
+
+    💌 Messages de remerciement automatisés après l’événement
+
+    Notre objectif est de vous offrir une expérience toujours plus fluide et intuitive.
+
+    👉 Découvrez toutes les fonctionnalités dès maintenant
+
+    ${rsvpLink}
+
+    💡 Pourquoi recevoir cette newsletter ?
+
+    Vous recevez cet email car vous avez créé un compte ou activé la news letter.
+    Nous partageons uniquement des informations utiles liées à la plateforme.
+
+    🔕 Se désabonner
+
+    Si vous ne souhaitez plus recevoir nos communications, vous pouvez vous désabonner à tout moment :
+
+    👉 Se désabonner de la newsletter
+    {{unsubscribe}}
+  `;
+  const formattedMessage = msg.replace(/\n/g, '<br>');
+
+  const sendSmtpEmail = {
+    to: [{ email: 'williamndongmo88@gmail.com', name: process.env.ADMIN_NAME }],
+    sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
+    subject: "✨ Nouveautés SmartInvite – Simplifiez vos événements",
+    htmlContent: ` 
+      <p>${formattedMessage}</p>
+    `
+  };
+
+  await brevo.sendTransacEmail(sendSmtpEmail);
+  console.log(`✅ Email(New letter) envoyé à aux users`);
+};
+
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
   sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
-  notifications, manualSendThankYouMailToPresentGuests
+  notifications, manualSendThankYouMailToPresentGuests, sendMailToAdmin, sendNewsLetterToUsers
 };
