@@ -196,10 +196,11 @@ const loginWithGoogle = async (req, res, next) => {
 
 const contactUs = async (req, res, next) => {
   try {
-    console.log("Body: ", req.body);
+    //console.log("Body: ", req.body);
     const {name, email, phone, subject, message, newsletter} = req.body;
     if(newsletter){
       const usernews = await getUserNewsByEmail(email);
+      const user = await getUserByEmail(email);
       if(usernews){
         console.log("Utilisateur déjà existant.");
         await updateUserNews(usernews.id, name, email, phone, usernews.newsletter);
