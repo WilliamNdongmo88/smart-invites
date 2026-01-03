@@ -75,7 +75,7 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Link Railway project
-        run: railway link $RAILWAY_PROJECT_ID
+        run: railway link --project $RAILWAY_PROJECT_ID
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
@@ -84,4 +84,5 @@ jobs:
         run: railway up --service smart-invites --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
 
