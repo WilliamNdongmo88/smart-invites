@@ -1,6 +1,7 @@
 process.env.NODE_ENV = "test";
 require("dotenv").config({path: ".env.test"});
 
+const schedule = require('node-schedule');
 const request = require("supertest");
 const { app, startServer, closeServer } = require("../app");
 
@@ -136,5 +137,10 @@ describe("Events API", () => {
 
     afterAll(async () => {
         await closeServer();
+        // Annule tous les jobs en cours pour libérer l'event loop
+        const jobs = schedule.scheduledJobs;
+        for (let jobName in jobs) {
+            jobs[jobName].cancel();
+        }
     });
 });
