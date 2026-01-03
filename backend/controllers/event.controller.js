@@ -1,3 +1,4 @@
+require("dotenv").config({path: ".env.test"});
 const {getUserById} = require('../models/users');
 const {createEvent, getEventById,updateEvent,updateEventStatus,
     getEventsByOrganizerId, getEventWithTotalGuest, deleteEvents, 
@@ -140,7 +141,11 @@ const getAllEvents = async (req, res, next) => {
         
         console.log('### scheduleId:', scheduleId);
         console.log(`Schedule mis à jour pour event ${req.params.eventId} → Exécution : ${eventDate}`);
-        planSchedule(scheduleId, req.params.eventId, eventDate);
+        //planSchedule(scheduleId, req.params.eventId, eventDate);
+        console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
+        if (process.env.NODE_ENV !== 'test') {
+            planSchedule(scheduleId, req.params.eventId, eventDate);
+        }
         
         return res.status(200).json({updatedEvent})
     } catch (error) {

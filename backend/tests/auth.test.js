@@ -44,23 +44,23 @@ describe("Auth API", () => {
             expect(res.body).toHaveProperty("refreshToken");
         });
 
-        // test("FORGOT PASSWORD USER", async () => {
-        //     const res = await request(app)
-        //     .post("/api/auth/forgot-password").send({email:email});
+        test("FORGOT PASSWORD USER", async () => {
+            const res = await request(app)
+            .post("/api/auth/forgot-password").send({email:email});
 
-        //     console.log("# FORGOT PASSWORD RES:", res.body);
-        //     expect(res.statusCode).toBe(200);
-        //     expect(res.body).toHaveProperty("message");
-        // });
+            console.log("# FORGOT PASSWORD RES:", res.body);
+            expect(res.statusCode).toBe(200);
+            expect(res.body).toHaveProperty("message");
+        });
 
-        // test("CHECK CODE USER", async () => {
-        //     const res = await request(app)
-        //     .post("/api/auth/check-code").send({email: email, code: "461311"});
+        test("CHECK CODE USER", async () => {
+            const res = await request(app)
+            .post("/api/auth/check-code").send({email: email, code: "461311"});
 
-        //     expect(res.statusCode).toBe(500);
-        //     expect(res.body).toHaveProperty("status");
-        //     expect(res.body).toHaveProperty("message");
-        // });
+            expect(res.statusCode).toBe(500);
+            expect(res.body).toHaveProperty("status");
+            expect(res.body).toHaveProperty("message");
+        });
 
         test("RESET PASSWORD USER", async () => {
             // console.log("# EMAIL :", email);

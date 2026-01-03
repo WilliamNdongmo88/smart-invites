@@ -46,9 +46,12 @@ const addCheckIn = async (req, res, next) => {
                 // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
                 const schedules = await getEventScheduleByEventId(eventId);
                 //console.log('Executed ? ', schedules.executed);
-                if (!schedules.executed) {
+                if (!schedules.executed && process.env.NODE_ENV !== 'test') {
                     planSchedule(event[0], schedules, organizer, guest);
                 }
+                // if (process.env.NODE_ENV !== 'test') {
+                //     planSchedule(scheduleId, req.params.eventId, eventDate);
+                // }
             }
             const event_and_guest_datas = await getEventAndGuestInfoByGuestId(guestId);
             console.log('event_and_guest_datas:', event_and_guest_datas);

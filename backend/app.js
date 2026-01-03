@@ -31,12 +31,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use("/api/auth/login", loginLimiter);
-app.use("/api/auth/register", registerLimiter);
-app.use("/api/events", apiLimiter);
-app.use("/api/guest", apiLimiter);
-app.use("/api/link", apiLimiter);
-app.use("/api/invitation", apiLimiter);
+// 1. Désactiver les rate limiters en mode test (ils utilisent des timers)
+if (process.env.NODE_ENV !== 'test') {
+  app.use("/api/auth/login", loginLimiter);
+  app.use("/api/auth/register", registerLimiter);
+  app.use("/api/events", apiLimiter);
+  app.use("/api/guest", apiLimiter);
+  app.use("/api/link", apiLimiter);
+  app.use("/api/invitation", apiLimiter);
+}
 
 // Notifications sans rate-limit
 app.use("/api/notification", noRateLimit);
@@ -54,7 +57,9 @@ app.use("/api/image-proxy", imageProxy);
 
 app.use(errorHandler);
 
-setupSwagger(app); 
+if (process.env.NODE_ENV !== 'test') {
+  setupSwagger(app);
+}
 
 let server; // Stocke l'instance du serveur HTTP
 
@@ -74,11 +79,14 @@ const startServer = async () => {
       res.send('🚀 Node.js + MySQL connectés et initialisés !');
     });
 
-    server = app.listen(PORT, () => {
-      console.log(`✅ Serveur lancé sur ${process.env.BASE_URL}`);
-      console.log("✅ BASE_URL:: ", process.env.BASE_URL);
-      console.log("✅ API_URL:: ", process.env.API_URL);
-    });
+    console.log("process.env.NODE_ENV: ", process.env.NODE_ENV);
+    if (process.env.NODE_ENV !== 'test') {
+      server = app.listen(PORT, () => {
+        console.log(`✅ Serveur lancé sur ${process.env.BASE_URL}`);
+        console.log("✅ BASE_URL:: ", process.env.BASE_URL);
+        console.log("✅ API_URL:: ", process.env.API_URL);
+      });
+    }
     return server; // Retourne l'instance du serveur
   } catch (err) {
     console.error('❌ Erreur au démarrage :', err.message);

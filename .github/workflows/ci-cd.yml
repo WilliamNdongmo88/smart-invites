@@ -50,7 +50,7 @@ jobs:
           ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-        run: npx jest --detectOpenHandles
+        run: npm test
 
   deploy:
     runs-on: ubuntu-latest
