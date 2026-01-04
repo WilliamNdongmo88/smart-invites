@@ -115,6 +115,7 @@ async function getEventByGuestId(guestId) {
             e.type,
             e.event_name_concerned1,
             e.event_name_concerned2,
+            e.event_civil_location AS eventCivilLocation,
             e.event_location AS eventLocation,
             u.id AS organizerId,
             u.email AS emailOrganizer
@@ -145,6 +146,7 @@ async function getGuestAndEventRelatedById(guestId) {
             e.type,
             e.event_name_concerned1,
             e.event_name_concerned2,
+            e.event_civil_location,
             e.event_location
         FROM GUESTS g
         LEFT JOIN EVENTS e ON e.id=g.event_id
@@ -231,6 +233,7 @@ async function getGuestAndInvitationRelatedById(guestId) {
             e.description,
             e.has_plus_one AS eventHasPlusOne,
             e.event_date AS eventDate,
+            e.event_civil_location AS eventCivilLocation,
             e.event_location AS eventLocation,
             e.has_plus_one AS eventHasPlusOne,
             e.foot_restriction AS eventFootRestriction,

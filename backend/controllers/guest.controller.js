@@ -106,7 +106,7 @@ const addGuestFromLink = async (req, res, next) => {
                 false
             );
             const organizer = await getUserById(event[0].organizerId);
-            await sendGuestResponseToOrganizer(organizer, guest_event_related, rsvpStatus);
+            await sendGuestResponseToOrganizer(organizer, guest_event_related[0], rsvpStatus);
             if(hasPlusOne){
                 await createNotification(
                     event[0].eventId,

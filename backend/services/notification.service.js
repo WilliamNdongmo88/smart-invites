@@ -6,12 +6,19 @@ const { getLogoUrlFromFirebase } = require('./qrCodeService');
 require('dotenv').config();
 
 async function sendGuestEmail(guest, event, token) {
+  console.log('[sendGuestEmail] event: ', event);
   const logo = await getLogoUrlFromFirebase('logo.png');
   if(logo){
     const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
   const rsvpLink = `${process.env.API_URL}/invitations/${token}`;
 
+  const date = event.event_date.toISOString().split('T')[0];
+  const time = event.event_date.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC'
+  });
   let article = '';
   let sentence ='';
   let concerned = '';
@@ -22,6 +29,7 @@ async function sendGuestEmail(guest, event, token) {
         article ='au '
         eventType = 'Mariage de ' + concerned
         sentence = 'Nous avons le plaisir de vous inviter à célébrer notre union '
+        lieu = ` ${event.event_civil_location} et banquet `
       break;
     case 'engagement':
         concerned = event.event_name_concerned1+' et '+event.event_name_concerned2
@@ -77,9 +85,16 @@ async function sendGuestEmail(guest, event, token) {
                 ${sentence} le 
                 <strong>${new Date(event.event_date).toLocaleDateString("fr-FR", {
                 day: "numeric", month: "long", year: "numeric"
-                })}</strong>
-                au <strong>${event.event_location}</strong>.
+                })}</strong>.
             </p>
+
+            <p>
+                📍 Lieu de la Cérémonie Civile : <strong>${event.event_civil_location} </strong> ⏰ Heure : <strong>${time}</strong>
+            </p>
+            <p>
+                📍 Lieu du Banquet : <strong>${event.event_location} </strong>
+            </p>
+            
             <p style="font-size: 16px; color: #333;">
                 Pour confirmer votre présence, merci de mettre à jour votre réponse (RSVP) en cliquant sur le bouton ci-dessous :
             </p>
@@ -508,6 +523,7 @@ async function sendFileQRCodeMail(data, qrCodeUrl) {
 }
 
 async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
+    console.log('[sendGuestResponseToOrganizer] guest:', guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
     const logo = await getLogoUrlFromFirebase('logo.png');
