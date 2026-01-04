@@ -19,22 +19,22 @@ const create_Event = async (req, res, next) => {
     try {
         if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
         let eventDatas = req.body;
-        //console.log('eventDatas :: ', eventDatas);
+        console.log('eventDatas :: ', eventDatas);
         const existing = await getUserById(eventDatas[0].organizerId);
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
         for (const event of eventDatas) {
             const {organizerId, title, description, eventDate, type, budget, eventNameConcerned1,
-                   eventNameConcerned2, eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                   eventNameConcerned2, eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
                    status} = event;
             const eventId = await createEvent(organizerId, title, description, eventDate,type, 
                                               budget, eventNameConcerned1,eventNameConcerned2, 
-                                              eventLocation, maxGuests,hasPlusOne, footRestriction, 
-                                              status);
+                                              eventCivilLocation, eventLocation, maxGuests,hasPlusOne, 
+                                              footRestriction, status);
             returnDatas.push({id: eventId, organizerId, title, description, eventDate,type, 
                                 budget, eventNameConcerned1,eventNameConcerned2, 
-                                eventLocation, maxGuests,hasPlusOne, footRestriction, 
-                                status})
+                                eventCivilLocation, eventLocation, maxGuests,hasPlusOne, 
+                                footRestriction,status})
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
                 console.log('[create_Event] eventId :', eventId);
@@ -108,7 +108,7 @@ const getAllEvents = async (req, res, next) => {
 
   const updateEventBy_Id = async (req, res, next) => {
     try {
-        let { organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, 
+        let { organizerId, title, description, eventDate, eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
             footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2
         } = req.body;
 
@@ -119,6 +119,7 @@ const getAllEvents = async (req, res, next) => {
         if(title == null){ title = event.title};
         if(description == null){ description = event.description};
         if(eventDate == null){ eventDate = event.event_date};
+        if(eventCivilLocation == null){ eventCivilLocation = event.civil_location};
         if(eventLocation == null){ eventLocation = event.event_location};
         if(maxGuests == null){ maxGuests = event.max_guests};
         if(hasPlusOne == null){ hasPlusOne = event.has_plus_one};
@@ -131,7 +132,8 @@ const getAllEvents = async (req, res, next) => {
 
         const organizer = await getUserById(organizerId);
         if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
-        await updateEvent(req.params.eventId, organizerId, title, description, eventDate, eventLocation, maxGuests, hasPlusOne, 
+        await updateEvent(req.params.eventId, organizerId, title, description, eventDate, 
+            eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
             footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2 );
         const updatedEvent = await getEventById(req.params.eventId);
         
