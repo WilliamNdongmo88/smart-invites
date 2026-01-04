@@ -39,6 +39,7 @@ describe("Events API", () => {
                 title: "Mariage de William et Gloria",
                 description: "Nous avons le plaisir de vous inviter à célébrer notre mariage. Ce sera une journée inoubliable remplie de joie, d'amour et de moments précieux en compagnie de nos proches.",
                 eventDate: "2026-06-06",
+                eventCivilLocation: "Hôtel de ville",
                 eventLocation: "Djamena",
                 maxGuests: 150,
                 hasPlusOne: false,
@@ -94,6 +95,7 @@ describe("Events API", () => {
         test("UPDATE EVENT", async () => {
             const updateData = {
                 organizerId,
+                eventCivilLocation: "Hôtel de ville",
                 eventLocation: "Palais des fêtes de Djamena",
                 maxGuests: 151,
                 hasPlusOne: true,
