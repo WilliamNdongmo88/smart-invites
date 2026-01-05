@@ -39,6 +39,7 @@ describe("Events API", () => {
                 title: "Mariage de William et Gloria",
                 description: "Nous avons le plaisir de vous inviter à célébrer notre mariage. Ce sera une journée inoubliable remplie de joie, d'amour et de moments précieux en compagnie de nos proches.",
                 eventDate: "2026-06-06",
+                banquetTime: "21:30",
                 eventCivilLocation: "Hôtel de ville",
                 eventLocation: "Djamena",
                 maxGuests: 150,
