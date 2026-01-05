@@ -20,7 +20,7 @@ async function sendGuestEmail(guest, event, token) {
     minute: '2-digit',
     timeZone: 'UTC'
   });
-  const banquetTime = event.banquet_time.split(':00')[0];
+  const banquetTime = event.banquet_time?.split(':00')[0];
 
   let article = '';
   let sentence ='';

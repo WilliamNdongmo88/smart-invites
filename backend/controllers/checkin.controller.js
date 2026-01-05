@@ -9,10 +9,30 @@ const { validateAndUseInvitation } = require("../services/invitation.service");
 const { sendGuestPresenceToOrganizer,sendThankYouMailToPresentGuests, manualSendThankYouMailToPresentGuests
       } = require("../services/notification.service");
 const schedule = require('node-schedule');
+const axios = require('axios')
+
+const viewPdfInvitation = async (req, res, next) => {
+  try {
+    //console.log('qrCodes:', req.body.link);
+    const pdfUrl = req.body.link;
+
+    const response = await axios.get(pdfUrl, {
+      responseType: "arraybuffer"
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=invitation.pdf");
+
+    res.send(response.data);
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 const addCheckIn = async (req, res, next) => {
     try {
-        //console.log("###body: ", req.body);
+        console.log("###body: ", req.body);
         let isValid = false;
         const {eventId, invitationId, guestId, token, scannedBy, scanStatus, checkinTime} = req.body;
         if(token=='undefined:undefined') return res.status(404).json({error: "Code Qr invalide !"});
@@ -72,7 +92,7 @@ const getValidCheckIn = async (req, res, next) => {
   try {
     const { guestIds } = req.body;
 
-    console.log("GuestIds reçus :", guestIds);
+    //console.log("GuestIds reçus :", guestIds);
 
     if (!Array.isArray(guestIds) || guestIds.length === 0) {
       return res.status(400).json({ error: "guestIds invalide ou vide" });
@@ -167,4 +187,5 @@ function formatDate(iso){
     return result;
 }
 
-module.exports = {addCheckIn, sendScheduledThankMessage, getValidCheckIn, sendManualThankMessage};
+module.exports = {addCheckIn, sendScheduledThankMessage, 
+    getValidCheckIn, sendManualThankMessage, viewPdfInvitation};

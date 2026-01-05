@@ -181,11 +181,13 @@ const deleteInvitation = async (req, res, next) => {
         const guest = await getGuestById(req.params.guestId);
         //console.log('guest before delete invitation:', guest);
         if(guest.has_plus_one){
+            console.log("guest: ", guest);
             guest.has_plus_one = false;
             guest.plus_one_name = null;
             guest.plus_one_name_diet_restr = null;
+            guest.guest_has_plus_one_autorise_by_admin = false;
             guest.rsvp_status = 'pending';
-            await update_guest(guest.id, guest.event_id, guest.full_name, guest.email, guest.phone_number, guest.rsvp_status, 
+            await update_guest(guest.id, guest.event_id, guest.full_name, null, guest.email, guest.phone_number, guest.rsvp_status, 
                 guest.has_plus_one, guest.guest_has_plus_one_autorise_by_admin, guest.plus_one_name, guest.notes, guest.dietary_restrictions, 
                 guest.plus_one_name_diet_restr, guest.updated_at);
         }else if(guest.rsvp_status == 'confirmed' || guest.rsvp_status == 'declined'){
