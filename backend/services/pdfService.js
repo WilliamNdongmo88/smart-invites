@@ -434,8 +434,14 @@ async function generateDualGuestListPdf(presentGuests = [], confirmedAbsentGuest
 async function uploadPdfToFirebase(guest, pdfBuffer) {
   const bucket = admin.storage().bucket();
   let fileName = null;
-  if(guest.id!=undefined) fileName = `pdfs/carte_${guest.id}.pdf`;
-  if(guest.guest_id!=undefined) fileName = `pdfs/carte_${guest.guest_id}.pdf`;
+  if (process.env.NODE_ENV == 'development'){
+    if(guest.id!=undefined) fileName = `dev/pdfs/carte_${guest.id}.pdf`;
+    if(guest.guest_id!=undefined) fileName = `dev/pdfs/carte_${guest.guest_id}.pdf`;
+  }else if(process.env.NODE_ENV == 'production'){
+    if(guest.id!=undefined) fileName = `prod/pdfs/carte_${guest.id}.pdf`;
+    if(guest.guest_id!=undefined) fileName = `prod/pdfs/carte_${guest.guest_id}.pdf`;
+  }
+  
   const file = bucket.file(fileName);
 
   await file.save(pdfBuffer, { contentType: 'application/pdf' });

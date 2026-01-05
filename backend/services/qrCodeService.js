@@ -4,8 +4,12 @@ const sharp = require('sharp');
 
 // Retourne l’URL Firebase directement plus légé et rapide
 async function getLogoUrlFromFirebase(filename) {
-  const file = bucket.file(`logos/${filename}`);
-
+  let file = '';
+  if (process.env.NODE_ENV == 'development'){
+    file = bucket.file(`dev/logos/${filename}`);
+  }else if(process.env.NODE_ENV == 'production'){
+    file = bucket.file(`prod/logos/${filename}`);
+  }
   const [url] = await file.getSignedUrl({
     action: "read",
     expires: Date.now() + 60 * 24 * 60 * 60 * 1000, // URL valide 60 jours
@@ -15,7 +19,13 @@ async function getLogoUrlFromFirebase(filename) {
 }
 
 async function getLogoFromFirebase(logoFileName) {
-  const file = bucket.file(`logos/${logoFileName}`);
+  let file = '';
+  if (process.env.NODE_ENV == 'development'){
+    file = bucket.file(`dev/logos/${logoFileName}`);
+  }else if(process.env.NODE_ENV == 'production'){
+    file = bucket.file(`prod/logos/${logoFileName}`);
+  }
+  
   const [exists] = await file.exists();
   if (!exists) throw new Error(`Logo ${logoFileName} introuvable dans Firebase.`);
   const [buffer] = await file.download();
@@ -46,8 +56,14 @@ async function generateGuestQr(guestId, token, logoFileName = null) {
     qrImage = qrImage.composite([{ input: resizedLogo, top: centerY, left: centerX }]);
   }
 
+  console.log("[NODE_ENV] Evironnement de travail : ", process.env.NODE_ENV);
   const finalQr = await qrImage.png().toBuffer();
-  const filePath = `qrcodes/${token}.png`;
+  let filePath = '';
+  if (process.env.NODE_ENV == 'development'){
+    filePath = `dev/qrcodes/${token}.png`;
+  }else if(process.env.NODE_ENV == 'production'){
+    filePath = `prod/qrcodes/${token}.png`;
+  }
 
   await bucket.file(filePath).save(finalQr, { contentType: "image/png" });
 

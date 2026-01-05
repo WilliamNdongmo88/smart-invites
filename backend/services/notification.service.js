@@ -8,6 +8,7 @@ require('dotenv').config();
 async function sendGuestEmail(guest, event, token) {
   //console.log('[sendGuestEmail] event: ', event);
   const logo = await getLogoUrlFromFirebase('logo.png');
+  //console.log('[sendGuestEmail] logo: ', logo);
   if(logo){
     const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();

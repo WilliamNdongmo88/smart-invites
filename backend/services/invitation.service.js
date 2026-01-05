@@ -15,8 +15,15 @@ async function validateAndUseInvitation(invitation) {
 async function deleteGuestFiles(guestId, invitationToken) {
   if (!guestId) throw new Error("Guest ID manquant pour la suppression des fichiers");
 
-  const pdfPath = `pdfs/carte_${guestId}.pdf`;
-  const qrPath = `qrcodes/${invitationToken}.png`;
+  let pdfPath = '';
+  let qrPath = ''
+  if (process.env.NODE_ENV == 'development'){
+    pdfPath = `dev/pdfs/carte_${guestId}.pdf`;
+    qrPath = `dev/qrcodes/${invitationToken}.png`;
+  }else if(process.env.NODE_ENV == 'production'){
+    pdfPath = `prod/pdfs/carte_${guestId}.pdf`;
+    qrPath = `prod/qrcodes/${invitationToken}.png`;
+  }
 
   const pdfFile = bucket.file(pdfPath);
   const qrFile = bucket.file(qrPath);
