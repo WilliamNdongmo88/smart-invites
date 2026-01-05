@@ -46,7 +46,16 @@ async function createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpSt
 }
 
 async function getGuestById(id) {
-    const [guest] = await pool.execute(`SELECT * FROM GUESTS WHERE id=?`, [id]);
+    const [guest] = await pool.execute(`
+        SELECT 
+            g.*,
+            e.id AS eventId,
+            e.type,
+            e.event_name_concerned1,
+            e.event_name_concerned2
+        FROM GUESTS g
+        LEFT JOIN EVENTS e ON e.id=g.event_id
+        WHERE g.id=?`, [id]);
     return guest[0];
 }
 
