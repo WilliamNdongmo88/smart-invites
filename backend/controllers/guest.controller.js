@@ -82,7 +82,7 @@ const addGuestFromLink = async (req, res, next) => {
         const guest_event_related = await getGuestAndEventRelatedById(guestId);
         let invitationToken =guestId +':'+ uuidv4();
         try {
-            qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.jpg");
+            qrUrl = await generateGuestQr(guestId, invitationToken, "ring.png");//"wedding-ring.jpg"
             const buffer = await generateGuestPdf(guest_event_related[0]);
             await uploadPdfToFirebase(guest, buffer);
         } catch (error) {
@@ -265,7 +265,7 @@ const updateGuest = async (req, res, next) => {
                     if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                     if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
                     await deleteGuestFiles(guest.guest_id, guest.invitationToken);
-                    await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.jpg");
+                    await generateGuestQr(guest.guest_id, guest.invitationToken, "ring.png");//"wedding-ring.jpg"
                     const buffer = await generateGuestPdf(guest);
                     await uploadPdfToFirebase(guest, buffer);
                     await sendInvitationToGuest(guest, guest.qrCodeUrl);

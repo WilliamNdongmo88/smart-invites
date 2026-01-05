@@ -3,68 +3,184 @@ const admin = require('firebase-admin');
 const path = require('path');
 require('pdfkit-table');
 
-// Fonction pour générer un PDF personnalisé
-async function generateGuestPdf(guest) {
-  //console.log("[generateGuestPdf] guest: ", guest);
+async function generateGuestPdf(data) {
+  const guest = data;
+  const event = data;
+
+  const eventDate = new Date(event.event_date).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const time = new Date(event.event_date).toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const banquetTime = event.banquet_time?.replace(':00', '');
+
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A5", margin: 40 });
+    const doc = new PDFDocument({
+      size: "A5",
+      margins: { top: 40, bottom: 40, left: 40, right: 40 }
+    });
+
     const chunks = [];
+    doc.on("data", c => chunks.push(c));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
 
-    doc.on('data', chunk => chunks.push(chunk));
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
+    const pageWidth = doc.page.width;
+    const contentWidth = pageWidth - 80;
+    let y = 40; // 🎯 point de départ vertical
 
-    // Fond doux
-    doc.rect(0, 0, doc.page.width, doc.page.height).fill("#fffaf5");
+    /* 🎨 Fond */
+    doc.rect(0, 0, pageWidth, doc.page.height).fill("#fffaf5");
 
-    // 💍 Image décorative (à la place de l’emoji)
-    doc.image(path.join(__dirname, "../assets/icons/ring.png"), doc.page.width / 2 - 20, 40, { width: 40 });
+    /* 💍 Icône */
+    doc.image(
+      path.join(__dirname, "../assets/icons/ring.png"),
+      pageWidth / 2 - 18,
+      y,
+      { width: 36 }
+    );
 
-   doc.moveDown(4);
-   doc.fillColor("#b58b63").font("Times-Bold").fontSize(26)
-      .text("Célébrons l’Amour", { align: "center" });
+    y += 55;
 
-   doc.moveDown(0.5);
-   doc.fillColor("#777").fontSize(14).font("Helvetica-Oblique")
-      .text("Nous avons la joie de vous convier à notre mariage", { align: "center" });
+    /* 💕 Titre */
+    doc
+      .fillColor("#b58b63")
+      .font("Times-Bold")
+      .fontSize(22)
+      .text("Célébrons l’Amour", 40, y, {
+        width: contentWidth,
+        align: "center"
+      });
 
-   doc.moveDown(2);
-   doc.fillColor("#333").font("Times-Italic").fontSize(16);
+    y += 35;
 
-   if (guest.has_plus_one) {
-   doc.text(
-      `Cher/Chère ${guest.full_name} et votre invité(e) ${guest.plus_one_name}`,
-      { align: "center" }
-   );
-   } else {
-   doc.text(
-      `Cher/Chère ${guest.full_name},`,
-      { align: "center" }
-   );
-   }
-
-   doc.moveDown(1);
-   doc.font("Helvetica").fontSize(13).fillColor("#444")
-      .text(`C’est avec un immense bonheur que nous vous invitons à célébrer notre union entourés 
-         de nos familles et de nos amis, lors d’une journée qui restera gravée dans nos cœurs.`,
-      { align: "center", lineGap: 6 }
+    /* Sous-titre */
+    doc
+      .fillColor("#777")
+      .font("Helvetica-Oblique")
+      .fontSize(12)
+      .text(
+        "Nous avons la joie de vous convier à notre mariage",
+        40,
+        y,
+        { width: contentWidth, align: "center" }
       );
 
-   doc.moveDown(1);
-   doc.font("Helvetica-Oblique").fillColor("#888")
-      .text("Votre présence illuminera ce jour si spécial pour nous.", { align: "center" });
+    y += 35;
 
-   doc.moveDown(2);
-   doc.font("Helvetica-Bold").fontSize(14).fillColor("#b58b63")
-      .text(`Les futurs mariés : ${guest.event_name_concerned1} et ${guest.event_name_concerned2}`, { align: "center" })
+    /* 👤 Invité */
+    doc
+      .fillColor("#333")
+      .font("Times-Italic")
+      .fontSize(14)
+      .text(
+        guest.has_plus_one
+          ? `Cher/Chère ${guest.full_name} et ${guest.plus_one_name}`
+          : `Cher/Chère ${guest.full_name},`,
+        40,
+        y,
+        { width: contentWidth, align: "center" }
+      );
 
-   doc.image(path.join(__dirname, "../assets/icons/heart.png"), doc.page.width / 2 - 10, doc.y + 10, { width: 20 });
+    y += 35;
 
-   doc.end();
+    /* 📝 Texte principal */
+    doc
+      .font("Helvetica")
+      .fontSize(11)
+      .fillColor("#444")
+      .text(
+        "C’est avec un immense bonheur que nous vous invitons à célébrer notre union entourés de nos familles et amis, lors d’une journée inoubliable.",
+        40,
+        y,
+        {
+          width: contentWidth,
+          align: "center",
+          lineGap: 4
+        }
+      );
+
+    y += 70;
+
+    /* 📅 Programme */
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(13)
+      .fillColor("#444")
+      .text("Programme de la journée", 40, y, {
+        width: contentWidth,
+        align: "center"
+      });
+
+    y += 22;
+
+    doc
+      .font("Helvetica")
+      .fontSize(11)
+      .text(
+        `Mariage civil le ${eventDate} à ${time}\n${event.event_civil_location}`,
+        40,
+        y,
+        { width: contentWidth, align: "center", lineGap: 3 }
+      );
+
+    y += 40;
+
+    doc.text(
+      `Réception nuptiale le même jour à partir de ${banquetTime}\n${event.event_location}`,
+      40,
+      y,
+      { width: contentWidth, align: "center", lineGap: 3 }
+    );
+
+    y += 45;
+
+    /* ✨ Message */
+    doc
+      .font("Helvetica-Oblique")
+      .fontSize(11)
+      .fillColor("#888")
+      .text(
+        "Votre présence illuminera ce jour si spécial pour nous.",
+        40,
+        y,
+        { width: contentWidth, align: "center" }
+      );
+
+    y += 30;
+
+    /* 🤍 Signature */
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(13)
+      .fillColor("#b58b63")
+      .text(
+        `${event.event_name_concerned1} & ${event.event_name_concerned2}`,
+        40,
+        y,
+        { width: contentWidth, align: "center" }
+      );
+
+    /* ❤️ Icône finale */
+    doc.image(
+      path.join(__dirname, "../assets/icons/heart.png"),
+      pageWidth / 2 - 10,
+      y + 22,
+      { width: 20 }
+    );
+
+    doc.end();
   });
 }
 
-// Fonction pour générer la liste des invité confirmé en pdf
+
 async function generatePresentGuestsPdf(guests = [], event) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 40 });
