@@ -79,7 +79,7 @@ const startServer = async () => {
       res.send('🚀 Node.js + MySQL connectés et initialisés !');
     });
 
-    console.log("process.env.NODE_ENV: ", process.env.NODE_ENV);
+    console.log("[NODE_ENV] Evironnement de travail : ", process.env.NODE_ENV);
     if (process.env.NODE_ENV !== 'test') {
       server = app.listen(PORT, () => {
         console.log(`✅ Serveur lancé sur ${process.env.BASE_URL}`);

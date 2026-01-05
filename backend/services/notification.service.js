@@ -6,7 +6,7 @@ const { getLogoUrlFromFirebase } = require('./qrCodeService');
 require('dotenv').config();
 
 async function sendGuestEmail(guest, event, token) {
-  console.log('[sendGuestEmail] event: ', event);
+  //console.log('[sendGuestEmail] event: ', event);
   const logo = await getLogoUrlFromFirebase('logo.png');
   if(logo){
     const brevo = new Brevo.TransactionalEmailsApi();
@@ -19,6 +19,8 @@ async function sendGuestEmail(guest, event, token) {
     minute: '2-digit',
     timeZone: 'UTC'
   });
+  const banquetTime = event.banquet_time.split(':00')[0];
+
   let article = '';
   let sentence ='';
   let concerned = '';
@@ -89,11 +91,13 @@ async function sendGuestEmail(guest, event, token) {
             </p>
 
             <p>
-                📍 Lieu de la Cérémonie Civile : <strong>${event.event_civil_location} </strong> ⏰ Heure : <strong>${time}</strong>
+                📍 Lieu de la Cérémonie Civile : <strong>${event.event_civil_location}</strong>
             </p>
+            <p>⏰ Heure : <strong>${time}</strong></p>
             <p>
-                📍 Lieu du Banquet : <strong>${event.event_location} </strong>
+                📍 Lieu du Banquet : <strong>${event.event_location}</strong>
             </p>
+            <p>⏰ Heure : <strong>${banquetTime}</strong></p>
             
             <p style="font-size: 16px; color: #333;">
                 Pour confirmer votre présence, merci de mettre à jour votre réponse (RSVP) en cliquant sur le bouton ci-dessous :

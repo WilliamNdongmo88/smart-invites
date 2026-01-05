@@ -13,6 +13,7 @@ const initEventsModel = async () => {
         event_name_concerned1 VARCHAR(50), -- New field: event_name_concerned1
         event_name_concerned2 VARCHAR(50), -- New field: event_name_concerned2
         event_date TIMESTAMP NOT NULL,
+        banquet_time TIME NULL,
         event_civil_location VARCHAR(255),
         event_location VARCHAR(255),
         max_guests INTEGER,
@@ -28,16 +29,16 @@ const initEventsModel = async () => {
   console.log('✅ Table EVENTS prête !');
 };
 
-async function createEvent(organizerId, title, description, eventDate,type, 
+async function createEvent(organizerId, title, description, eventDate, banquetTime, type, 
                             budget, eventNameConcerned1,eventNameConcerned2, 
                             eventCivilLocation, eventLocation, maxGuests,hasPlusOne, 
                             footRestriction, status) {
     const [result] = await pool.execute(`INSERT INTO EVENTS (organizer_id, title, description, 
-                                            event_date, event_civil_location, event_location, max_guests,has_plus_one, 
+                                            event_date, banquet_time, event_civil_location, event_location, max_guests,has_plus_one, 
                                             foot_restriction, status, type, budget, 
                                             event_name_concerned1, event_name_concerned2) 
-                                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [organizerId, title, description, eventDate, eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [organizerId, title, description, eventDate, banquetTime, eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
         status, type, budget, eventNameConcerned1, eventNameConcerned2]);
     return result.insertId;
 }
@@ -69,6 +70,7 @@ async function getEventWithTotalGuest() {
       e.title,
       e.description,
       e.event_date,
+      e.banquet_time,
       e.event_civil_location,
       e.event_location,
       e.max_guests,
@@ -90,6 +92,7 @@ async function getEventWithTotalGuest() {
       e.title,
       e.description,
       e.event_date,
+      e.banquet_time,
       e.event_civil_location,
       e.event_location,
       e.max_guests,
@@ -137,6 +140,7 @@ async function getEventsByOrganizerId(organizerId) {
             e.title,
             e.description,
             e.event_date,
+            e.banquet_time,
             e.event_civil_location,
             e.event_location,
             e.max_guests,
@@ -158,6 +162,7 @@ async function getEventsByOrganizerId(organizerId) {
             e.title,
             e.description,
             e.event_date,
+            e.banquet_time,
             e.event_civil_location,
             e.event_location,
             e.max_guests,
@@ -180,6 +185,7 @@ async function getEventWithTotalGuestById(eventId) {
             e.title,
             e.description,
             e.event_date,
+            e.banquet_time,
             e.event_civil_location,
             e.event_location,
             e.max_guests,
@@ -207,6 +213,7 @@ async function getEventWithTotalGuestById(eventId) {
             e.title,
             e.description,
             e.event_date,
+            e.banquet_time,
             e.event_civil_location,
             e.event_location,
             e.max_guests,
@@ -227,15 +234,16 @@ async function getEventWithTotalGuestById(eventId) {
     return result[0];
 }
 
-async function updateEvent(eventId, organizerId, title, description, eventDate, eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
+async function updateEvent(eventId, organizerId, title, description, eventDate, banquetTime, eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
             footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2 ) {
 
-    await pool.query(`UPDATE EVENTS SET organizer_id=?, title=?, description=?, event_date=?, 
-        event_civil_location=?, event_location=?, max_guests=?,has_plus_one=?, foot_restriction=?, status=?, 
+    await pool.query(`UPDATE EVENTS SET organizer_id=?, title=?, description=?, event_date=?, banquet_time=?,
+            event_civil_location=?, event_location=?, max_guests=?,has_plus_one=?, foot_restriction=?,
+            status=?, 
             type=?,
             budget=?,
             event_name_concerned1=?,
-            event_name_concerned2=? WHERE id=?`, [organizerId, title, description, eventDate, 
+            event_name_concerned2=? WHERE id=?`, [organizerId, title, description, eventDate, banquetTime, 
                 eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, status, type, 
                 budget, eventNameConcerned1, eventNameConcerned2, eventId]);
 }
