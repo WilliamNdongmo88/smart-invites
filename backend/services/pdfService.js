@@ -5,6 +5,7 @@ require('pdfkit-table');
 
 // Fonction pour générer un PDF personnalisé
 async function generateGuestPdf(guest) {
+  console.log("[generateGuestPdf] guest: ", guest);
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A5", margin: 40 });
     const chunks = [];
