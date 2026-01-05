@@ -13,7 +13,6 @@ const initEventsModel = async () => {
         event_name_concerned1 VARCHAR(50), -- New field: event_name_concerned1
         event_name_concerned2 VARCHAR(50), -- New field: event_name_concerned2
         event_date TIMESTAMP NOT NULL,
-        banquet_time TIME NULL,
         event_civil_location VARCHAR(255),
         event_location VARCHAR(255),
         max_guests INTEGER,
