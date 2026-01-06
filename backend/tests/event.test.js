@@ -40,11 +40,14 @@ describe("Events API", () => {
                 description: "Nous avons le plaisir de vous inviter à célébrer notre mariage. Ce sera une journée inoubliable remplie de joie, d'amour et de moments précieux en compagnie de nos proches.",
                 eventDate: "2026-06-06",
                 banquetTime: "21:30",
+                religiousLocation: 'Eglise Saint Pierre',
+                religiousTime: '16:00',
                 eventCivilLocation: "Hôtel de ville",
                 eventLocation: "Djamena",
                 maxGuests: 150,
                 hasPlusOne: false,
                 footRestriction: false,
+                showWeddingReligiousLocation: true,
                 status: "planned",
                 type: "wedding",
                 budget: 3000,
@@ -101,6 +104,7 @@ describe("Events API", () => {
                 maxGuests: 151,
                 hasPlusOne: true,
                 footRestriction: true,
+                showWeddingReligiousLocation: false,
             };
             const res = await request(app)
             .put(`/api/event/${eventId}`)
