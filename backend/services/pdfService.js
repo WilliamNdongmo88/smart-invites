@@ -81,7 +81,7 @@ async function generateGuestPdf(data) {
       .font("Times-Italic")
       .fontSize(14)
       .text(
-        guest.has_plus_one
+        guest.has_plus_name !=null
           ? `Cher/Chère ${guest.full_name} et ${guest.plus_one_name}`
           : `Cher/Chère ${guest.full_name},`,
         40,

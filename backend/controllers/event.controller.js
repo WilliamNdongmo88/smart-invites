@@ -24,17 +24,20 @@ const create_Event = async (req, res, next) => {
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
         for (const event of eventDatas) {
-            const {organizerId, title, description, eventDate, banquetTime, type, budget, eventNameConcerned1,
-                   eventNameConcerned2, eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
-                   status} = event;
-            const eventId = await createEvent(organizerId, title, description, eventDate, banquetTime, type, 
-                                              budget, eventNameConcerned1,eventNameConcerned2, 
+            const {
+                organizerId, title, description, eventDate, banquetTime, religiousLocation, 
+                religiousTime, type, budget, eventNameConcerned1, eventNameConcerned2, 
+                eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                showWeddingReligiousLocation, status} = event;
+            const eventId = await createEvent(organizerId, title, description, eventDate, banquetTime, 
+                                              religiousLocation, religiousTime, type, budget, 
+                                              eventNameConcerned1,eventNameConcerned2, 
                                               eventCivilLocation, eventLocation, maxGuests,hasPlusOne, 
-                                              footRestriction, status);
+                                              footRestriction, showWeddingReligiousLocation, status);
             returnDatas.push({id: eventId, organizerId, title, description, eventDate, banquetTime, 
-                type, budget, eventNameConcerned1,eventNameConcerned2, 
-                eventCivilLocation, eventLocation, maxGuests,hasPlusOne,
-                footRestriction,status})
+                religiousLocation, religiousTime, type, budget, eventNameConcerned1,eventNameConcerned2, 
+                eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
+                showWeddingReligiousLocation, status})
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
                 console.log('[create_Event] eventId :', eventId);
@@ -108,8 +111,9 @@ const getAllEvents = async (req, res, next) => {
 
   const updateEventBy_Id = async (req, res, next) => {
     try {
-        let { organizerId, title, description, eventDate, banquetTime, eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
-            footRestriction, status, type, budget, eventNameConcerned1, eventNameConcerned2
+        let { organizerId, title, description, eventDate, banquetTime, religiousLocation, religiousTime, 
+            eventCivilLocation, eventLocation, maxGuests, hasPlusOne, footRestriction, 
+            showWeddingReligiousLocation, status, type, budget, eventNameConcerned1, eventNameConcerned2
         } = req.body;
 
         const event = await getEventById(req.params.eventId);
@@ -120,6 +124,8 @@ const getAllEvents = async (req, res, next) => {
         if(description == null){ description = event.description};
         if(eventDate == null){ eventDate = event.event_date};
         if(banquetTime == null){ banquetTime = event.banquet_time};
+        if(religiousLocation == null){ religiousLocation = event.religious_location};
+        if(religiousTime == null){ religiousTime = event.religious_time};
         if(eventCivilLocation == null){ eventCivilLocation = event.civil_location};
         if(eventLocation == null){ eventLocation = event.event_location};
         if(maxGuests == null){ maxGuests = event.max_guests};
@@ -129,12 +135,14 @@ const getAllEvents = async (req, res, next) => {
         if(eventNameConcerned1 == null){ eventNameConcerned1 = event.event_name_concerned1};
         if(eventNameConcerned2 == null){ eventNameConcerned2 = event.event_name_concerned2};
         if(footRestriction == null){ footRestriction = event.foot_restriction};
+        if(showWeddingReligiousLocation == null){ showWeddingReligiousLocation = event.show_wedding_religious_location};
         if(status == null){ status = event.status};
 
         const organizer = await getUserById(organizerId);
         if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
         await updateEvent(req.params.eventId, organizerId, title, description, eventDate, banquetTime,
-            eventCivilLocation, eventLocation, maxGuests, hasPlusOne, footRestriction, status, type, 
+            religiousLocation, religiousTime, eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
+            footRestriction, showWeddingReligiousLocation, status, type, 
             budget, eventNameConcerned1, eventNameConcerned2 );
         const updatedEvent = await getEventById(req.params.eventId);
         

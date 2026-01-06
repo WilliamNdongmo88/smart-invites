@@ -74,8 +74,8 @@ const genererInvitation = async (req, res, next) => {
 
 const viewInvitation = async (req, res, next) => {
     try {
-        //console.log('guestId:', req.params.guestId);
         const guest = await getGuestById(req.params.guestId);
+        console.log('[viewInvitation] guest:', guest);
         if (!guest) return res.status(404).send("Invité introuvable");
 
         const invitations = await getGuestInvitationById(req.params.guestId);
