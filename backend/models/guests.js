@@ -64,6 +64,9 @@ async function getGuestById(id) {
             e.religious_location,
             e.religious_time,
             e.show_wedding_religious_location,
+            e.religious_location,
+            e.religious_time,
+            e.show_wedding_religious_location,
             e.event_location
         FROM GUESTS g
         LEFT JOIN EVENTS e ON e.id=g.event_id
@@ -138,6 +141,9 @@ async function getEventByGuestId(guestId) {
             e.event_name_concerned1,
             e.event_name_concerned2,
             e.event_civil_location AS eventCivilLocation,
+            e.religious_location AS religiousLocation,
+            e.religious_time AS religiousTime,
+            e.show_wedding_religious_location AS showWeddingReligiousLocation,
             e.event_location AS eventLocation,
             u.id AS organizerId,
             u.email AS emailOrganizer
@@ -170,6 +176,9 @@ async function getGuestAndEventRelatedById(guestId) {
             e.event_name_concerned1,
             e.event_name_concerned2,
             e.event_civil_location,
+            e.religious_location,
+            e.religious_time,
+            e.show_wedding_religious_location,
             e.event_location
         FROM GUESTS g
         LEFT JOIN EVENTS e ON e.id=g.event_id
@@ -258,6 +267,9 @@ async function getGuestAndInvitationRelatedById(guestId) {
             e.event_date AS eventDate,
             e.banquet_time AS banquetTime,
             e.event_civil_location AS eventCivilLocation,
+            e.religious_location AS religiousLocation,
+            e.religious_time AS religiousTime,
+            e.show_wedding_religious_location AS showWeddingReligiousLocation,
             e.event_location AS eventLocation,
             e.has_plus_one AS eventHasPlusOne,
             e.foot_restriction AS eventFootRestriction,

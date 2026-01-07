@@ -21,6 +21,7 @@ async function sendGuestEmail(guest, event, token) {
     timeZone: 'UTC'
   });
   const banquetTime = event.banquet_time?.split(':00')[0];
+  const religiousTime = event.religious_time?.split(':00')[0];
 
   let article = '';
   let sentence ='';
@@ -92,13 +93,14 @@ async function sendGuestEmail(guest, event, token) {
             </p>
 
             <p>
-                📍 Lieu de la Cérémonie Civile : <strong>${event.event_civil_location}</strong>
+                ${event.type = 'wedding' ? `📍 Lieu de la Cérémonie Civile : <strong>${event.event_civil_location}</strong>, 🕒 Heure : <strong>${time}</strong>`:''}
             </p>
-            <p>⏰ Heure : <strong>${time}</strong></p>
             <p>
-                📍 Lieu du Banquet : <strong>${event.event_location}</strong>
+                ${event.show_wedding_religious_location = true ? `📍 Cérémonie Religieuse : <strong>${event.religious_location}</strong>, 🕒 Heure : <strong>${religiousTime}</strong>`:''} 
             </p>
-            <p>⏰ Heure : <strong>${banquetTime}</strong></p>
+            <p>
+                ${event.type = 'wedding' ? `📍 Lieu du Banquet : <strong>${event.event_location}</strong>, 🕒 Heure : <strong>${banquetTime}</strong>`:''} 
+            </p>
             
             <p style="font-size: 16px; color: #333;">
                 Pour confirmer votre présence, merci de mettre à jour votre réponse (RSVP) en cliquant sur le bouton ci-dessous :
