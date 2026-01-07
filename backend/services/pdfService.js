@@ -20,6 +20,7 @@ async function generateGuestPdf(data) {
   });
 
   const banquetTime = event.banquet_time?.replace(':00', '');
+  const religiousTime = event.religious_time?.replace(':00', '');
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -41,7 +42,7 @@ async function generateGuestPdf(data) {
 
     /* 💍 Icône */
     doc.image(
-      path.join(__dirname, "../assets/icons/ring.png"),
+      path.join(__dirname, "../assets/icons/logo.png"),//ring.png
       pageWidth / 2 - 18,
       y,
       { width: 36 }
@@ -110,7 +111,8 @@ async function generateGuestPdf(data) {
     y += 70;
 
     /* 📅 Programme */
-    doc
+    if(event.type == 'wedding'){
+      doc
       .font("Helvetica-Bold")
       .fontSize(13)
       .fillColor("#444")
@@ -119,28 +121,40 @@ async function generateGuestPdf(data) {
         align: "center"
       });
 
-    y += 22;
+      y += 22;
 
-    doc
-      .font("Helvetica")
-      .fontSize(11)
-      .text(
-        `Mariage civil le ${eventDate} à ${time}\n${event.event_civil_location}`,
+      doc
+        .font("Helvetica")
+        .fontSize(11)
+        .text(
+          `Mariage civil le ${eventDate} à ${time}\n${event.event_civil_location}`,
+          40,
+          y,
+          { width: contentWidth, align: "center", lineGap: 3 }
+        );
+
+      y += 40;
+
+      if(event.show_wedding_religious_location){
+        doc.text(
+          `Cérémonie Religieuse ${religiousTime}\n${event.religious_location}`,
+          40,
+          y,
+          { width: contentWidth, align: "center", lineGap: 3 }
+        );
+
+        y += 40;
+      }
+
+      doc.text(
+        `Réception nuptiale le même jour à partir de ${banquetTime}\n${event.event_location}`,
         40,
         y,
         { width: contentWidth, align: "center", lineGap: 3 }
       );
 
-    y += 40;
-
-    doc.text(
-      `Réception nuptiale le même jour à partir de ${banquetTime}\n${event.event_location}`,
-      40,
-      y,
-      { width: contentWidth, align: "center", lineGap: 3 }
-    );
-
-    y += 45;
+      y += 45;
+    }
 
     /* ✨ Message */
     doc
@@ -544,8 +558,6 @@ async function generateDualGuestListPdf(presentGuests = [], confirmedAbsentGuest
     doc.end();
   });
 }
-
-
 
 // Fonction pour uploader sur Firebase Storage
 async function uploadPdfToFirebase(guest, pdfBuffer) {

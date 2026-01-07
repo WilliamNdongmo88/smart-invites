@@ -53,7 +53,7 @@ async function getGuestById(id) {
             e.type,
             e.title,
             e.description,
-            e.has_plus_one,
+            e.has_plus_one AS hasPlusOne,
             e.foot_restriction,
             e.event_date,
             e.banquet_time,
@@ -61,6 +61,9 @@ async function getGuestById(id) {
             e.event_name_concerned1,
             e.event_name_concerned2,
             e.event_civil_location,
+            e.religious_location,
+            e.religious_time,
+            e.show_wedding_religious_location,
             e.event_location
         FROM GUESTS g
         LEFT JOIN EVENTS e ON e.id=g.event_id

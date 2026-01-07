@@ -192,7 +192,7 @@ const updateGuest = async (req, res, next) => {
         console.log('req.body:', req.body);
         let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
-        // console.log('guestInBd:', guest);
+        console.log('guestInBd:', guest);
         if(!fromEditePage){
             if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
             if(eventId==null) eventId = guest.event_id;
