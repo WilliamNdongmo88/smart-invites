@@ -55,7 +55,7 @@ async function generateGuestPdf(data) {
       pageWidth / 2 - 50, // Ajusté pour centrer avec la nouvelle largeur
       y,
       { 
-        width: 300, // Image agrandie (au lieu de 36)
+        width: 100, // Image agrandie (au lieu de 36)
         fit: [100, 100], // Optionnel : maintient les proportions
       }
     );
