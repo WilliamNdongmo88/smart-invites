@@ -50,25 +50,16 @@ async function generateGuestPdf(data) {
 
     // y += 55;
     
+    const imgSize = 100;
+
     doc.image(
       path.join(__dirname, "../assets/icons/logo.png"),
-      pageWidth / 2 - 50, // Ajusté pour centrer avec la nouvelle largeur
+      pageWidth / 2 - imgSize / 2,
       y,
-      { 
-        width: 100, // Image agrandie (au lieu de 36)
-        fit: [100, 100], // Optionnel : maintient les proportions
-      }
+      { width: imgSize }
     );
 
-    // Pour ajouter une bordure ronde, dessinez un cercle autour de l'image
-    const centerX = pageWidth / 2;
-    const centerY = y + 50; // Centre du cercle (50 = rayon)
-
-    doc.circle(centerX, centerY, 52) // Rayon légèrement plus grand pour la bordure
-      .lineWidth(2)
-      .stroke('#000000'); // Couleur de la bordure
-
-    y += 110; // Ajusté pour l'espace après l'image agrandie
+    y += imgSize + 20;
 
     /* 💕 Titre */
     doc
