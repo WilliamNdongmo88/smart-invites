@@ -10,17 +10,18 @@ const initLinkModel = async () => {
       used_count INT NOT NULL DEFAULT 0,
       limit_count INT NOT NULL,
       link VARCHAR(500),
+      date_limit_link DATE NULL,
       FOREIGN KEY (event_id) REFERENCES EVENTS(id) ON DELETE CASCADE
     )
   `);
   console.log('✅ Table LINKS prête !');
 };
 
-async function createLink(eventId, type, token, limitCount, link) {
+async function createLink(eventId, type, token, limitCount, link, dateLimitLink) {
   const [result] = await pool.query(`
-      INSERT INTO LINKS (event_id, type, token, limit_count, link)
-      VALUES(?,?,?,?,?)
-  `,[eventId, type, token, limitCount, link]);
+      INSERT INTO LINKS (event_id, type, token, limit_count, link, date_limit_link)
+      VALUES(?,?,?,?,?,?)
+  `,[eventId, type, token, limitCount, link, dateLimitLink]);
 
   return result;
 }
@@ -51,12 +52,12 @@ async function getLinkByToken(token) {
   return result[0];
 }
 
-async function updateLink(linkId, usedCount, type, usedLimitCount) {
+async function updateLink(linkId, usedCount, type, usedLimitCount, dateLimitLink) {
   const [result] = await pool.query(`
     UPDATE LINKS 
-    SET used_count=?, type=?, limit_count=?
+    SET used_count=?, type=?, limit_count=?, date_limit_link=?
     WHERE id=?
-  `, [usedCount, type, usedLimitCount, linkId]);
+  `, [usedCount, type, usedLimitCount, dateLimitLink, linkId]);
 
   return result.insertId;
 }

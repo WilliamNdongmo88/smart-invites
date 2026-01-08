@@ -41,14 +41,34 @@ async function generateGuestPdf(data) {
     doc.rect(0, 0, pageWidth, doc.page.height).fill("#fffaf5");
 
     /* 💍 Icône */
+    // doc.image(
+    //   path.join(__dirname, "../assets/icons/logo.png"),//ring.png
+    //   pageWidth / 2 - 18,
+    //   y,
+    //   { width: 36 }
+    // );
+
+    // y += 55;
+    
     doc.image(
-      path.join(__dirname, "../assets/icons/logo.png"),//ring.png
-      pageWidth / 2 - 18,
+      path.join(__dirname, "../assets/icons/logo.png"),
+      pageWidth / 2 - 50, // Ajusté pour centrer avec la nouvelle largeur
       y,
-      { width: 36 }
+      { 
+        width: 300, // Image agrandie (au lieu de 36)
+        fit: [100, 100], // Optionnel : maintient les proportions
+      }
     );
 
-    y += 55;
+    // Pour ajouter une bordure ronde, dessinez un cercle autour de l'image
+    const centerX = pageWidth / 2;
+    const centerY = y + 50; // Centre du cercle (50 = rayon)
+
+    doc.circle(centerX, centerY, 52) // Rayon légèrement plus grand pour la bordure
+      .lineWidth(2)
+      .stroke('#000000'); // Couleur de la bordure
+
+    y += 110; // Ajusté pour l'espace après l'image agrandie
 
     /* 💕 Titre */
     doc

@@ -24,7 +24,7 @@ const genererSeveralInvitations = async (req, res, next) => {
         const invitations = await getGuestInvitationById(guestId);
         if (invitations[0]) return res.status(409).json({ error: `Invitation déjà invoyé a l'invité ${guestId}` });
         let token = guestId +':'+ uuidv4();
-        const qrUrl = await generateGuestQr(guest.id, token, "ring.png");//"wedding-ring.jpg"
+        const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
         const buffer = await generateGuestPdf(guest_event_related[0]);
         const pdfUrl = await uploadPdfToFirebase(guest, buffer);
         try {
@@ -54,7 +54,7 @@ const genererInvitation = async (req, res, next) => {
     if (invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
     
     let token =req.params.guestId +':'+ uuidv4();
-    const qrUrl = await generateGuestQr(guest.id, token, "ring.png");//"wedding-ring.jpg"
+    const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
     const buffer = await generateGuestPdf(guest_event_related[0]);
     const pdfUrl = await uploadPdfToFirebase(guest, buffer);
     try {

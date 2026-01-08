@@ -4,14 +4,14 @@ const { createLink, getAllLinks, updateLink, getLinkById, deleteLink } = require
 
 const addLink = async (req, res, next) => {
     try {
-        const {eventId, type, usedLimitCount} = req.body;
+        const {eventId, type, usedLimitCount, dateLimitLink} = req.body;
         let parts = uuidv4().split('-');
         if(type=='unique') parts[2] = "a11a";
         if(type=='couple') parts[2] = "a22a";
         const token = parts.join('-');
         console.log('token ::', token);
         const link = `${process.env.API_URL}/invitations/${eventId}:${token}`;
-        const links = await createLink(eventId, type, token, usedLimitCount, link);
+        const links = await createLink(eventId, type, token, usedLimitCount, link, dateLimitLink);
         return res.status(200).json(links);
     } catch (error) {
         console.log('[createLink] Error:', error.message);
@@ -22,11 +22,11 @@ const addLink = async (req, res, next) => {
 const editLink = async (req, res, next) => {
     try {
       console.log('req.body ::', req.body);
-        const {type, usedLimitCount} = req.body;
+        const {type, usedLimitCount, dateLimitLink} = req.body;
         const linkId = req.params.linkId;
         const link = await getLinkById(linkId);
         if(!link) return res.status(404).json({error: "Lien non trouvé !"});
-        const links = await updateLink(linkId, link.used_count, type, usedLimitCount);
+        const links = await updateLink(linkId, link.used_count, type, usedLimitCount, dateLimitLink);
         return res.status(200).json(links);
     } catch (error) {
         console.log('[editLink] Error:', error.message);

@@ -54,15 +54,20 @@ const addGuestFromLink = async (req, res, next) => {
         const { eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, 
             dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName, token} = req.body;
         const link = await getLinkByToken(token);
-        //console.log('link :: ', link);
+        console.log('link :: ', link);
 
         if(!link) return res.status(404).json({error: `Lien d'invitation introuvable`});
         link.used_count = Number(link.used_count) || 0;
 
+        if (link.date_limit_link && new Date(link.date_limit_link) < new Date()) {
+            console.log("### Lien expiré");
+            return res.status(410).json({ error: "Lien expiré" });
+        }
+
         if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
         link.used_count ++;
 
-        const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count);
+        const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count, link.date_limit_link);
         console.log('updated :: ', updated);
 
         const event = await getEventById(eventId);
@@ -82,7 +87,7 @@ const addGuestFromLink = async (req, res, next) => {
         const guest_event_related = await getGuestAndEventRelatedById(guestId);
         let invitationToken =guestId +':'+ uuidv4();
         try {
-            qrUrl = await generateGuestQr(guestId, invitationToken, "ring.png");//"wedding-ring.jpg"
+            qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.webp");//"ring.png"
             const buffer = await generateGuestPdf(guest_event_related[0]);
             await uploadPdfToFirebase(guest, buffer);
         } catch (error) {
@@ -265,7 +270,7 @@ const updateGuest = async (req, res, next) => {
                     if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                     if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
                     await deleteGuestFiles(guest.guest_id, guest.invitationToken);
-                    await generateGuestQr(guest.guest_id, guest.invitationToken, "ring.png");//"wedding-ring.jpg"
+                    await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.webp");
                     const buffer = await generateGuestPdf(guest);
                     await uploadPdfToFirebase(guest, buffer);
                     await sendInvitationToGuest(guest, guest.qrCodeUrl);
