@@ -199,6 +199,8 @@ const getAllEvents = async (req, res, next) => {
     try {
         const guestsList = req.body.filteredGuests;
         const event = req.body.event;
+        // console.log('guestsList:', guestsList);
+        // console.log('event:', event);
         if (!Array.isArray(guestsList) || guestsList.length === 0) {
             return res.status(400).json({ error: 'Le tableau d\'invités est requis' });
         }

@@ -147,7 +147,7 @@ async function sendGuestEmail(guest, event, token) {
   }
 };
 
-async function sendInvitationToGuest(data, qrCodeUrl) {
+async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
   const logo = await getLogoUrlFromFirebase('logo.png');
   if(logo){
     const guest = data;
@@ -162,6 +162,7 @@ async function sendInvitationToGuest(data, qrCodeUrl) {
 
     // 2 La convertir en base64
     const qrBase64 = Buffer.from(qrResponse.data).toString("base64");
+    const pdfBase64 = pdfBuffer.toString("base64");
 
     let article = '';
     let sentence ='';
@@ -213,37 +214,39 @@ async function sendInvitationToGuest(data, qrCodeUrl) {
         </div>
 
         <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-          <h2 style="color: #816405ff; margin-top:0;">
-            💖 Merci d'avoir confirmé votre présence ${article}${eventType} !
-          </h2>
+        <center>
+          <div style="
+            max-width: 650px;
+            background:#ffffff;
+            margin: 30px auto;
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          ">
+            <h2 style="color: #816405ff; margin-top:0;">
+              💖 Merci d'avoir confirmé votre présence ${article}${eventType} !
+            </h2>
 
-          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+            <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-          <p>
-            ${sentence}
-            Votre présence compte énormément pour nous ❤️.
-          </p>
+            <p>
+              ${sentence}
+              Votre présence compte énormément pour nous ❤️.
+            </p>
 
-          <p>
-            Vous trouverez ci-joint votre <strong>QR-code d’accès</strong> que vous pourrez
-            présenter le jour de l’événement.
-          </p>
+            <p>
+              Vous trouverez en pièce jointe votre invitation officielle et votre <strong>QR-code d’accès</strong>.
+            </p>
+            <p>Merci de les présenter le jour de l'événement.</p>
 
-          <p>
-            Si vous avez des questions, n’hésitez surtout pas à nous contacter.
-          </p>
+            <p>
+              Si vous avez des questions, n’hésitez surtout pas à nous contacter.
+            </p>
 
-          <p style="margin-top:25px;">À très bientôt,</p>
-          <p><strong>${signature}</strong></p>
-        </div>
+            <p style="margin-top:25px;">À très bientôt,</p>
+            <p><strong>${signature}</strong></p>
+          </div>
+        </center>
 
         <!-- FOOTER -->
         <div style="
@@ -268,14 +271,18 @@ async function sendInvitationToGuest(data, qrCodeUrl) {
       htmlContent,
       attachment: [
         {
-          name: "qr-code-mariage.png",
-          content: qrBase64
+          name: "qr-code.png",
+          content: qrBase64,
+        },
+        {
+          name: `invitation-${guest.id}.pdf`,
+          content: pdfBase64,
         }
-      ]
+      ],
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(qr-code) envoyé à ${guest.email}`);
+    console.log(`✅ Email(qr-code et pdf) envoyé à ${guest.email}`);
   }
 }
 
@@ -755,6 +762,49 @@ async function sendPdfByEmail(data, pdfBuffer) {
     console.log(`✅ Email(pdf) envoyé à ${user.email}`);
 }
 
+async function sendPdfToGuestMail(guest, pdfBuffer) {
+    try {
+      const brevo = new Brevo.TransactionalEmailsApi();
+      brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+      if (!guest?.email) {
+          throw new Error("Email de l'invité manquant");
+      }
+
+      const pdfBase64 = pdfBuffer.toString("base64");
+
+      const message = `
+                <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+
+                <p>Vous trouverez en pièce jointe votre invitation officielle.</p>
+
+                <p>Merci de présenter ce document le jour de l'événement.</p>
+
+                <br>
+                <p>✨ À très bientôt</p>
+                <p><strong>L'équipe Smart Invite</strong></p>
+            `;
+
+      const sendSmtpEmail = {
+        to: [{ email: guest.email, name: guest.full_name }],
+        sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
+        subject: "📩 Votre invitation officielle",
+        htmlContent: message,
+        attachment: [
+            {
+                content: pdfBase64,
+                name: `invitation-${guest.id}.pdf`,
+            },
+        ],
+      };
+
+      await brevo.sendTransacEmail(sendSmtpEmail);
+      console.log(`✅ Invitation PDF envoyée à ${guest.email}`);
+    } catch (error) {
+        console.error("[sendPdfToGuestMail] BREVO ERROR:", error.message);
+        throw error;
+    }
+};
+
 async function sendThankYouMailToPresentGuests(event, schedules, organizer, guest) {
   //console.log('guest:', guest);
     const brevo = new Brevo.TransactionalEmailsApi();
@@ -1128,5 +1178,6 @@ async function sendNewsLetterToUsers() {
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
   sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
-  notifications, manualSendThankYouMailToPresentGuests, sendMailToAdmin, sendNewsLetterToUsers
+  notifications, manualSendThankYouMailToPresentGuests, sendMailToAdmin, sendNewsLetterToUsers,
+  sendPdfToGuestMail
 };

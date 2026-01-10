@@ -3,24 +3,27 @@ const admin = require('firebase-admin');
 const path = require('path');
 require('pdfkit-table');
 
-async function generateGuestPdf(data) {
+async function generateGuestPdf(data, plusOneName = null) {
+  console.log('[generateGuestPdf] data: ', data);
   const guest = data;
   const event = data;
 
-  const eventDate = new Date(event.event_date).toLocaleDateString('fr-FR', {
+  const eventDate = new Date((event.event_date || event.eventDate)).toLocaleDateString('fr-FR', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
-  const time = new Date(event.event_date).toLocaleTimeString('fr-FR', {
+  const time = new Date((event.event_date || event.eventDate)).toLocaleTimeString('fr-FR', {
     hour: '2-digit',
     minute: '2-digit'
   });
 
-  const banquetTime = event.banquet_time?.replace(':00', '');
-  const religiousTime = event.religious_time?.replace(':00', '');
+  // const banquetTime = event.banquet_time?.replace(':00', '');
+  const banquetTime = (event.banquet_time || event.banquetTime)?.replace(':00', '');
+  const religiousTime = (event.religious_time || event.religiousTime)?.replace(':00', '');
+  // const religiousTime = event.religious_time?.replace(':00', '');
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -93,8 +96,8 @@ async function generateGuestPdf(data) {
       .font("Times-Italic")
       .fontSize(14)
       .text(
-        guest.has_plus_name !=null
-          ? `Cher/Chère ${guest.full_name} et ${guest.plus_one_name}`
+        (guest.plus_one_name || plusOneName)
+          ? `Cher/Chère ${guest.full_name} et ${(guest.plus_one_name || plusOneName)}`
           : `Cher/Chère ${guest.full_name},`,
         40,
         y,
@@ -138,7 +141,7 @@ async function generateGuestPdf(data) {
         .font("Helvetica")
         .fontSize(11)
         .text(
-          `Mariage civil le ${eventDate} à ${time}\n${event.event_civil_location}`,
+          `Mariage civil le ${eventDate} à ${time}\n${(event.event_civil_location || event.eventCivilLocation)}`,
           40,
           y,
           { width: contentWidth, align: "center", lineGap: 3 }
@@ -148,7 +151,7 @@ async function generateGuestPdf(data) {
 
       if(event.show_wedding_religious_location){
         doc.text(
-          `Cérémonie Religieuse ${religiousTime}\n${event.religious_location}`,
+          `Cérémonie Religieuse ${religiousTime}\n${(event.religious_location || event.religiousLocation)}`,
           40,
           y,
           { width: contentWidth, align: "center", lineGap: 3 }
@@ -158,7 +161,7 @@ async function generateGuestPdf(data) {
       }
 
       doc.text(
-        `Réception nuptiale le même jour à partir de ${banquetTime}\n${event.event_location}`,
+        `Réception nuptiale le même jour à partir de ${banquetTime}\n${(event.event_location || event.eventLocation)}`,
         40,
         y,
         { width: contentWidth, align: "center", lineGap: 3 }
@@ -593,4 +596,6 @@ async function uploadPdfToFirebase(guest, pdfBuffer) {
   return url;
 }
 
-module.exports = { generateGuestPdf, uploadPdfToFirebase, generatePresentGuestsPdf, generateDualGuestListPdf };
+module.exports = { generateGuestPdf, uploadPdfToFirebase, 
+                   generatePresentGuestsPdf, generateDualGuestListPdf, 
+                 };

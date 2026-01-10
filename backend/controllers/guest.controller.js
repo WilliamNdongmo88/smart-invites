@@ -88,7 +88,7 @@ const addGuestFromLink = async (req, res, next) => {
         let invitationToken =guestId +':'+ uuidv4();
         try {
             qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.webp");//"ring.png"
-            const buffer = await generateGuestPdf(guest_event_related[0]);
+            const buffer = await generateGuestPdf(guest_event_related[0], plusOneName);
             await uploadPdfToFirebase(guest, buffer);
         } catch (error) {
             console.error('File ERROR:', error.message);
@@ -102,7 +102,8 @@ const addGuestFromLink = async (req, res, next) => {
         try {
             const event = await getEventByGuestId(guestId);
             const guest = await getGuestAndInvitationRelatedById(guestId);
-            await sendInvitationToGuest(guest, invitation[0].qr_code_url);
+            const buffer = await generateGuestPdf(guest, plusOneName);
+            await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
             await createNotification(
                 event[0].eventId,
                 `Invitation envoyé.`,
@@ -190,7 +191,8 @@ const updateGuest = async (req, res, next) => {
         let updatedGuest = {};
         let isValid = false;
         let {
-            eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus,hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
+            eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus,hasPlusOne, 
+            guesthasPlusOneAutoriseByAdmin, plusOneName, 
             notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken, fromEditePage
         } = req.body;
         console.log('fromEditePage:', fromEditePage);
@@ -218,7 +220,8 @@ const updateGuest = async (req, res, next) => {
                 if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
                 try {
                     const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
-                    await sendInvitationToGuest(invite, invitation[0].qr_code_url);
+                    const buffer = await generateGuestPdf(invite);
+                    await sendInvitationToGuest(invite, invitation[0].qr_code_url, buffer);
                     const event = await getEventByGuestId(guest.id);
                     const organizer = await getUserById(event[0].organizerId);
                     await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
@@ -267,13 +270,15 @@ const updateGuest = async (req, res, next) => {
                 // Envoyer une nouvelle invitation en tenant compte de la personne qui l'accompagne
                 try {
                     const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
+                    console.log('[guest] guest: ', guest);
                     if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                     if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
                     await deleteGuestFiles(guest.guest_id, guest.invitationToken);
                     await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.webp");
-                    const buffer = await generateGuestPdf(guest);
+                    console.log('[plusOneName] plusOneName: ', plusOneName);
+                    const buffer = await generateGuestPdf(guest, plusOneName);
                     await uploadPdfToFirebase(guest, buffer);
-                    await sendInvitationToGuest(guest, guest.qrCodeUrl);
+                    await sendInvitationToGuest(guest, guest.qrCodeUrl, buffer);
                     isValid = true;
                     const event = await getEventByGuestId(guest.guest_id);
                     const organizer = await getUserById(event[0].organizerId);
