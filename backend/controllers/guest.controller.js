@@ -2,7 +2,8 @@ const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events')
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById, createInvitation } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
-    sendGuestResponseToOrganizer, sendFileQRCodeMail} = require('../services/notification.service');
+    sendGuestResponseToOrganizer, sendFileQRCodeMail,
+    sendPdfToGuestMail} = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
@@ -11,7 +12,9 @@ const {
         getAllGuestAndInvitationRelated,getGuestAndInvitationRelatedById,
         getEventByGuestId,
         createGuestFromLink,
-        getGuestAndEventRelatedById
+        getGuestAndEventRelatedById,
+        getGuestAndInvitationRelatedByIdCostum,
+        getAllConfirmedGuests
     } = require('../models/guests');
 const { getUserById } = require('../models/users');
 const { createNotification } = require('../models/notification');
@@ -139,6 +142,30 @@ const addGuestFromLink = async (req, res, next) => {
         
     } catch (error) {
         console.error('AddGuestFromLink ERROR:', error.message);
+        next(error);
+    }
+}
+
+const getAllConfirmedGuest = async (req, res, next) => {
+    try {
+        const guestIds = await getAllConfirmedGuests();
+        let guests = [];
+        let buffer;
+        for (const g of guestIds) {
+            const guest = await getGuestAndInvitationRelatedById(g.id);
+            buffer = await generateGuestPdf(guest);
+            const data = {
+                guest: guest,
+                buffer: buffer
+            }
+            guests.push(data);
+        }        
+        // Envoi des mails en parallèle contrôlée (plus rapide)
+        await Promise.all(
+            guests.map(data => sendPdfToGuestMail(data))
+        );
+    } catch (error) {
+        console.error('getAllConfirmedGuest ERROR:', error.message);
         next(error);
     }
 }
@@ -398,5 +425,8 @@ const sendFileQRCode = async (req, res, next) => {
     }
 }
 
-module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, getEventByGuest, updateRsvpStatus, deleteGuest, 
-                  deleteSeveralGuests, getAllGuest, sendReminder, sendFileQRCode, addGuestFromLink};
+module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, getEventByGuest, 
+                  updateRsvpStatus, deleteGuest, 
+                  deleteSeveralGuests, getAllGuest, 
+                  sendReminder, sendFileQRCode, 
+                  addGuestFromLink, getAllConfirmedGuest};

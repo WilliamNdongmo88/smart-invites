@@ -4,7 +4,7 @@ const path = require('path');
 require('pdfkit-table');
 
 async function generateGuestPdf(data, plusOneName = null) {
-  console.log('[generateGuestPdf] data: ', data);
+  //console.log('[generateGuestPdf] data: ', data);
   const guest = data;
   const event = data;
 

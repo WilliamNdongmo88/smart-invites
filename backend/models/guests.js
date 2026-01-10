@@ -79,6 +79,11 @@ async function getGuestByEmail(email) {
     return event[0];
 }
 
+async function getAllConfirmedGuests() {
+    const [guests] = await pool.query(`SELECT * FROM GUESTS WHERE rsvp_status = ?`, ['confirmed']);
+    return guests;
+}
+
 async function getGuestByEventId(eventId) {
     const [event] = await pool.query(`SELECT * FROM GUESTS WHERE event_id=?`, [eventId]);
     return event;
@@ -314,5 +319,6 @@ module.exports = {initGuestModel, createGuest, getGuestById,getGuestByEmail,
     getGuestByEventId, update_guest, updateRsvpStatusGuest, delete_guest,
     getEventByGuestId, getAllGuestAndInvitationRelated,getGuestAndEventRelatedById,
     getAllGuestAndInvitationRelatedByEventId, getGuestAndInvitationRelatedById,
-    getGuestByEventIdAndConfirmedRsvp, getAllPresentGuest, createGuestFromLink
+    getGuestByEventIdAndConfirmedRsvp, getAllPresentGuest, createGuestFromLink,
+    getAllConfirmedGuests
 }

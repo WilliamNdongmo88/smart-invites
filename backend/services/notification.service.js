@@ -271,11 +271,11 @@ async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
       htmlContent,
       attachment: [
         {
-          name: "qr-code.png",
+          name: `${formatFullName(guest.full_name)}-qr-code.png`,
           content: qrBase64,
         },
         {
-          name: `invitation-${guest.id}.pdf`,
+          name: `${formatFullName(guest.full_name)}-invitation.pdf`,
           content: pdfBase64,
         }
       ],
@@ -284,6 +284,12 @@ async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
     await brevo.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ Email(qr-code et pdf) envoyé à ${guest.email}`);
   }
+}
+
+function formatFullName(full_name) {
+  if (!full_name) return '';
+  
+  return full_name.trim().replace(/\s+/g, '_');
 }
 
 async function sendReminderMail(guest, event) {
@@ -762,7 +768,9 @@ async function sendPdfByEmail(data, pdfBuffer) {
     console.log(`✅ Email(pdf) envoyé à ${user.email}`);
 }
 
-async function sendPdfToGuestMail(guest, pdfBuffer) {
+async function sendPdfToGuestMail(data) {
+  const guest = data.guest;
+  const pdfBuffer = data.buffer;
     try {
       const brevo = new Brevo.TransactionalEmailsApi();
       brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
@@ -773,16 +781,16 @@ async function sendPdfToGuestMail(guest, pdfBuffer) {
       const pdfBase64 = pdfBuffer.toString("base64");
 
       const message = `
-                <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+        </center>
+          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-                <p>Vous trouverez en pièce jointe votre invitation officielle.</p>
+          <p>Vous trouverez en pièce jointe votre invitation officielle.</p>
 
-                <p>Merci de présenter ce document le jour de l'événement.</p>
-
-                <br>
-                <p>✨ À très bientôt</p>
-                <p><strong>L'équipe Smart Invite</strong></p>
-            `;
+          <br>
+          <p>✨ À très bientôt</p>
+        </center>  
+        <p><strong>L'équipe Smart Invite</strong></p>
+      `;
 
       const sendSmtpEmail = {
         to: [{ email: guest.email, name: guest.full_name }],
@@ -792,7 +800,7 @@ async function sendPdfToGuestMail(guest, pdfBuffer) {
         attachment: [
             {
                 content: pdfBase64,
-                name: `invitation-${guest.id}.pdf`,
+                name: `${formatFullName(guest.full_name)}-invitation.pdf`,
             },
         ],
       };

@@ -17,6 +17,7 @@ const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./mi
 const setupSwagger = require('./docs/swagger');
 const { sendScheduledReport } = require('./controllers/event.controller');
 const { sendNewsLetterToUsers } = require('./services/notification.service');
+const { getAllConfirmedGuest } = require('./controllers/guest.controller');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -73,6 +74,7 @@ const startServer = async () => {
     await createDefaultAdmin();
     //await sendScheduledReport(3);
     //await sendNewsLetterToUsers();
+    await getAllConfirmedGuest()
 
     // 3 Démarrer le serveur
     app.get('/', (req, res) => {
