@@ -39,7 +39,7 @@ async function updateEventSchedule(eventScheduledId, eventId, scheduledFor, exec
         WHERE id=?
     `,[eventId, scheduledFor, executed,isCheckinExecuted, eventScheduledId]);
 
-    return result.insertId;
+    return eventScheduledId;
 }
 
 async function deleteEventSchedule(eventId) {

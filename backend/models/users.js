@@ -15,8 +15,8 @@ const initUserModel = async () => {
       bio TEXT,
       avatar_url TEXT,
       email_notifications BOOLEAN NOT NULL DEFAULT FALSE,
-      attendance_notifications BOOLEAN NOT NULL DEFAULT FALSE,
-      thank_notifications BOOLEAN NOT NULL DEFAULT FALSE,
+      attendance_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+      thank_notifications BOOLEAN NOT NULL DEFAULT TRUE,
       event_reminders BOOLEAN NOT NULL DEFAULT FALSE,
       marketing_emails BOOLEAN NOT NULL DEFAULT FALSE,
       refresh_token TEXT,
@@ -100,7 +100,7 @@ async function clearRefreshToken(userId) {
 }
 
 async function updateUser(userId, updatedUser) {
-    const result = await pool.query(`
+    const [result] = await pool.query(`
       UPDATE USERS SET name=?, phone=?, bio=?, avatar_url=?, 
       email_notifications=?, attendance_notifications=?, thank_notifications=?, event_reminders=?, marketing_emails=?
       WHERE id=?
@@ -116,6 +116,8 @@ async function updateUser(userId, updatedUser) {
       updatedUser.marketing_emails,  
       userId
   ]);
+
+  return userId;
 }
 
 async function deleteAccount(userId) {

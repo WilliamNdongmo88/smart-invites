@@ -1,6 +1,6 @@
 const { createCheckin, getCheckinByInvitationId, updateCheckin, getEventAndGuestInfoByGuestId } = require("../models/checkins");
 const { getEventScheduleByEventId } = require("../models/event_schedules");
-const { getEventById } = require("../models/events");
+const { getEventById, getUserByEventId } = require("../models/events");
 const { getGuestById, getEventByGuestId, updateRsvpStatusGuest, getAllPresentGuest } = require("../models/guests");
 const { getInvitationById, getGuestInvitationByToken } = require("../models/invitations");
 const { createNotification } = require("../models/notification");
@@ -64,14 +64,14 @@ const addCheckIn = async (req, res, next) => {
                     false
                 );
                 // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
-                const schedules = await getEventScheduleByEventId(eventId);
-                //console.log('Executed ? ', schedules.executed);
-                if (!schedules.executed && process.env.NODE_ENV !== 'test') {
-                    planSchedule(event[0], schedules, organizer, guest);
+                const user = await getUserByEventId(eventId);
+                if(user.thank_notifications){
+                  const schedules = await getEventScheduleByEventId(eventId);
+                  //console.log('Executed ? ', schedules.executed);
+                  if (!schedules.executed && process.env.NODE_ENV !== 'test') {
+                      planSchedule(event[0], schedules, organizer, guest);
+                  }
                 }
-                // if (process.env.NODE_ENV !== 'test') {
-                //     planSchedule(scheduleId, req.params.eventId, eventDate);
-                // }
             }
             const event_and_guest_datas = await getEventAndGuestInfoByGuestId(guestId);
             console.log('event_and_guest_datas:', event_and_guest_datas);
@@ -123,6 +123,8 @@ function planSchedule(event, schedules, organizer, guest) {
     const date = formatDate(schedules.scheduled_for);
     
     // on passe une fonction anonyme qui appelle notre fonction async
+    // const user = getUserByEventId(event.eventId);
+    // if(user.thank_notifications){}
     schedule.scheduleJob(date, async () => {
         //console.log('=== Job déclenché ===');
         await sendScheduledThankMessage(event, schedules, organizer, guest);

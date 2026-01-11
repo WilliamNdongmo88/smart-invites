@@ -10,7 +10,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   charset: "utf8mb4",
-  timezone: 'Z',
+  timezone: 'UTC'
 });
 
 console.log("📌 Connected to DB:", process.env.MYSQL_DATABASE);

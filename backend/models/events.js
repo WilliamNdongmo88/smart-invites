@@ -291,7 +291,12 @@ async function getUserByEventId(eventId) {
             e.title,
             u.id AS organizerId,
             u.name,
-            u.email
+            u.email,
+            u.email_notifications,
+            u.attendance_notifications,
+            u.thank_notifications,
+            u.event_reminders,
+            u.marketing_emails
         FROM EVENTS e
         LEFT JOIN USERS u ON u.id=e.organizer_id
         WHERE e.id=?

@@ -1,3 +1,4 @@
+//auth.controller.js
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -13,12 +14,18 @@ const {
   updateUser,
   deleteAccount
 } = require('../models/users');
-const { create } = require('qrcode');
 const { getEventsByOrganizerId, deleteEvents } = require('../models/events');
 const { getGuestByEventId, getGuestAndInvitationRelatedById, delete_guest } = require('../models/guests');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { sendMailToAdmin } = require('../services/notification.service');
 const { createUserNews, getUserNewsByEmail, updateUserNews } = require('../models/usernews');
+
+const {
+    planSchedule,
+    cancelSchedule
+} = require('./event.controller');
+const { getEventScheduleByEventId, updateEventSchedule } = require('../models/event_schedules');
+
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
@@ -93,13 +100,50 @@ const updateProfile = async (req, res, next) => {
             marketing_emails: marketing_emails !== undefined ? marketing_emails : user.marketing_emails
         };
 
-        const result = await updateUser(req.params.userId, updatedUser);
+        const resultId = await updateUser(req.params.userId, updatedUser);
+        //console.log('### result:', resultId);
+
+        // Relancer le schedule après la maj des paramètres de notification profile
+        const events = await getEventsByOrganizerId(resultId);
+        for (const event of events) {
+
+          const date = event.event_date.toISOString().split('T')[0]; // "2026-01-10"
+          const time = event.event_date.toISOString().split('T')[1].split('.')[0]; // "17:26:00"
+          const combinedDateTime = `${date}T${time}.000Z`;
+          console.log('### combined: ', combinedDateTime);
+
+          const scheduleRow = await getEventScheduleByEventId(event.event_id);
+          if (!scheduleRow) continue;
+
+          if (req.body.attendance_notifications) {
+              if (!scheduleRow.executed && process.env.NODE_ENV !== 'test') {
+                  await planSchedule(
+                      scheduleRow.id,
+                      event.event_id,
+                      formatDateForMySQL(combinedDateTime)
+                  );
+              }
+          } else {
+              // Annuler seulement si l'utilisateur a explicitement désactivé les notifications
+              for (const event of events) {
+                  const existingSchedule = await getEventScheduleByEventId(event.event_id);
+                  if (existingSchedule) await cancelSchedule(existingSchedule.id);
+              }
+          }
+        }
+
         return res.status(200).json({ message: 'Utilisateur mis à jour avec succès' });
     } catch (error) {
         console.error('UPDATE USER ERROR:', error.message);
         next(error);
     }
 };
+
+function formatDateForMySQL(date) {
+    const d = new Date(date);
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+    // Résultat : "2026-01-10 18:07:00"
+}
 
 const login = async (req, res, next) => {
   try {

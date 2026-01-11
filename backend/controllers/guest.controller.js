@@ -146,6 +146,8 @@ const addGuestFromLink = async (req, res, next) => {
     }
 }
 
+// Cette méthode a été implémenter pour envoyer le pdf aux invités qui
+// avaient confirmés leur présence avant la maj sendInvitationToGuest()
 const getAllConfirmedGuest = async (req, res, next) => {
     try {
         const guestIds = await getAllConfirmedGuests();

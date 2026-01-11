@@ -42,15 +42,14 @@ const create_Event = async (req, res, next) => {
             try {
                 console.log('[create_Event] eventId :', eventId);
                 const existingSchedule = await getEventScheduleByEventId(eventId);
-                //console.log('[create_Event] existingSchedule:', existingSchedule);
-                // Une tâche existe déjà → NE PAS EN RECRÉER
                 if (existingSchedule) {
                     console.log(`Schedule déjà existant pour event ${eventId}`);
                     return;
                 }
                 const scheduleId = await createEventSchedule(eventId, eventDate, false);
-                //console.log(`Schedule créé pour event ${eventId} → Exécution : ${eventDate}`);
-                planSchedule(scheduleId, eventId, eventDate);
+                if (process.env.NODE_ENV !== 'test') {
+                    await planSchedule(scheduleId, eventId, e.eventDate);
+                }
             } catch (error) {
                 console.error("Erreur planification scheduler:", error);
                 next(error);
@@ -149,13 +148,16 @@ const getAllEvents = async (req, res, next) => {
         const existingSchedule = await getEventScheduleByEventId(req.params.eventId);
         console.log('### existing schedule:', existingSchedule);
         const scheduleId = await updateEventSchedule(existingSchedule.id, req.params.eventId, eventDate, false, false);
-        
         console.log('### scheduleId:', scheduleId);
+
         console.log(`Schedule mis à jour pour event ${req.params.eventId} → Exécution : ${eventDate}`);
-        //planSchedule(scheduleId, req.params.eventId, eventDate);
         console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
-        if (process.env.NODE_ENV !== 'test') {
-            planSchedule(scheduleId, req.params.eventId, eventDate);
+        const user = await getUserByEventId(req.params.eventId);
+        if(user.attendance_notifications){
+            console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
+            if (process.env.NODE_ENV !== 'test') {
+                planSchedule(scheduleId, req.params.eventId, eventDate);
+            }
         }
         
         return res.status(200).json({updatedEvent})
@@ -244,30 +246,47 @@ const getAllEvents = async (req, res, next) => {
         // Conversion finale selon ta logique métier
         const scheduleDate = formatDate(eventDate);
         console.log('[schedule 1] scheduleDate (réelle pour scheduler):', scheduleDate);
+
+        // 🔁 Sécurité : annuler s'il existe déjà
+        await cancelSchedule(scheduleId);
+
         // Planification
-        schedule.scheduleJob(scheduleDate, async () => {
+        schedule.scheduleJob(String(scheduleId), scheduleDate, async () => {
             console.log('🚀 === Job déclenché ===');
             await runScheduledTask(scheduleId, eventId, eventDate);
         });
-
+        console.log('✅ Schedule planifié pour l\'event ', scheduleId, ' date: ', scheduleDate);
     } catch (error) {
         console.error("❌ Erreur planSchedule:", error);
     }
   }
 
+  async function cancelSchedule(scheduleId) {
+    const job = schedule.scheduledJobs[String(scheduleId)];
+
+    if (!job) {
+        console.log('[cancelSchedule] Aucun job trouvé pour l\`event ', scheduleId);
+        return;
+    }
+
+    job.cancel();
+    delete schedule.scheduledJobs[String(scheduleId)];
+
+    console.log('🛑 Schedule annulé:', scheduleId);
+  }
+ 
   async function runScheduledTask(scheduleId, eventId, scheduledFor) {
-    console.log(`Exécution du scheduler pour l'événement ${eventId}`);
+    console.log('🚀 Scheduler exécuté pour event:', eventId);
 
     // Marquer comme exécuté
     await updateEventSchedule(scheduleId, eventId, scheduledFor, true, false);
-
     await sendScheduledReport(eventId);
 
-    console.log(`Scheduler terminé pour l'événement ${eventId}`);
+    console.log('✅ Scheduler terminé:', eventId);
   }
 
   async function sendScheduledReport(eventId) {
-        console.log('=== Job déclenché =1=');
+        // console.log('=== Job déclenché =1=');
     try {
         let guestPresentList = [];
         let guestConfirmedList = [];
@@ -307,7 +326,7 @@ const getAllEvents = async (req, res, next) => {
             }
             guestConfirmedList.push(data);
         }
-        console.log("guestConfirmedList:: ", guestConfirmedList);
+        //console.log("guestConfirmedList:: ", guestConfirmedList);
         const pdfBuffer = await generateDualGuestListPdf(guestPresentList, guestConfirmedList, data);
         //console.log("pdfBuffer:: ", pdfBuffer);
         await sendPdfByEmail(data, pdfBuffer);
@@ -348,5 +367,8 @@ module.exports = {
     sendSReportManually,
     sendSThankMessageManually,
     formatDate,
+    planSchedule,
+    cancelSchedule,
+    runScheduledTask,
     sendScheduledReport
 }
