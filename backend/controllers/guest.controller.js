@@ -155,7 +155,7 @@ const getAllConfirmedGuest = async (req, res, next) => {
         let buffer;
         for (const g of guestIds) {
             const guest = await getGuestAndInvitationRelatedById(g.id);
-            buffer = await generateCustomGuestPdf(guest);
+            buffer = await generateGuestPdf(guest);//generateCustomGuestPdf
             const data = {
                 guest: guest,
                 buffer: buffer

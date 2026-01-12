@@ -3,234 +3,235 @@ const admin = require('firebase-admin');
 const path = require('path');
 require('pdfkit-table');
 
-async function generateGuestPdf(data, plusOneName = null) {
-  console.log('[generateGuestPdf] data: ', data);
-  const guest = data;
-  const event = data;
+// async function generateGuestPdf(data, plusOneName = null) {
+//   console.log('[generateGuestPdf] data: ', data);
+//   const guest = data;
+//   const event = data;
 
-  const eventDate = new Date((event.event_date || event.eventDate)).toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+//   const eventDate = new Date((event.event_date || event.eventDate)).toLocaleDateString('fr-FR', {
+//     weekday: 'long',
+//     year: 'numeric',
+//     month: 'long',
+//     day: 'numeric',
+//   });
 
-  const time = new Date((event.event_date || event.eventDate)).toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+//   const time = new Date((event.event_date || event.eventDate)).toLocaleTimeString('fr-FR', {
+//     hour: '2-digit',
+//     minute: '2-digit'
+//   });
 
-  // const banquetTime = event.banquet_time?.replace(':00', '');
-  const banquetTime = (event.banquet_time || event.banquetTime)?.replace(':00', '');
-  const religiousTime = (event.religious_time || event.religiousTime)?.replace(':00', '');
-  // const religiousTime = event.religious_time?.replace(':00', '');
+//   // const banquetTime = event.banquet_time?.replace(':00', '');
+//   const banquetTime = (event.banquet_time || event.banquetTime)?.replace(':00', '');
+//   const religiousTime = (event.religious_time || event.religiousTime)?.replace(':00', '');
+//   // const religiousTime = event.religious_time?.replace(':00', '');
 
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({
-      size: "A5",
-      margins: { top: 40, bottom: 40, left: 40, right: 40 }
-    });
+//   return new Promise((resolve, reject) => {
+//     const doc = new PDFDocument({
+//       size: "A5",
+//       margins: { top: 40, bottom: 40, left: 40, right: 40 }
+//     });
 
-    const chunks = [];
-    doc.on("data", c => chunks.push(c));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
+//     const chunks = [];
+//     doc.on("data", c => chunks.push(c));
+//     doc.on("end", () => resolve(Buffer.concat(chunks)));
+//     doc.on("error", reject);
 
-    const pageWidth = doc.page.width;
-    const pageHeight = doc.page.height;
+//     const pageWidth = doc.page.width;
+//     const pageHeight = doc.page.height;
 
-    const contentWidth = pageWidth - 80;
-    let y = 40; // 🎯 point de départ vertical
+//     const contentWidth = pageWidth - 80;
+//     let y = 40; // 🎯 point de départ vertical
 
-    /* 🎨 Fond */
-    // doc.rect(0, 0, pageWidth, doc.page.height).fill("#fffaf5");//#fffaf5
+//     /* 🎨 Fond */
+//     // doc.rect(0, 0, pageWidth, doc.page.height).fill("#fffaf5");//#fffaf5
 
-    // BLEU
-    doc.save()
-      .opacity(1)
-      .rect(0, 0, pageWidth, 30)
-      .fill("#0055A4")
-      .restore();
+//     // BLEU
+//     doc.save()
+//       .opacity(1)
+//       .rect(0, 0, pageWidth, 30)
+//       .fill("#0055A4")
+//       .restore();
 
-    // ROUGE
-    doc.save()
-      .opacity(1)
-      .rect(0, pageHeight - 30, pageWidth, 30)
-      .fill("#EF4135")
-      .restore();
+//     // ROUGE
+//     doc.save()
+//       .opacity(1)
+//       .rect(0, pageHeight - 30, pageWidth, 30)
+//       .fill("#EF4135")
+//       .restore();
 
-    // BLANC (opacité très légère pour rester visible)
-    doc.save()
-      .opacity(0.06)
-      .rect(0, 0, pageWidth, pageHeight)
-      .fill("#FFFFFF")
-      .restore();
+//     // BLANC (opacité très légère pour rester visible)
+//     doc.save()
+//       .opacity(0.06)
+//       .rect(0, 0, pageWidth, pageHeight)
+//       .fill("#FFFFFF")
+//       .restore();
 
-    /* 💍 Icône */
-    // doc.image(
-    //   path.join(__dirname, "../assets/icons/logo.png"),//ring.png
-    //   pageWidth / 2 - 18,
-    //   y,
-    //   { width: 36 }
-    // );
+//     /* 💍 Icône */
+//     // doc.image(
+//     //   path.join(__dirname, "../assets/icons/logo.png"),//ring.png
+//     //   pageWidth / 2 - 18,
+//     //   y,
+//     //   { width: 36 }
+//     // );
 
-    // y += 55;
+//     // y += 55;
     
-    const imgSize = 100;
+//     const imgSize = 100;
 
-    doc.image(
-      path.join(__dirname, "../assets/icons/logo.png"),
-      pageWidth / 2 - imgSize / 2,
-      y,
-      { width: imgSize }
-    );
+//     doc.image(
+//       path.join(__dirname, "../assets/icons/logo.png"),
+//       pageWidth / 2 - imgSize / 2,
+//       y,
+//       { width: imgSize }
+//     );
 
-    y += imgSize + 20;
+//     y += imgSize + 20;
 
-    /* 💕 Titre */
-    doc
-      .fillColor("#b58b63")
-      .font("Times-Bold")
-      .fontSize(22)
-      .text("Célébrons l’Amour", 40, y, {
-        width: contentWidth,
-        align: "center"
-      });
+//     /* 💕 Titre */
+//     doc
+//       .fillColor("#b58b63")
+//       .font("Times-Bold")
+//       .fontSize(22)
+//       .text("Célébrons l’Amour", 40, y, {
+//         width: contentWidth,
+//         align: "center"
+//       });
 
-    y += 35;
+//     y += 35;
 
-    /* Sous-titre */
-    doc
-      .fillColor("#777")
-      .font("Helvetica-Oblique")
-      .fontSize(12)
-      .text(
-        "Nous avons la joie de vous convier à notre mariage",
-        40,
-        y,
-        { width: contentWidth, align: "center" }
-      );
+//     /* Sous-titre */
+//     doc
+//       .fillColor("#777")
+//       .font("Helvetica-Oblique")
+//       .fontSize(12)
+//       .text(
+//         "Nous avons la joie de vous convier à notre mariage",
+//         40,
+//         y,
+//         { width: contentWidth, align: "center" }
+//       );
 
-    y += 35;
+//     y += 35;
 
-    /* 👤 Invité */
-    doc
-      .fillColor("#333")
-      .font("Times-Italic")
-      .fontSize(14)
-      .text(
-        (guest.plus_one_name || plusOneName)
-          ? `Cher/Chère ${guest.full_name} et ${(guest.plus_one_name || plusOneName)}`
-          : `Cher/Chère ${guest.full_name},`,
-        40,
-        y,
-        { width: contentWidth, align: "center" }
-      );
+//     /* 👤 Invité */
+//     doc
+//       .fillColor("#333")
+//       .font("Times-Italic")
+//       .fontSize(14)
+//       .text(
+//         (guest.plus_one_name || plusOneName)
+//           ? `Cher/Chère ${guest.full_name} et ${(guest.plus_one_name || plusOneName)}`
+//           : `Cher/Chère ${guest.full_name},`,
+//         40,
+//         y,
+//         { width: contentWidth, align: "center" }
+//       );
 
-    y += 35;
+//     y += 35;
 
-    /* 📝 Texte principal */
-    doc
-      .font("Helvetica")
-      .fontSize(11)
-      .fillColor("#444")
-      .text(
-        "C’est avec un immense bonheur que nous vous invitons à célébrer notre union entourés de nos familles et amis, lors d’une journée inoubliable.",
-        40,
-        y,
-        {
-          width: contentWidth,
-          align: "center",
-          lineGap: 4
-        }
-      );
+//     /* 📝 Texte principal */
+//     doc
+//       .font("Helvetica")
+//       .fontSize(11)
+//       .fillColor("#444")
+//       .text(
+//         "C’est avec un immense bonheur que nous vous invitons à célébrer notre union entourés de nos familles et amis, lors d’une journée inoubliable.",
+//         40,
+//         y,
+//         {
+//           width: contentWidth,
+//           align: "center",
+//           lineGap: 4
+//         }
+//       );
 
-    y += 70;
+//     y += 70;
 
-    /* 📅 Programme */
-    if(event.type == 'wedding'){
-      doc
-      .font("Helvetica-Bold")
-      .fontSize(13)
-      .fillColor("#444")
-      .text("Programme de la journée", 40, y, {
-        width: contentWidth,
-        align: "center"
-      });
+//     /* 📅 Programme */
+//     if(event.type == 'wedding'){
+//       doc
+//       .font("Helvetica-Bold")
+//       .fontSize(13)
+//       .fillColor("#444")
+//       .text("Programme de la journée", 40, y, {
+//         width: contentWidth,
+//         align: "center"
+//       });
 
-      y += 22;
+//       y += 22;
 
-      doc
-        .font("Helvetica")
-        .fontSize(11)
-        .text(
-          `Mariage civil le ${eventDate} à ${time}\n${(event.event_civil_location || event.eventCivilLocation)}`,
-          40,
-          y,
-          { width: contentWidth, align: "center", lineGap: 3 }
-        );
+//       doc
+//         .font("Helvetica")
+//         .fontSize(11)
+//         .text(
+//           `Mariage civil le ${eventDate} à ${time}\n${(event.event_civil_location || event.eventCivilLocation)}`,
+//           40,
+//           y,
+//           { width: contentWidth, align: "center", lineGap: 3 }
+//         );
 
-      y += 40;
+//       y += 40;
 
-      if(event.show_wedding_religious_location){
-        doc.text(
-          `Cérémonie Religieuse ${religiousTime}\n${(event.religious_location || event.religiousLocation)}`,
-          40,
-          y,
-          { width: contentWidth, align: "center", lineGap: 3 }
-        );
+//       if(event.show_wedding_religious_location){
+//         doc.text(
+//           `Cérémonie Religieuse ${religiousTime}\n${(event.religious_location || event.religiousLocation)}`,
+//           40,
+//           y,
+//           { width: contentWidth, align: "center", lineGap: 3 }
+//         );
 
-        y += 40;
-      }
+//         y += 40;
+//       }
 
-      doc.text(
-        `Réception nuptiale le même jour à partir de ${banquetTime}\n${(event.event_location || event.eventLocation)}`,
-        40,
-        y,
-        { width: contentWidth, align: "center", lineGap: 3 }
-      );
+//       doc.text(
+//         `Réception nuptiale le même jour à partir de ${banquetTime}\n${(event.event_location || event.eventLocation)}`,
+//         40,
+//         y,
+//         { width: contentWidth, align: "center", lineGap: 3 }
+//       );
 
-      y += 45;
-    }
+//       y += 45;
+//     }
 
-    /* ✨ Message */
-    doc
-      .font("Helvetica-Oblique")
-      .fontSize(11)
-      .fillColor("#888")
-      .text(
-        "Votre présence illuminera ce jour si spécial pour nous.",
-        40,
-        y,
-        { width: contentWidth, align: "center" }
-      );
+//     /* ✨ Message */
+//     doc
+//       .font("Helvetica-Oblique")
+//       .fontSize(11)
+//       .fillColor("#888")
+//       .text(
+//         "Votre présence illuminera ce jour si spécial pour nous.",
+//         40,
+//         y,
+//         { width: contentWidth, align: "center" }
+//       );
 
-    y += 30;
+//     y += 30;
 
-    /* 🤍 Signature */
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(13)
-      .fillColor("#b58b63")
-      .text(
-        `${event.event_name_concerned1} & ${event.event_name_concerned2}`,
-        40,
-        y,
-        { width: contentWidth, align: "center" }
-      );
+//     /* 🤍 Signature */
+//     doc
+//       .font("Helvetica-Bold")
+//       .fontSize(13)
+//       .fillColor("#b58b63")
+//       .text(
+//         `${event.event_name_concerned1} & ${event.event_name_concerned2}`,
+//         40,
+//         y,
+//         { width: contentWidth, align: "center" }
+//       );
 
-    /* ❤️ Icône finale */
-    doc.image(
-      path.join(__dirname, "../assets/icons/heart.png"),
-      pageWidth / 2 - 10,
-      y + 22,
-      { width: 20 }
-    );
+//     /* ❤️ Icône finale */
+//     doc.image(
+//       path.join(__dirname, "../assets/icons/heart.png"),
+//       pageWidth / 2 - 10,
+//       y + 22,
+//       { width: 20 }
+//     );
 
-    doc.end();
-  });
-}
+//     doc.end();
+//   });
+// }
 //generateCustomGuestPdf
+
 async function generateGuestPdf(data, plusOneName = null) {
   const guest = data;
   const event = data;
@@ -277,14 +278,22 @@ async function generateGuestPdf(data, plusOneName = null) {
     y += imgSize; // 🎯 Réduction de la marge entre l'image et le titre
 
     /* 💕 Titre */
-    doc.fillColor("#b58b63").font("Times-Bold").fontSize(19).text("LETTRE D'INVITATION", 38, y, { width: contentWidth, align: "center" });
+    doc
+    .fillColor("#b58b63")
+    .font("Times-BoldItalic")  // ✅ Gras + Italique
+    .fontSize(19)
+    .text("LETTRE D'INVITATION", 38, y, { 
+      width: contentWidth, 
+      align: "center",
+      underline: true  // ✅ Souligné
+    });
     y += 30;
 
-    /* Sous-titre */
-    doc.fillColor("#777").font("Helvetica-Oblique").fontSize(11.5).text(
+    /* Sous-titre .font("Helvetica-Oblique") */
+    doc.fillColor("#444").font("Times-BoldItalic").fontSize(11.5).text(
       (guest.plus_one_name || plusOneName)
-        ? `Cher/Chère M. et Mme ${guest.full_name} et ${(guest.plus_one_name || plusOneName)}`
-        : `Cher/Chère M. et Mme ${guest.full_name},`,
+        ? `Cher/Chère ${guest.full_name} et ${(guest.plus_one_name || plusOneName)}`
+        : `Cher/Chère ${guest.full_name},`,
       38, y, { width: contentWidth, align: "center" }
     );
     y += 20;
@@ -303,7 +312,12 @@ async function generateGuestPdf(data, plusOneName = null) {
     y += mainTextHeight + 15; // Ajout d'un espace de sécurité
 
     /* 📅 Programme */
-    doc.font("Helvetica-Bold").fontSize(12.5).fillColor("#444").text("PROGRAMME DE LA JOURNÉE", 38, y, { width: contentWidth, align: "center" });
+    doc
+      //.font("Helvetica-Bold")
+      .fontSize(12.5)
+      .fillColor("#444")
+      .font("Times-BoldItalic")  
+      .text("PROGRAMME DE LA JOURNÉE", 38, y, { width: contentWidth, align: "center" });
     y += 20;
 
     const programText1 = `MARIAGE CIVIL LE ${eventDate} A ${time}\n${(event.event_civil_location || event.eventCivilLocation)} \nMini réception à la sortie de la mairie directement après la célebration de l'union par Mr le Maire.`;
@@ -319,10 +333,16 @@ async function generateGuestPdf(data, plusOneName = null) {
     y += programHeight2 + 15;
 
     /* ✨ Thème & Couleurs */
-    doc.font("Helvetica-Bold").fontSize(11.5).text("THEME DE LA SOIRÉE : CHIC ET GLAMOUR", 38, y, { width: contentWidth, align: "center" });
+    doc
+      //.font("Helvetica-Bold")
+      .fontSize(11.5)
+      .font("Times-BoldItalic") 
+      .text("THEME DE LA SOIRÉE : CHIC ET GLAMOUR", 38, y, { width: contentWidth, align: "center" });
     y += 18;
 
-    doc.font("Helvetica").fontSize(10.5).text("Couleurs priorisées : Bleu, Blanc, Rouge, (NOIR: couleur universelle).", 38, y, { width: contentWidth, align: "center" });
+    doc.font("Helvetica").fontSize(10.5).text("Couleurs priorisées", 38, y, { width: contentWidth, align: "center" });
+    y += 20;
+    doc.font("Helvetica").fontSize(10.5).font("Times-BoldItalic") .text("Bleu, Blanc, Rouge, (NOIR: couleur universelle).", 38, y, { width: contentWidth, align: "center" });
     y += 20;
 
     /* Consignes QR */
@@ -343,12 +363,17 @@ async function generateGuestPdf(data, plusOneName = null) {
 
     const thanksText3 = "Votre présence illuminera ce jour si spécial pour nous.";
     doc.font("Helvetica-Oblique").fontSize(10).fillColor("#666").text(thanksText3, 38, y, { width: contentWidth, align: "center", lineGap: 1.5 });
+    // y += thanksText3 + 50;
 
     /* 🤍 Signature et ❤️ Cœur (Positionnement fixe en bas) */
-    const signatureY = pageHeight - 85; // 🎯 Positionnement fixe par rapport au bas de la page
-    doc.font("Helvetica-Bold").fontSize(14).fillColor("#b58b63").text(`${event.event_name_concerned1} & ${event.event_name_concerned2}`, 38, signatureY, { width: contentWidth, align: "center" });
+    const signatureY = pageHeight - 65; // 🎯 Positionnement fixe par rapport au bas de la page
+    doc
+      .font("Times-BoldItalic") 
+      .fontSize(14)
+      .fillColor("#b58b63")
+      .text(`${event.event_name_concerned1} & ${event.event_name_concerned2}`, 38, signatureY,{ width: contentWidth, align: "center", underline: true });
     
-    const heartSize = 22;
+    const heartSize = 16;
     doc.image(path.join(__dirname, "../assets/icons/heart.png"), pageWidth / 2 - heartSize / 2, signatureY + 20, { width: heartSize });
 
     doc.end();
