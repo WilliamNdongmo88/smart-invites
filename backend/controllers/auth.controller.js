@@ -24,7 +24,7 @@ const {
     planSchedule,
     cancelSchedule
 } = require('./event.controller');
-const { getEventScheduleByEventId, updateEventSchedule } = require('../models/event_schedules');
+const { getEventScheduleByEventId } = require('../models/event_schedules');
 
 
 const JWT_SECRET = process.env.JWT_SECRET;

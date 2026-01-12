@@ -4,7 +4,7 @@ const path = require('path');
 require('pdfkit-table');
 
 async function generateGuestPdf(data, plusOneName = null) {
-  //console.log('[generateGuestPdf] data: ', data);
+  console.log('[generateGuestPdf] data: ', data);
   const guest = data;
   const event = data;
 
@@ -37,11 +37,34 @@ async function generateGuestPdf(data, plusOneName = null) {
     doc.on("error", reject);
 
     const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+
     const contentWidth = pageWidth - 80;
     let y = 40; // 🎯 point de départ vertical
 
     /* 🎨 Fond */
-    doc.rect(0, 0, pageWidth, doc.page.height).fill("#fffaf5");
+    // doc.rect(0, 0, pageWidth, doc.page.height).fill("#fffaf5");//#fffaf5
+
+    // BLEU
+    doc.save()
+      .opacity(1)
+      .rect(0, 0, pageWidth, 30)
+      .fill("#0055A4")
+      .restore();
+
+    // ROUGE
+    doc.save()
+      .opacity(1)
+      .rect(0, pageHeight - 30, pageWidth, 30)
+      .fill("#EF4135")
+      .restore();
+
+    // BLANC (opacité très légère pour rester visible)
+    doc.save()
+      .opacity(0.06)
+      .rect(0, 0, pageWidth, pageHeight)
+      .fill("#FFFFFF")
+      .restore();
 
     /* 💍 Icône */
     // doc.image(
@@ -207,7 +230,130 @@ async function generateGuestPdf(data, plusOneName = null) {
     doc.end();
   });
 }
+//generateCustomGuestPdf
+async function generateGuestPdf(data, plusOneName = null) {
+  const guest = data;
+  const event = data;
 
+  const eventDate = new Date((event.event_date || event.eventDate)).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const time = new Date((event.event_date || event.eventDate)).toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const banquetTime = (event.banquet_time || event.banquetTime)?.replace(':00', '');
+  const religiousTime = (event.religious_time || event.religiousTime)?.replace(':00', '');
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: "A5",
+      margins: { top: 30, bottom: 30, left: 40, right: 40 }
+    });
+
+    const chunks = [];
+    doc.on("data", c => chunks.push(c));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const contentWidth = pageWidth - 80;
+    let y = 35; 
+
+    /* 🎨 Fond */
+    doc.save().rect(0, 0, pageWidth, 25).fill("#0055A4").restore();
+    doc.save().rect(0, pageHeight - 25, pageWidth, 25).fill("#EF4135").restore();
+    doc.save().opacity(0.04).rect(0, 0, pageWidth, pageHeight).fill("#FFFFFF").restore();
+
+    /* 💍 Icône */
+    const imgSize = 65;
+    doc.image(path.join(__dirname, "../assets/icons/logo.png"), pageWidth / 2 - imgSize / 2, y, { width: imgSize });
+    y += imgSize; // 🎯 Réduction de la marge entre l'image et le titre
+
+    /* 💕 Titre */
+    doc.fillColor("#b58b63").font("Times-Bold").fontSize(19).text("LETTRE D'INVITATION", 38, y, { width: contentWidth, align: "center" });
+    y += 30;
+
+    /* Sous-titre */
+    doc.fillColor("#777").font("Helvetica-Oblique").fontSize(11.5).text(
+      (guest.plus_one_name || plusOneName)
+        ? `Cher/Chère M. et Mme ${guest.full_name} et ${(guest.plus_one_name || plusOneName)}`
+        : `Cher/Chère M. et Mme ${guest.full_name},`,
+      38, y, { width: contentWidth, align: "center" }
+    );
+    y += 20;
+
+    /* 📝 Texte principal */
+    doc.font("Helvetica").fontSize(10.5).fillColor("#444").text(
+      `C'est avec un immense bonheur que nous vous invitons à l'occasion de notre union que nous célebrerons entourés de nos familles, amis et connaissances dans la ville de BANGANGTE plus précisement à la Mairie.`,
+      38, y, { width: contentWidth, align: "center", lineGap: 2 }
+    );
+    
+    // 🎯 Calcul dynamique de la hauteur du texte pour éviter le chevauchement
+    const mainTextHeight = doc.heightOfString(
+      `C'est avec un immense bonheur que nous vous invitons à l'occasion de notre union que nous célebrerons entourés de nos familles, amis et connaissances dans la ville de BANGANGTE plus précisement à la Mairie.`,
+      { width: contentWidth, lineGap: 2 }
+    );
+    y += mainTextHeight + 15; // Ajout d'un espace de sécurité
+
+    /* 📅 Programme */
+    doc.font("Helvetica-Bold").fontSize(12.5).fillColor("#444").text("PROGRAMME DE LA JOURNÉE", 38, y, { width: contentWidth, align: "center" });
+    y += 20;
+
+    const programText1 = `MARIAGE CIVIL LE ${eventDate} A ${time}\n${(event.event_civil_location || event.eventCivilLocation)} \nMini réception à la sortie de la mairie directement après la célebration de l'union par Mr le Maire.`;
+    doc.font("Helvetica").fontSize(10.5).text(programText1, 38, y, { width: contentWidth, align: "center", lineGap: 1.5 });
+    
+    const programHeight1 = doc.heightOfString(programText1, { width: contentWidth, lineGap: 1.5 });
+    y += programHeight1 + 10;
+
+    const programText2 = `Reception nuptial le même jour a partir de ${banquetTime} précisement à\n${(event.event_location || event.eventLocation)}`;
+    doc.text(programText2, 38, y, { width: contentWidth, align: "center", lineGap: 1.5 });
+    
+    const programHeight2 = doc.heightOfString(programText2, { width: contentWidth, lineGap: 1.5 });
+    y += programHeight2 + 15;
+
+    /* ✨ Thème & Couleurs */
+    doc.font("Helvetica-Bold").fontSize(11.5).text("THEME DE LA SOIRÉE : CHIC ET GLAMOUR", 38, y, { width: contentWidth, align: "center" });
+    y += 18;
+
+    doc.font("Helvetica").fontSize(10.5).text("Couleurs priorisées : Bleu, Blanc, Rouge, (NOIR: couleur universelle).", 38, y, { width: contentWidth, align: "center" });
+    y += 20;
+
+    /* Consignes QR */
+    const qrText = "Prière de vous présenter uniquement avec votre code QR et votre billet numérique (à partir de votre téléphone) transféré par votre émetteur via les applications mobiles de votre choix (WhatsApp, SMS, e-mail) le jour de la soirée.";
+    doc.font("Helvetica").fontSize(10).fillColor("#444").text(qrText, 38, y, { width: contentWidth, align: "center", lineGap: 1.5 });
+    
+    const qrHeight = doc.heightOfString(qrText, { width: contentWidth, lineGap: 1.5 });
+    y += qrHeight + 10;
+
+    /* Remerciements */
+    const thanksText = "Merci de respecter les couleurs vestimentaires choisies.";
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("#666").text(thanksText, 38, y, { width: contentWidth, align: "center", lineGap: 1.5 });
+    y += 20;
+
+    const thanksText2 = "Merci pour votre compréhension.";
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("#666").text(thanksText2, 38, y, { width: contentWidth, align: "center", lineGap: 1.5 });
+    y += 20;
+
+    const thanksText3 = "Votre présence illuminera ce jour si spécial pour nous.";
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("#666").text(thanksText3, 38, y, { width: contentWidth, align: "center", lineGap: 1.5 });
+
+    /* 🤍 Signature et ❤️ Cœur (Positionnement fixe en bas) */
+    const signatureY = pageHeight - 85; // 🎯 Positionnement fixe par rapport au bas de la page
+    doc.font("Helvetica-Bold").fontSize(14).fillColor("#b58b63").text(`${event.event_name_concerned1} & ${event.event_name_concerned2}`, 38, signatureY, { width: contentWidth, align: "center" });
+    
+    const heartSize = 22;
+    doc.image(path.join(__dirname, "../assets/icons/heart.png"), pageWidth / 2 - heartSize / 2, signatureY + 20, { width: heartSize });
+
+    doc.end();
+  });
+}
 
 async function generatePresentGuestsPdf(guests = [], event) {
   return new Promise((resolve, reject) => {
@@ -597,5 +743,5 @@ async function uploadPdfToFirebase(guest, pdfBuffer) {
 }
 
 module.exports = { generateGuestPdf, uploadPdfToFirebase, 
-                   generatePresentGuestsPdf, generateDualGuestListPdf, 
+                   generatePresentGuestsPdf, generateDualGuestListPdf,
                  };

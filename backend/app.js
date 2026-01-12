@@ -74,7 +74,8 @@ const startServer = async () => {
     await createDefaultAdmin();
     //await sendScheduledReport(3);
     //await sendNewsLetterToUsers();
-    
+    //await getAllConfirmedGuest();
+
     // 3 Démarrer le serveur
     app.get('/', (req, res) => {
       res.send('🚀 Node.js + MySQL connectés et initialisés !');

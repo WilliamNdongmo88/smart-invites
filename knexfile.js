@@ -11,8 +11,7 @@ module.exports = {
       port: process.env.MYSQL_PORT || 3308,
       user: process.env.MYSQL_USER || "root",
       password: process.env.MYSQL_PASSWORD || "dev-root",
-      database: process.env.MYSQL_DATABASE || "dev_smart_invite_db",
-      timezone: 'UTC'
+      database: process.env.MYSQL_DATABASE || "dev_smart_invite_db"
     },
     migrations: {
       directory: path.resolve(__dirname, "backend/migrations")

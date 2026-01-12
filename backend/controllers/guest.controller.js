@@ -5,7 +5,7 @@ const { sendInvitationToGuest, sendReminderMail,
     sendGuestResponseToOrganizer, sendFileQRCodeMail,
     sendPdfToGuestMail} = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
-const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
+const { generateGuestPdf, uploadPdfToFirebase, generateCustomGuestPdf } = require("../services/pdfService");
 const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
         update_guest, updateRsvpStatusGuest, delete_guest,
@@ -155,7 +155,7 @@ const getAllConfirmedGuest = async (req, res, next) => {
         let buffer;
         for (const g of guestIds) {
             const guest = await getGuestAndInvitationRelatedById(g.id);
-            buffer = await generateGuestPdf(guest);
+            buffer = await generateCustomGuestPdf(guest);
             const data = {
                 guest: guest,
                 buffer: buffer
