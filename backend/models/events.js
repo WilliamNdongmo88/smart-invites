@@ -136,9 +136,13 @@ async function getGuestEmailRelatedToEvent(email, eventId) {
         e.event_name_concerned1,
         e.event_name_concerned2,
         g.id AS guestId,
-        g.email
+        g.full_name,
+        g.email,
+        u.id AS organizerId,
+        u.role
         FROM EVENTS e
         LEFT JOIN GUESTS g ON g.event_id = e.id
+        LEFT JOIN USERS u ON u.id = e.organizer_id
         WHERE g.email = ? AND e.id = ?
         ORDER BY e.id`, [email, eventId]);
     return event[0];

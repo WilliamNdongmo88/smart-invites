@@ -37,7 +37,13 @@ const addGuest = async (req, res, next) => {
             //console.log('event :: ', event);
             if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
             const result = await getGuestEmailRelatedToEvent(email, event.id);
-            if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
+            console.log('[addGuest] result :: ', result);
+            console.log('[addGuest] role :: ', result.role);
+            if (result && !['admin', 'user'].includes(result.role)) {
+                return res.status(409).json({
+                    error: `L'invité ${email} existe déjà`
+                });
+            }
             const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
                                               rsvpStatus, guesthasPlusOneAutoriseByAdmin);
             returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
