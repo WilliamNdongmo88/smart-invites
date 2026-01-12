@@ -54,11 +54,11 @@ async function createDefaultAdmin() {
     }
 }
 
-async function createUser({ name, email, password, role = 'admin', avatar_url = null }) {
+async function createUser({ name, email, password, role = 'admin', isActive = false, avatar_url = null }) {
   const hashed = await bcrypt.hash(password, 10);
   const [result] = await pool.query(
-    `INSERT INTO USERS (name, email, password, role, avatar_url) VALUES (?, ?, ?, ?, ?)`,
-    [name, email, hashed, role, avatar_url]
+    `INSERT INTO USERS (name, email, password, role, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?)`,
+    [name, email, hashed, role, isActive, avatar_url]
   );
   return result.insertId;
 }
@@ -89,6 +89,10 @@ async function saveResetCode(userId, code) {
 async function updateUserPassword(email, newpassword) {
     const hashedPassword = await bcrypt.hash(newpassword, 10);
     await pool.query(`UPDATE USERS SET password = ? WHERE email = ?`, [hashedPassword, email]);
+}
+
+async function updateUserActiveAccount(email, isActive) {
+    await pool.query(`UPDATE USERS SET is_active = ? WHERE email = ?`, [isActive, email]);
 }
 
 async function saveRefreshToken(userId, token) {
@@ -136,5 +140,6 @@ module.exports = {
     saveRefreshToken,
     updateUserPassword,
     clearRefreshToken,
-    deleteAccount
+    deleteAccount,
+    updateUserActiveAccount
 }

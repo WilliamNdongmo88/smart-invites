@@ -73,7 +73,38 @@ const register = async (req, res, next) => {
     if (existing) return res.status(409).json({ error: 'Email déjà utilisé' });
 
     const userId = await createUser({ name, email, password, role });
-    res.status(201).json({ id: userId, name, email });
+    console.log('userId:', userId);
+    
+    // Génère un code à 6 chiffres
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // ✅ Correction : Utiliser userId au lieu de user.id
+    await saveResetCode(userId, code);
+
+    // Envoie du mail via Brevo
+    try {
+      // ✅ Correction : Créer l'objet user ou passer userId et email
+      const user = { id: userId, name, email };
+      await sendEmailCode(user, code, true);
+      
+      // ✅ Correction : Retourner une seule réponse
+      return res.status(201).json({ 
+        id: userId, 
+        name, 
+        email, 
+        message: 'Utilisateur créé. Email de vérification envoyé.' 
+      });
+    } catch (error) {
+      console.error("SEND EMAIL ERROR:", error.message);
+      // ✅ L'utilisateur est créé mais l'email a échoué
+      return res.status(201).json({ 
+        id: userId, 
+        name, 
+        email, 
+        warning: 'Utilisateur créé mais email non envoyé' 
+      });
+    }
+
   } catch (error) {
     console.error('REGISTER ERROR:', error.message);
     next(error);
@@ -158,8 +189,13 @@ const login = async (req, res, next) => {
     }
 
     const user = await getUserByEmail(email);
+    console.log('user: ', user);
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur non trouvé' });
+    }
+
+    if (user.is_active==false) {
+      return res.status(403).json({ error: 'Veuillez activer votre compte!' });
     }
 
     const match = await bcrypt.compare(password, user.password);
@@ -218,7 +254,7 @@ const loginWithGoogle = async (req, res, next) => {
       const name = payload.name;
       const randomPassword = Math.random().toString(36).slice(-8);
       const userId = await createUser({ 
-        name, email, password: randomPassword, role: 'user', avatar_url: picture 
+        name, email, password: randomPassword, role: 'user', isActive: true, avatar_url: picture 
       });
       user = await getUserById(userId);
     }
@@ -289,7 +325,7 @@ const forgotPassword = async (req, res, next) => {
     // Envoie du mail via Brevo
     try {
       await sendEmailCode(user, code);
-      res.status(200).json({ message: 'Email envoyé' });
+      console.log('Email envoyé');
     } catch (error) {
       console.error("SEND EMAIL ERROR:", error.message);
       next(error);
@@ -304,10 +340,10 @@ const forgotPassword = async (req, res, next) => {
 
 const checkCode = async (req, res, next) => {
     try {
-        const { email, code } = req.body;
-
+        const { email, code, isActive } = req.body;
+        console.log('email, code, isActive: ', email, code, isActive);
         // Vérification si le code est correct
-        const user = await checkUserByCode(email, code);
+        const user = await checkUserByCode(email, code, isActive);
 
         return res.status(200).json({ message: 'Code valide', userId: user.id });
     } catch (error) {

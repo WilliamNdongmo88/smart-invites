@@ -1,17 +1,13 @@
 const Brevo = require('@getbrevo/brevo');
 require('dotenv').config();
-const {getUserByEmail, updateUserPassword} = require('../models/users')
+const {getUserByEmail, updateUserPassword, updateUserActiveAccount} = require('../models/users')
 
 // Fonction utilitaire pour envoyer le mail via Brevo
-async function sendEmailCode(user, code) {
+async function sendEmailCode(user, code, isActive=false) {
   const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
-  const sendSmtpEmail = {
-    to: [{ email: user.email, name: user.name }],
-    sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
-    subject: 'Réinitialisation de votre mot de passe',
-    htmlContent: `
+  const resetPassMessage = `
       <div style="font-family:Arial,sans-serif">
         <h2>Bonjour ${user.name || ''},</h2>
         <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
@@ -23,13 +19,30 @@ async function sendEmailCode(user, code) {
         <p>L’équipe <strong>Smart Invite</strong></p>
       </div>
     `
+  const activeAccountMessage = `
+      <div style="font-family:Arial,sans-serif">
+        <h2>Bonjour ${user.name || ''},</h2>
+        <p>Voici votre code d'activation :</p>
+        <h1 style="letter-spacing:4px">${code}</h1>
+        <p>Ce code est valable pendant 10 minutes.</p>
+        <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail.</p>
+        <br/>
+        <p>L’équipe <strong>Smart Invite</strong></p>
+      </div>
+    `
+
+  const sendSmtpEmail = {
+    to: [{ email: user.email, name: user.name }],
+    sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
+    subject: isActive ? 'Activation de votre compte': 'Réinitialisation de votre mot de passe',
+    htmlContent: isActive ? activeAccountMessage : resetPassMessage
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
   console.log(`✅ Email envoyé à ${user.email}`);
 }
 
-async function checkUserByCode(email, code) {
+async function checkUserByCode(email, code, isActive=false) {
   // Recherche l'utilisateur
   const user = await getUserByEmail(email);
   if (!user) {
@@ -55,6 +68,7 @@ async function checkUserByCode(email, code) {
   }
 
   // Si tout est bon, retourne l’utilisateur
+  if(isActive) await updateUserActiveAccount(email, true);
   return user;
 }
 
