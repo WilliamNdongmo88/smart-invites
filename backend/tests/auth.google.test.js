@@ -58,7 +58,7 @@ const loginWithGoogle = async (req, res, next) => {
 
     let user = await getUserByEmail(email);
     if (!user) {
-      const userId = await createUser({ name, email, password: 'random', role: 'user', avatar_url: picture });
+      const userId = await createUser({ name, email, password: 'random', role: 'user', isActive: true, avatar_url: picture });
       user = await getUserById(userId);
     }
 

@@ -24,6 +24,18 @@ describe("Events API", () => {
             expect(res.statusCode).toBe(201);
         });
 
+        test("ACTIVATE USER (TEST MODE)", async () => {
+            const res = await request(app)
+            .post("/api/auth/check-code")
+            .send({
+                email: userData.email,
+                code: "000000",
+                isActive: true
+            });
+
+            expect(res.statusCode).toBe(200);
+        });
+
         test("LOGIN USER", async () => {
             const res = await request(app).post("/api/auth/login").send(userData);
             console.log("LOGIN RESPONSE:", res.body);

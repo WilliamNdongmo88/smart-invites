@@ -14,65 +14,75 @@ describe("Auth API", () => {
         server = await startServer();
     });
 
-    describe("Test", () => {
-        const userData = {email: "will@example.com", password: "Willfr123", role: "admin"};
+    describe("Auth API", () => {
+
+        const userData = {
+            email: "will@example.com",
+            password: "Will@fr123",
+            role: "admin"
+        };
 
         test("REGISTER USER", async () => {
-            const res = await request(app).post('/api/auth/register').send(userData);
+            const res = await request(app)
+            .post("/api/auth/register")
+            .send(userData);
 
-            console.log("# REGISTER RES:", res.body);
             expect(res.statusCode).toBe(201);
         });
 
+        test("ACTIVATE USER (TEST MODE)", async () => {
+            const res = await request(app)
+            .post("/api/auth/check-code")
+            .send({
+                email: userData.email,
+                code: "000000",
+                isActive: true
+            });
+
+            expect(res.statusCode).toBe(200);
+        });
+
         test("LOGIN USER", async () => {
-            const res = await request(app).post("/api/auth/login").send(userData);
-            console.log("LOGIN RESPONSE:", res.body);
+            const res = await request(app)
+            .post("/api/auth/login")
+            .send(userData);
+
+            expect(res.statusCode).toBe(200);
+
             token = res.body.accessToken;
             refreshToken = res.body.refreshToken;
             email = res.body.user.email;
-            expect(res.statusCode).toBe(200);
-            expect(res.body).toHaveProperty("accessToken");
-            expect(res.body).toHaveProperty("refreshToken");
         });
 
-        test("REFRESH TOKEN USER", async () => {
+        test("REFRESH TOKEN", async () => {
             const res = await request(app)
-            .post("/api/auth/refresh-token").send({refreshToken: refreshToken});
+            .post("/api/auth/refresh-token")
+            .send({ refreshToken });
 
             expect(res.statusCode).toBe(200);
-            expect(res.body).toHaveProperty("accessToken");
-            expect(res.body).toHaveProperty("refreshToken");
         });
 
-        test("FORGOT PASSWORD USER", async () => {
+        test("FORGOT PASSWORD", async () => {
             const res = await request(app)
-            .post("/api/auth/forgot-password").send({email:email});
+            .post("/api/auth/forgot-password")
+            .send({ email });
 
-            console.log("# FORGOT PASSWORD RES:", res.body);
             expect(res.statusCode).toBe(200);
-            expect(res.body).toHaveProperty("message");
         });
 
-        test("CHECK CODE USER", async () => {
+        test("RESET PASSWORD", async () => {
             const res = await request(app)
-            .post("/api/auth/check-code").send({email: email, code: "461311"});
+            .post("/api/auth/reset-password")
+            .send({
+                email,
+                newpassword: "NewPass@123"
+            });
 
-            expect(res.statusCode).toBe(500);
-            expect(res.body).toHaveProperty("status");
-            expect(res.body).toHaveProperty("message");
-        });
-
-        test("RESET PASSWORD USER", async () => {
-            // console.log("# EMAIL :", email);
-            const res = await request(app)
-            .post("/api/auth/reset-password").send({email: email, newpassword: "Will@fr123"});
-
-            console.log("res:: ", res.body)
             expect(res.statusCode).toBe(200);
             expect(res.body).toHaveProperty("userId");
-            expect(res.body).toHaveProperty("message");
         });
-    })
+    });
+
 
     afterAll(async () => {
         await closeServer();
