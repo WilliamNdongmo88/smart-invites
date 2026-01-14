@@ -48,7 +48,7 @@ const create_Event = async (req, res, next) => {
                 }
                 const scheduleId = await createEventSchedule(eventId, eventDate, false);
                 if (process.env.NODE_ENV !== 'test') {
-                    await planSchedule(scheduleId, eventId, e.eventDate);
+                    await planSchedule(scheduleId, eventId, eventDate);
                 }
             } catch (error) {
                 console.error("Erreur planification scheduler:", error);
