@@ -306,7 +306,8 @@ const contactUs = async (req, res, next) => {
 
 const forgotPassword = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, isActive } = req.body;
+    console.log('[forgotPassword] req.body:', req.body);
     if (!email) {
       return res.status(400).json({ error: 'Email requis' });
     }
@@ -325,7 +326,7 @@ const forgotPassword = async (req, res, next) => {
 
     // Envoie du mail via Brevo
     try {
-      await sendEmailCode(user, code);
+      await sendEmailCode(user, code, isActive);
       console.log('Email envoyé');
     } catch (error) {
       console.error("SEND EMAIL ERROR:", error.message);

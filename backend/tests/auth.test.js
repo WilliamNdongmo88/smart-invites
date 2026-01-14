@@ -65,7 +65,7 @@ describe("Auth API", () => {
         test("FORGOT PASSWORD", async () => {
             const res = await request(app)
             .post("/api/auth/forgot-password")
-            .send({ email });
+            .send({ email, isActive: false });
 
             expect(res.statusCode).toBe(200);
         });
