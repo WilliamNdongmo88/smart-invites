@@ -1,4 +1,4 @@
-const { getEventById, getGuestEmailRelatedToEvent} = require('../models/events');
+const { getEventById, getGuestEmailRelatedToEvent, getUserByEventId} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById, createInvitation } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
@@ -36,10 +36,11 @@ const addGuest = async (req, res, next) => {
             const event = await getEventById(eventId);
             //console.log('event :: ', event);
             if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
+            const user = await getUserByEventId(event.id);
+
+            //Permettre aux organisateurs d'event de créer des invités avec leur email(user.email);
             const result = await getGuestEmailRelatedToEvent(email, event.id);
-            console.log('[addGuest] result :: ', result);
-            console.log('[addGuest] role :: ', result.role);
-            if (result && !['admin', 'user'].includes(result.role)) {
+            if (result && user.email != result.email) {
                 return res.status(409).json({
                     error: `L'invité ${email} existe déjà`
                 });
