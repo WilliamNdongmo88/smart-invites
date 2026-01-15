@@ -74,7 +74,9 @@ const startServer = async () => {
     await createDefaultAdmin();
     //await sendScheduledReport(3);
     //await sendNewsLetterToUsers();
-    await getAllConfirmedGuest();
+    if (process.env.NODE_ENV == 'development') {
+      //await getAllConfirmedGuest();
+    }
 
     // 3 Démarrer le serveur
     app.get('/', (req, res) => {
