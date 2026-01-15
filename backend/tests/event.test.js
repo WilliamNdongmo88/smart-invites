@@ -66,17 +66,26 @@ describe("Events API", () => {
                 eventNameConcerned1: "William",
                 eventNameConcerned2: "Gloria"
             }];
-            
+            const eventInvitationNote = {
+                invTitle: "Célébrons l'amour",
+                mainMessage: "C'est avec un immense bonheur que nous vous ...",
+                eventTheme: "Chic et Glamour",
+            }
+            const data = {
+                eventDatas: eventDatas,
+                eventInvitationNote: eventInvitationNote
+            }
+            console.log("## data:", data);
             const res = await request(app)
             .post("/api/event/create-event")
-            .send(eventDatas)
+            .send(data)
             .set("Authorization", `Bearer ${token}`);
 
             console.log("CREATE EVENT RESPONSE:", res.body);
-            eventId = res.body[0].id;
+            eventId = res.body.eventDatas[0].id;
             expect(res.statusCode).toBe(201);
-            expect(res.body[0]).toHaveProperty("organizerId");
-            expect(res.body[0].organizerId).toBe(2);
+            expect(res.body.eventDatas[0]).toHaveProperty("organizerId");
+            expect(res.body.eventDatas[0].organizerId).toBe(2);
         });
 
         test("GET ALL EVENT", async () => {
@@ -118,14 +127,24 @@ describe("Events API", () => {
                 footRestriction: true,
                 showWeddingReligiousLocation: false,
             };
+            const eventInvitationNote = {
+                invTitle: "Célébrons l'amour",
+                mainMessage: "C'est avec un immense bonheur que nous vous ...",
+                eventTheme: "Chic et Glamour",
+            }
+            const data = {
+                eventDatas: updateData,
+                eventInvitationNote: eventInvitationNote
+            }
             const res = await request(app)
             .put(`/api/event/${eventId}`)
             .set("Authorization", `Bearer ${token}`)
-            .send(updateData);
+            .send(data);
 
             expect(res.statusCode).toBe(200);
-            expect(res.body).toHaveProperty("updatedEvent");
-            expect(res.body.updatedEvent.max_guests).toBe(151);
+            expect(res.body).toHaveProperty("eventDatas");
+            expect(res.body.eventDatas.max_guests).toBe(151);
+
         });
 
         test("UPDATE STATUS EVENT", async () => {

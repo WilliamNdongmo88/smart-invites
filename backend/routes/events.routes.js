@@ -77,6 +77,8 @@ router.get('/all-events',authenticateToken, EventController.getAllEvents);
  */
 router.get('/:eventId', EventController.getEventBy_Id);
 
+router.get('/event-inv-note/:eventId', EventController.getEventInvitationNote);
+
 router.get('/:eventId/invitation',authenticateToken, EventController.getEventAndInvitationRelatedById);
 
 /**

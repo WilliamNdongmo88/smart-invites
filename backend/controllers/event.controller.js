@@ -13,13 +13,20 @@ const { getGuestByInvitationId } = require('../models/invitations');
 const { sendPdfByEmail } = require('../services/notification.service');
 const { sendScheduledThankMessage } = require('./checkin.controller');
 const { getEventScheduleByEventId, createEventSchedule, updateEventSchedule, deleteEventSchedule } = require('../models/event_schedules');
+const { creatEventInvitNote, getEventInvitNote, updateEventInvitNote } = require("../models/event_invitation_notes");
 
 
 const create_Event = async (req, res, next) => {
     try {
         if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
-        let eventDatas = req.body;
+        let datas = req.body;
+        let eventDatas = datas.eventDatas;
+        let eventInvitationNote = datas.eventInvitationNote;
         console.log('eventDatas :: ', eventDatas);
+        console.log('eventInvitationNote :: ', eventInvitationNote);
+        const {invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, qrInstructions, 
+               dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
+               topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl} = eventInvitationNote
         const existing = await getUserById(eventDatas[0].organizerId);
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
@@ -37,7 +44,11 @@ const create_Event = async (req, res, next) => {
             returnDatas.push({id: eventId, organizerId, title, description, eventDate, banquetTime, 
                 religiousLocation, religiousTime, type, budget, eventNameConcerned1,eventNameConcerned2, 
                 eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
-                showWeddingReligiousLocation, status})
+                showWeddingReligiousLocation, status});
+            await creatEventInvitNote(eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, qrInstructions, 
+               dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
+               topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl);
+
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
                 console.log('[create_Event] eventId :', eventId);
@@ -55,7 +66,9 @@ const create_Event = async (req, res, next) => {
                 next(error);
             }
         }
-        return res.status(201).json(returnDatas);
+        return res.status(201).json({
+            eventDatas: returnDatas
+        });
     } catch (error) {
         console.error('CREATE EVENT ERROR:', error.message);
         next(error);
@@ -76,11 +89,23 @@ const getAllEvents = async (req, res, next) => {
   const getEventBy_Id = async (req, res, next) => {
     try {
         const event = await getEventWithTotalGuestById(req.params.eventId);
-        console.log('### event:', event);
+        //console.log('### event:', event);
         if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
         return res.status(200).json(event);
     } catch (error) {
         console.error('GET EVENT BY ID ERROR:', error.message);
+        next(error);
+    }
+  };
+
+    const getEventInvitationNote = async (req, res, next) => {
+    try {
+        const event = await getEventInvitNote(req.params.eventId);
+        //console.log('### event:', event);
+        if(!event) res.status(404).json({ error: 'Aucun Evénement trouvé' });
+        return res.status(200).json(event);
+    } catch (error) {
+        console.error('GET EVENT-INVT-NOTE BY EVENT-ID ERROR:', error.message);
         next(error);
     }
   };
@@ -110,10 +135,11 @@ const getAllEvents = async (req, res, next) => {
 
   const updateEventBy_Id = async (req, res, next) => {
     try {
+        console.log('req.body: ', req.body);
         let { organizerId, title, description, eventDate, banquetTime, religiousLocation, religiousTime, 
             eventCivilLocation, eventLocation, maxGuests, hasPlusOne, footRestriction, 
             showWeddingReligiousLocation, status, type, budget, eventNameConcerned1, eventNameConcerned2
-        } = req.body;
+        } = req.body.eventDatas;
 
         const event = await getEventById(req.params.eventId);
         if(!event) return res.status(404).json({error: "Cet Evénement n'existe pas"});
@@ -144,6 +170,8 @@ const getAllEvents = async (req, res, next) => {
             footRestriction, showWeddingReligiousLocation, status, type, 
             budget, eventNameConcerned1, eventNameConcerned2 );
         const updatedEvent = await getEventById(req.params.eventId);
+
+        await updateEventInvitationNote(req.body.eventInvitationNote);
         
         const existingSchedule = await getEventScheduleByEventId(req.params.eventId);
         console.log('### existing schedule:', existingSchedule);
@@ -160,12 +188,49 @@ const getAllEvents = async (req, res, next) => {
             }
         }
         
-        return res.status(200).json({updatedEvent})
+        return res.status(200).json({ eventDatas: updatedEvent });
     } catch (error) {
         console.error('UPDATE EVENT BY ID ERROR:', error.message);
         next(error);
     }
   };
+
+  async function updateEventInvitationNote(eventInvitationNote) {
+    console.log('[updateEventInvitationNote] eventInvitationNote: ', eventInvitationNote);
+    try {
+        let {eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, 
+            qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
+            topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl
+        } = eventInvitationNote;
+
+        const event = await getEventInvitNote(eventId);
+        console.log('event: ', event);
+        if(!event) throw new Error("La table de note de cet event n'existe pas");
+        
+        if(eventId == null){ eventId = event.event_id};
+        if(invTitle == null){ invTitle = event.title};
+        if(mainMessage == null){ mainMessage = event.main_message};
+        if(sousMainMessage == null){ sousMainMessage = event.sous_main_message};
+        if(eventTheme == null){ eventTheme = event.event_theme};
+        if(priorityColors == null){ priorityColors = event.priority_colors};
+        if(qrInstructions == null){ qrInstructions = event.qr_instructions};
+        if(dressCodeMessage == null){ dressCodeMessage = event.dress_code_message};
+        if(thanksMessage1 == null){ thanksMessage1 = event.thanks_message1};
+        if(closingMessage == null){ closingMessage = event.closing_message};
+        if(titleColor == null){ titleColor = event.title_color};
+        if(topBandColor == null){ topBandColor = event.top_band_color};
+        if(bottomBandColor == null){ bottomBandColor = event.bottom_band_color};
+        if(textColor == null){ textColor = event.text_color};
+        if(logoUrl == null){ logoUrl = event.logo_url};
+        if(heartIconUrl == null){ heartIconUrl = event.heart_icon_url};
+
+        await updateEventInvitNote(event.id, eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, 
+            qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
+            topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl);
+    } catch (error) {
+        console.error('UPDATE EVENT-INVIT-NOTE BY EVENT-ID ERROR:', error.message);
+    }
+  }
 
   const updateEvent_Status = async (req, res, next) => {
     try {
@@ -358,6 +423,7 @@ module.exports = {
     create_Event,
     getAllEvents, 
     getEventBy_Id,
+    getEventInvitationNote,
     getEventAndInvitationRelatedById,
     getOrganizerEvents,
     updateEventBy_Id,

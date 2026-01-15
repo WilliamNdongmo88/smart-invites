@@ -5,7 +5,7 @@ const { sendInvitationToGuest, sendReminderMail,
     sendGuestResponseToOrganizer, sendFileQRCodeMail,
     sendPdfToGuestMail} = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
-const { generateGuestPdf, uploadPdfToFirebase, generateCustomGuestPdf } = require("../services/pdfService");
+const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
         createGuest, getGuestById, getAllGuestAndInvitationRelatedByEventId,
         update_guest, updateRsvpStatusGuest, delete_guest,
@@ -13,13 +13,13 @@ const {
         getEventByGuestId,
         createGuestFromLink,
         getGuestAndEventRelatedById,
-        getGuestAndInvitationRelatedByIdCostum,
         getAllConfirmedGuests
     } = require('../models/guests');
 const { getUserById } = require('../models/users');
 const { createNotification } = require('../models/notification');
 const { getLinkByToken, updateLink } = require('../models/links');
 const { v4: uuidv4 } = require('uuid');
+const { getEventInvitNote } = require('../models/event_invitation_notes');
 
 const addGuest = async (req, res, next) => {
     try {
@@ -98,7 +98,8 @@ const addGuestFromLink = async (req, res, next) => {
         let invitationToken =guestId +':'+ uuidv4();
         try {
             qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.webp");//"ring.png"
-            const buffer = await generateGuestPdf(guest_event_related[0], plusOneName);
+            const card = await getEventInvitNote(guest_event_related[0].eventId)
+            const buffer = await generateGuestPdf(guest_event_related[0], card, plusOneName);
             await uploadPdfToFirebase(guest, buffer);
         } catch (error) {
             console.error('File ERROR:', error.message);
@@ -112,7 +113,8 @@ const addGuestFromLink = async (req, res, next) => {
         try {
             const event = await getEventByGuestId(guestId);
             const guest = await getGuestAndInvitationRelatedById(guestId);
-            const buffer = await generateGuestPdf(guest, plusOneName);
+            const card = await getEventInvitNote(event[0].eventId);
+            const buffer = await generateGuestPdf(guest, card, plusOneName);
             await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
             await createNotification(
                 event[0].eventId,
@@ -162,7 +164,10 @@ const getAllConfirmedGuest = async (req, res, next) => {
         let buffer;
         for (const g of guestIds) {
             const guest = await getGuestAndInvitationRelatedById(g.id);
-            buffer = await generateGuestPdf(guest);//generateCustomGuestPdf
+            //console.log("guest: ", guest);
+            const card = await getEventInvitNote(guest.eventId)
+            //console.log("card: ", card);
+            buffer = await generateGuestPdf(guest, card);//generateCustomGuestPdf
             const data = {
                 guest: guest,
                 buffer: buffer
@@ -255,10 +260,12 @@ const updateGuest = async (req, res, next) => {
                 if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
                 if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
                 try {
-                    const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
-                    const buffer = await generateGuestPdf(invite);
-                    await sendInvitationToGuest(invite, invitation[0].qr_code_url, buffer);
                     const event = await getEventByGuestId(guest.id);
+                    const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
+                    const card = await getEventInvitNote(event[0].eventId);
+                    const buffer = await generateGuestPdf(invite, card);
+                    await sendInvitationToGuest(invite, invitation[0].qr_code_url, buffer);
+                    
                     const organizer = await getUserById(event[0].organizerId);
                     await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                     await createNotification(
@@ -312,11 +319,13 @@ const updateGuest = async (req, res, next) => {
                     await deleteGuestFiles(guest.guest_id, guest.invitationToken);
                     await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.webp");
                     console.log('[plusOneName] plusOneName: ', plusOneName);
-                    const buffer = await generateGuestPdf(guest, plusOneName);
+                    const event = await getEventByGuestId(guest.guest_id);
+                    const card = await getEventInvitNote(event[0].eventId);
+                    const buffer = await generateGuestPdf(guest, card, plusOneName);
                     await uploadPdfToFirebase(guest, buffer);
                     await sendInvitationToGuest(guest, guest.qrCodeUrl, buffer);
                     isValid = true;
-                    const event = await getEventByGuestId(guest.guest_id);
+                    
                     const organizer = await getUserById(event[0].organizerId);
                     await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                     await createNotification(

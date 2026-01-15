@@ -74,7 +74,7 @@ const startServer = async () => {
     await createDefaultAdmin();
     //await sendScheduledReport(3);
     //await sendNewsLetterToUsers();
-    //await getAllConfirmedGuest();
+    await getAllConfirmedGuest();
 
     // 3 Démarrer le serveur
     app.get('/', (req, res) => {

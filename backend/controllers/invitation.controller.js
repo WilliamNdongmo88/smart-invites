@@ -10,6 +10,7 @@ const {sendGuestEmail} = require('../services/notification.service');
 const { update_guest } = require('../models/guests');
 const { bucket } = require('../config/firebaseConfig');
 const { getEventById } = require('../models/events');
+const { getEventInvitNote } = require('../models/event_invitation_notes');
 
 const genererSeveralInvitations = async (req, res, next) => {
   try {
@@ -25,7 +26,9 @@ const genererSeveralInvitations = async (req, res, next) => {
         if (invitations[0]) return res.status(409).json({ error: `Invitation déjà invoyé a l'invité ${guestId}` });
         let token = guestId +':'+ uuidv4();
         const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
-        const buffer = await generateGuestPdf(guest_event_related[0]);
+        const event = await getEventByGuestId(guest.id);
+        const card = await getEventInvitNote(event[0].eventId);
+        const buffer = await generateGuestPdf(guest_event_related[0], card);
         const pdfUrl = await uploadPdfToFirebase(guest, buffer);
         try {
             await sendGuestEmail(guest, guest_event_related[0], token);
@@ -55,7 +58,9 @@ const genererInvitation = async (req, res, next) => {
     
     let token =req.params.guestId +':'+ uuidv4();
     const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
-    const buffer = await generateGuestPdf(guest_event_related[0]);
+    const event = await getEventByGuestId(guest.id);
+    const card = await getEventInvitNote(event[0].eventId);
+    const buffer = await generateGuestPdf(guest_event_related[0], card);
     const pdfUrl = await uploadPdfToFirebase(guest, buffer);
     try {
         await sendGuestEmail(guest, guest_event_related[0], token);
@@ -91,7 +96,9 @@ const viewInvitation = async (req, res, next) => {
             file.createReadStream().pipe(res);
         } else {
             // Sinon, génère et renvoie à la volée
-            const buffer = await generateGuestPdf(guest);
+            const event = await getEventByGuestId(guest.id);
+            const card = await getEventInvitNote(event[0].eventId);
+            const buffer = await generateGuestPdf(guest, card);
             const pdfUrl = await uploadPdfToFirebase(guest, buffer);
             //console.log('pdfUrl:', pdfUrl);
             res.redirect(pdfUrl);
