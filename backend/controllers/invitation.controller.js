@@ -154,10 +154,12 @@ const viewQrCode = async (req, res, next) => {
 const downloadQRCode = async (req, res, next) => {
     try {
         const response = await axios.get(req.query.url, { responseType: "arraybuffer" });
-
+        const guest = await getGuestById(req.params.guestId);
+        if (!guest) return res.status(404).json({ error: "Invité introuvable" });
+        //console.log('[downloadQRCode] guest:', guest);
         res.set({
             "Content-Type": "image/png",
-            "Content-Disposition": `attachment; filename="qr-code-${req.params.guestId}.png"`
+            "Content-Disposition": `attachment; filename="qr-code-${guest.full_name.replace(' ','_')}.png"`
         });
 
         res.send(response.data);
