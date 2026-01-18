@@ -3,6 +3,7 @@ const { initCheckinModel } = require('./checkins');
 const { initEventInvitationNotesModel } = require('./event_invitation_notes');
 const { initEventSchedulesModel } = require('./event_schedules');
 const { initEventsModel } = require('./events');
+const { initFeedbacksModel } = require('./feedbacks');
 const { initGuestModel } = require('./guests');
 const { initInvitationModel } = require('./invitations');
 const { initLinkModel } = require('./links');
@@ -23,6 +24,7 @@ const initModels = async () => {
   await initLinkModel();
   await initCheckin_ParametersModel();
   await initEventInvitationNotesModel();
+  await initFeedbacksModel();
 };
 
 module.exports = {

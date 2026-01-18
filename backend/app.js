@@ -11,6 +11,7 @@ const checkinRoutes = require('./routes/checkin.routes');
 const checkin_ParamRoutes = require('./routes/checkin_param.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const linkRoutes = require('./routes/link.routes');
+const feedbackRoutes = require('./routes/feedback.routes');
 const imageProxy = require('./routes/imageProxy.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./middlewares/rateLimiter');
@@ -54,6 +55,7 @@ app.use('/api/checkin', checkinRoutes);
 app.use('/api/checkin-param', checkin_ParamRoutes);
 app.use('/api/notification', notificationRoutes);
 app.use('/api/link', linkRoutes);
+app.use('/api', feedbackRoutes);
 app.use("/api/image-proxy", imageProxy);
 
 app.use(errorHandler);
