@@ -331,156 +331,150 @@ async function generatePresentGuestsPdf(guests = [], event) {
     doc.on("error", reject);
 
     // Constantes de mise en page
-    const startX = 40; //Marge a gauche du tableau
+    const startX = 40; // Marge à gauche du tableau
     const endX = 570;
     const tableWidth = endX - startX;
     const rowHeight = 25;
     const headerHeight = 25;
-    // Limite Y pour le contenu avant d'ajouter une nouvelle page (ajustée pour la marge)
+    // Limite Y pour le contenu avant d'ajouter une nouvelle page
     const maxPageY = doc.page.height - doc.page.margins.bottom - rowHeight - 5; 
-    const startY = doc.page.margins.top; // Position Y de départ pour le contenu de la page
+    const startY = doc.page.margins.top; 
 
-   const imageWidth = 100; // ta largeur d’image
-   const x = (doc.page.width - imageWidth) / 2; // calcul centré
+    const imageWidth = 100; 
+    const xLogo = (doc.page.width - imageWidth) / 2; 
 
-    
     let rsvp_status = '';
+    let color = '#2d2d2d'; // ✅ Définition par défaut pour éviter l'erreur ReferenceError
+
     switch (event.guestRsvpStatus) {
       case 'confirmed':
-         rsvp_status = 'confirmés'
-         color = '#2ecc71'
+         rsvp_status = 'confirmés';
+         color = '#2ecc71';
          break;
       case 'present':
-         rsvp_status = 'présents'
-         color = '#219E4f'
+         rsvp_status = 'présents';
+         color = '#219E4f';
          break;
       case 'pending':
-         rsvp_status = 'en attentes'
-         color = '#EAB308'
+         rsvp_status = 'en attentes';
+         color = '#EAB308';
          break;
       case 'declined':
-         rsvp_status = 'déclinés'
-         color = '#EF4444'
-         break;   
+         rsvp_status = 'déclinés';
+         color = '#EF4444';
+         break;
+      default:
+         rsvp_status = 'invités';
+         color = '#2d2d2d';
     }
 
     // --- LOGO ---
     doc.image(
       path.join(__dirname, "../assets/icons/logo.png"),
-      x, // position centrée
-      40, // position Y
+      xLogo, 
+      40, 
       { width: imageWidth }
     );
 
     // --- TITRE ---
+    // On positionne le titre après le logo
+    doc.y = 40 + imageWidth * 0.6; // Ajustement dynamique selon la hauteur probable du logo
+    doc.moveDown(1);
     doc.fontSize(22).font("Helvetica-Bold").fillColor("#2d2d2d");
     doc.text(`Liste des invités ${rsvp_status}`, { align: "center" });
     doc.moveDown(1.5);
 
     // --- INFOS MARIAGE ---
     doc.fontSize(13).font("Helvetica-Bold").fillColor("#D4AF37");
-    doc.text(`${event.eventTitle}`);
+    doc.text(`${event.eventTitle || 'Événement'}`);
     doc.moveDown(0.5);
 
     doc.fontSize(10).font("Helvetica-Bold").fillColor("#2d2d2d")
     .text("Date et heure :");
-    doc.fontSize(10).font("Helvetica").text(`${event.eventDate} à ${event.eventTime}`);
+    doc.fontSize(10).font("Helvetica").text(`${event.eventDate || '-'} à ${event.eventTime || '-'}`);
     doc.moveDown(0.5);
 
     doc.fontSize(10).font("Helvetica-Bold").fillColor("#2d2d2d")
     .text("Lieu :");
-    doc.fontSize(10).font("Helvetica").text(`${event.eventLocation}`);
+    doc.fontSize(10).font("Helvetica").text(`${event.eventLocation || '-'}`);
     doc.moveDown(1);
 
     doc.fontSize(10).font("Helvetica-Bold").fillColor("#2d2d2d")
     .text(`Nombre d'invité(s) : ${guests.length}`);
 
     // --- COLUMNS ---
+    // Ajustement des largeurs pour que le total ne dépasse pas tableWidth (530)
     const columns = [
-      { label: "Nom", key: "name", width: 140 },
-      { label: "Nom +1", key: "plusOneName", width: 120 },
-      { label: "Restrictions", key: "dietaryRestrictions", width: 100 },
-      { label: "Restrictions +1", key: "plusOnedietaryRestrictions", width: 110 },
+      { label: "Nom", key: "name", width: 110 },
+      { label: "Nom +1", key: "plusOneName", width: 100 },
+      { label: "Table", key: "tableNumber", width: 50 },
+      { label: "Restrictions", key: "dietaryRestrictions", width: 95 },
+      { label: "Restr. +1", key: "plusOnedietaryRestrictions", width: 95 },
       { label: "Statut", key: "status", width: 80 },
     ];
 
     // Fonction pour dessiner l'en-tête du tableau
-    function drawTableHeader(y) {
-      // Fond de l'en-tête
+    function drawTableHeader(yPos) {
       doc.fillColor("#f5f5f5");
-      doc.rect(startX, y, tableWidth, headerHeight).fill();
+      doc.rect(startX, yPos, tableWidth, headerHeight).fill();
 
-      // Texte de l'en-tête
-      doc.fillColor("#000").font("Helvetica-Bold").fontSize(10);
+      doc.fillColor("#000").font("Helvetica-Bold").fontSize(9);
 
-      let x = startX + 10;
+      let currentX = startX + 5;
       columns.forEach((col) => {
-        doc.text(col.label, x, y + 7, { width: col.width });
-        x += col.width;
+        doc.text(col.label, currentX, yPos + 7, { width: col.width, truncate: true });
+        currentX += col.width;
       });
 
-      // Ligne sous l'en-tête
-      y += headerHeight;
-      doc.moveTo(startX, y).lineTo(endX, y).strokeColor("#ddd").stroke();
+      yPos += headerHeight;
+      doc.moveTo(startX, yPos).lineTo(endX, yPos).strokeColor("#ddd").stroke();
       
-      return y;
+      return yPos;
     }
 
-    // Position Y actuelle après les informations de l'événement
-    let y = doc.y + 10;
+    let y = doc.y + 15;
 
     // Dessiner l'en-tête initial
     y = drawTableHeader(y);
 
     // --- ROWS ---
-    doc.font("Helvetica").fontSize(9).fillColor("#222");
+    doc.font("Helvetica").fontSize(8.5).fillColor("#222");
 
     guests.forEach((g) => {
-      // Vérifier si la prochaine ligne dépasse la limite de la page
-      // On vérifie si y + hauteur_ligne + marge_basse > limite_max
-      // La limite est ajustée pour s'assurer qu'il y a assez de place pour la ligne complète
-      if (y + rowHeight + 5 > maxPageY) {
+      if (y + rowHeight > maxPageY) {
         doc.addPage();
-        y = startY; // Réinitialiser Y au début de la nouvelle page (marge supérieure)
-        y = drawTableHeader(y); // Dessiner l'en-tête sur la nouvelle page
+        y = startY; 
+        y = drawTableHeader(y);
       }
 
-      // Marge supérieure pour la ligne
-      y += 5; 
       let currentY = y;
-      let x = startX + 10;
+      let currentX = startX + 5;
 
-      // Fond de la ligne
+      // Fond de la ligne (alternance de couleur optionnelle ou blanc)
       doc.fillColor("#ffffff");
-      doc.rect(startX, currentY - 5, tableWidth, rowHeight).fill();
+      doc.rect(startX, currentY, tableWidth, rowHeight).fill();
       doc.fillColor("#222");
 
-      // Colonnes
       columns.forEach((col) => {
         let value = g[col.key];
 
         if (col.key === "plusOneName" && !g.plusOne) value = "-";
+        if (col.key === "tableNumber" && !g.tableNumber) value = "-";
         if (col.key === "plusOnedietaryRestrictions" && !g.plusOne) value = "-";
 
-        // Badge "Présent"
         if (col.key === "status") {
-          doc.fillColor(`${color}`);
+          doc.fillColor(color);
           doc.font("Helvetica-Bold");
-          // Utilisation de currentY + 2 pour aligner le texte dans la ligne
-          doc.text(`${rsvp_status}`, x, currentY + 2, { width: col.width });
+          doc.text(`${rsvp_status}`, currentX, currentY + 7, { width: col.width });
           doc.font("Helvetica").fillColor("#222");
         } else {
-          // Utilisation de currentY + 2 pour aligner le texte dans la ligne
-          doc.text(value || "-", x, currentY + 2, { width: col.width });
+          doc.text(value || "-", currentX, currentY + 7, { width: col.width, truncate: true });
         }
 
-        x += col.width;
+        currentX += col.width;
       });
 
-      // Mettre à jour la position Y pour la ligne suivante
-      y = currentY + rowHeight;
-
-      // Ligne séparatrice
+      y += rowHeight;
       doc.moveTo(startX, y).lineTo(endX, y).strokeColor("#eee").stroke();
     });
 

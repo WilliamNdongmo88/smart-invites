@@ -73,9 +73,30 @@ async function getRecentFeedback() {
   return rows;
 }
 
+async function updateStatusFeedback(id, status) {
+  const [result] = await pool.query(`
+    UPDATE FEEDBACKS 
+    SET status=?
+    WHERE id=?
+  `, [status, id]);
+
+  return result.insertId;
+}
+
+async function updateFeedback(id, rating, category, title, message, email) {
+  const [result] = await pool.query(`
+    UPDATE FEEDBACKS 
+    SET rating=?, category=?, title=?, message=?, email=?
+    WHERE id=?
+  `, [rating, category, title, message, email, id]);
+
+  return result.insertId;
+}
+
 module.exports = {
     initFeedbacksModel,
     createFeedback,
     getFeedbackStats,
-    getRecentFeedback
+    getRecentFeedback,
+    updateStatusFeedback
 };
