@@ -57,6 +57,7 @@ const getUserRole = async (req, res, next) => {
             return res.status(401).json({ error: 'Utilisateur non trouvé' });
           }
           const maintenanceMode = await getMaintenanceById(1);
+          console.log('maintenanceMode ::', maintenanceMode);
           if (user.organizerRole == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
             return res.status(503).json({ error: 'Le service est en maintenance.' });
           }
