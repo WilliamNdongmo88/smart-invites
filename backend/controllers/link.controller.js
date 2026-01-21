@@ -49,6 +49,7 @@ const getLinks = async (req, res, next) => {
 
 const getUserRole = async (req, res, next) => {
     try {
+      let msg = '';
         // console.log('[getUserRole] token:', req.params.token);
         const user = await getUserRoleByToken(req.params.token);
         console.log('[getUserRole] result:', user);
@@ -58,16 +59,15 @@ const getUserRole = async (req, res, next) => {
           }
           const maintenanceMode = await getMaintenanceById(1);
           console.log('maintenanceMode ::', maintenanceMode);
-          console.log('organizerRole ::', user.organizerRole);
-          console.log('maintenanceMode ::', maintenanceMode.status);
           if (user.organizerRole == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
             console.log('Service en maintenance pour l\'utilisateur.');
-            return res.status(503).json({ error: 'Le service est en maintenance.' });
+            msg = 'Le service est en maintenance.';
           }else{
             console.log('Service accessible pour l\'utilisateur.');
+            msg = 'Service accessible.';
           }
         }
-        return res.status(200).json(user);
+        return res.status(200).json({message: msg});
     } catch (error) {
         console.error('GET USER ROLE BY TOKEN ERROR:', error.message);
         next(error);
