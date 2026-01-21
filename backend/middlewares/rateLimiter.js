@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+const rateLimit = require("express-rate-limit");
 
 const loginLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
@@ -48,7 +48,7 @@ const noRateLimit = rateLimit({
   max: 999999,   // quasiment aucune limite
 });
 
-export default {
+module.exports = {
   loginLimiter,
   registerLimiter,
   apiLimiter,

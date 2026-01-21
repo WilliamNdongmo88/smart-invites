@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
-const {loginLimiter} = require('../middlewares/rateLimiter').default
+const {loginLimiter} = require('../middlewares/rateLimiter')
 const AuthController = require('../controllers/auth.controller');
 
 /**
