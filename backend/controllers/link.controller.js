@@ -58,8 +58,13 @@ const getUserRole = async (req, res, next) => {
           }
           const maintenanceMode = await getMaintenanceById(1);
           console.log('maintenanceMode ::', maintenanceMode);
+          console.log('organizerRole ::', user.organizerRole);
+          console.log('maintenanceMode ::', maintenanceMode.status);
           if (user.organizerRole == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
+            console.log('Service en maintenance pour l\'utilisateur.');
             return res.status(503).json({ error: 'Le service est en maintenance.' });
+          }else{
+            console.log('Service accessible pour l\'utilisateur.');
           }
         }
         return res.status(200).json(user);
