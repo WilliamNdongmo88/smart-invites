@@ -407,7 +407,7 @@ async function generatePresentGuestsPdf(guests = [], event) {
     const columns = [
       { label: "Nom", key: "name", width: 110 },
       { label: "Nom +1", key: "plusOneName", width: 100 },
-      { label: "Table", key: "tableNumber", width: 50 },
+      { label: "N° Table", key: "tableNumber", width: 50 },
       { label: "Restrictions", key: "dietaryRestrictions", width: 95 },
       { label: "Restr. +1", key: "plusOnedietaryRestrictions", width: 95 },
       { label: "Statut", key: "status", width: 80 },

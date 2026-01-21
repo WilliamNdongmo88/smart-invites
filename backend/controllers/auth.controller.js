@@ -26,6 +26,7 @@ const {
     cancelSchedule
 } = require('./event.controller');
 const { getEventScheduleByEventId } = require('../models/event_schedules');
+const { getMaintenanceById } = require('../models/maintenance');
 
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -185,6 +186,17 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
+    if(process.env.NODE_ENV !== 'test') {
+      const user = await getUserByEmail(email);
+      if(!user) {
+        return res.status(401).json({ error: 'Utilisateur non trouvé' });
+      }
+      const maintenanceMode = await getMaintenanceById(1);
+      if (user.role == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
+        return res.status(503).json({ error: 'Le service est en maintenance. Veuillez réessayer plus tard.' });
+      }
+    }
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email et mot de passe requis' });
     }
@@ -231,6 +243,7 @@ const login = async (req, res, next) => {
 const loginWithGoogle = async (req, res, next) => {
   try {
     const { tokenId } = req.body;
+
     if (!tokenId) {
       return res.status(400).json({ error: 'Token ID requis' });
     }
@@ -259,6 +272,14 @@ const loginWithGoogle = async (req, res, next) => {
       });
       user = await getUserById(userId);
     }
+
+    if(process.env.NODE_ENV !== 'test') {
+      const maintenanceMode = await getMaintenanceById(1);
+      if (user.role == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
+        return res.status(503).json({ error: 'Le service est en maintenance. Veuillez réessayer plus tard.' });
+      }
+    }
+
     const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
     const refreshToken = signRefreshToken({ id: user.id });
     await saveRefreshToken(user.id, refreshToken);

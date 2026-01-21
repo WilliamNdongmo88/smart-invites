@@ -7,6 +7,7 @@ const { initFeedbacksModel } = require('./feedbacks');
 const { initGuestModel } = require('./guests');
 const { initInvitationModel } = require('./invitations');
 const { initLinkModel } = require('./links');
+const { initMaintenanceModel } = require('./maintenance');
 const { initNotificationModel } = require('./notification');
 const { initUserNewsModel } = require('./usernews');
 const {initUserModel} = require('./users');
@@ -25,6 +26,7 @@ const initModels = async () => {
   await initCheckin_ParametersModel();
   await initEventInvitationNotesModel();
   await initFeedbacksModel();
+  await initMaintenanceModel();
 };
 
 module.exports = {

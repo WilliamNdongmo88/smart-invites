@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
-const { createLink, getAllLinks, updateLink, getLinkById, deleteLink } = require("../models/links");
+const { createLink, getAllLinks, updateLink, getLinkById, deleteLink, getUserRoleByToken } = require("../models/links");
+const { getMaintenanceById } = require('../models/maintenance');
 
 const addLink = async (req, res, next) => {
     try {
@@ -46,6 +47,27 @@ const getLinks = async (req, res, next) => {
     }
 }
 
+const getUserRole = async (req, res, next) => {
+    try {
+        // console.log('[getUserRole] token:', req.params.token);
+        const user = await getUserRoleByToken(req.params.token);
+        console.log('[getUserRole] result:', user);
+        if(process.env.NODE_ENV !== 'test') {
+          if(!user.organizerEmail) {
+            return res.status(401).json({ error: 'Utilisateur non trouvé' });
+          }
+          const maintenanceMode = await getMaintenanceById(1);
+          if (user.organizerRole == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
+            return res.status(503).json({ error: 'Le service est en maintenance.' });
+          }
+        }
+        return res.status(200).json(user);
+    } catch (error) {
+        console.error('GET USER ROLE BY TOKEN ERROR:', error.message);
+        next(error);
+    }
+};
+
 const getImage = async (req, res, next) => {
   const imageUrl = req.query.url;
 
@@ -84,4 +106,4 @@ const deleteLinks = async (req, res, next) => {
     }
 }
 
-module.exports = {addLink, getLinks, getImage, editLink, deleteLinks};
+module.exports = {addLink, getLinks, getImage, editLink, deleteLinks, getUserRole};

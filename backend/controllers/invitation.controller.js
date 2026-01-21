@@ -2,7 +2,8 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById, getEventByGuestId} = require("../models/guests");
 const {createInvitation, getGuestInvitationById, 
-    getGuestInvitationByToken, deleteGuestInvitation} = require('../models/invitations');
+    getGuestInvitationByToken, deleteGuestInvitation,
+    getUserRoleByToken} = require('../models/invitations');
 const { generateGuestQr, getLogoUrlFromFirebase } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {deleteGuestFiles} = require('../services/invitation.service');
@@ -133,7 +134,7 @@ const viewQrCode = async (req, res, next) => {
             const eventId = req.params.token.split(':')[0];
             let logoUrl = '';
             const event = await getEventById(eventId);
-            console.log('[viewQrCode] event:', event);
+            // console.log('[viewQrCode] event:', event);
             if(event.type == 'wedding'){
                 logoUrl = await getLogoUrlFromFirebase("carte.jpg");
             }else if(event.type == 'engagement'){
@@ -218,5 +219,5 @@ const deleteInvitation = async (req, res, next) => {
 }
 
 module.exports = {genererInvitation, genererSeveralInvitations, viewInvitation, viewQrCode, 
-                    rsvpGuestStatus, deleteInvitation, downloadQRCode
+                    rsvpGuestStatus, deleteInvitation, downloadQRCode,
                 };

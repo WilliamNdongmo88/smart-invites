@@ -42,6 +42,30 @@ async function getLinkById(linkId) {
   return result[0];
 }
 
+async function getUserRoleByToken(token) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+        l.id           AS linkId,
+        l.type         AS linkType,
+
+        e.id           AS eventId,
+
+        u.id           AS organizerId,
+        u.role         AS organizerRole,
+        u.email       AS organizerEmail
+    FROM LINKS l
+    LEFT JOIN EVENTS e ON e.id = l.event_id
+    LEFT JOIN USERS  u ON u.id = e.organizer_id
+    WHERE l.token = ?
+    LIMIT 1
+    `,
+    [token]
+  );
+
+  return rows.length ? rows[0] : null;
+}
+
 async function getLinkByToken(token) {
   const [result] = await pool.query(`
       SELECT *
@@ -66,5 +90,8 @@ async function deleteLink(linkId) {
     await pool.query(`DELETE FROM LINKS WHERE id=?`, [linkId]);
 }
 
-module.exports = {initLinkModel, createLink, getAllLinks, getLinkById,
-  getLinkByToken, updateLink, deleteLink}
+module.exports = {initLinkModel, createLink, 
+  getAllLinks, getLinkById,
+  getLinkByToken, updateLink, 
+  deleteLink, getUserRoleByToken
+}

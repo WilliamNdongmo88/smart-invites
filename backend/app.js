@@ -11,6 +11,7 @@ const checkinRoutes = require('./routes/checkin.routes');
 const checkin_ParamRoutes = require('./routes/checkin_param.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const linkRoutes = require('./routes/link.routes');
+const maintenaceRoutes = require('./routes/maintenance.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const imageProxy = require('./routes/imageProxy.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
@@ -19,6 +20,7 @@ const setupSwagger = require('./docs/swagger');
 const { sendScheduledReport } = require('./controllers/event.controller');
 const { sendNewsLetterToUsers } = require('./services/notification.service');
 const { getAllConfirmedGuest } = require('./controllers/guest.controller');
+const { createDefaultTableMaintenance } = require('./models/maintenance');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,6 +57,7 @@ app.use('/api/checkin', checkinRoutes);
 app.use('/api/checkin-param', checkin_ParamRoutes);
 app.use('/api/notification', notificationRoutes);
 app.use('/api/link', linkRoutes);
+app.use('/api/maintenance', maintenaceRoutes);
 app.use('/api', feedbackRoutes);
 app.use("/api/image-proxy", imageProxy);
 
@@ -74,6 +77,7 @@ const startServer = async () => {
     // 2 Initialiser toutes les tables
     await initModels();
     await createDefaultAdmin();
+    await createDefaultTableMaintenance();
     //await sendScheduledReport(3);
     //await sendNewsLetterToUsers();
     if (process.env.NODE_ENV == 'development') {
