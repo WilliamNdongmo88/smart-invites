@@ -29,8 +29,15 @@ const genererSeveralInvitations = async (req, res, next) => {
         const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
         const event = await getEventByGuestId(guest.id);
         const card = await getEventInvitNote(event[0].eventId);
-        const buffer = await generateGuestPdf(guest_event_related[0], card);
-        const pdfUrl = await uploadPdfToFirebase(guest, buffer);
+
+        let pdfUrl = '';
+        if(card.pdf_url == null){
+            const buffer = await generateGuestPdf(guest_event_related[0], card);
+            data = await uploadPdfToFirebase(guest, buffer, null);
+            pdfUrl = data.url;
+        }else{
+            pdfUrl = card.pdf_url;
+        }
         try {
             await sendGuestEmail(guest, guest_event_related[0], token);
         } catch (error) {
@@ -61,8 +68,15 @@ const genererInvitation = async (req, res, next) => {
     const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
     const event = await getEventByGuestId(guest.id);
     const card = await getEventInvitNote(event[0].eventId);
-    const buffer = await generateGuestPdf(guest_event_related[0], card);
-    const pdfUrl = await uploadPdfToFirebase(guest, buffer);
+    // console.log("card: ", card);
+    let pdfUrl = '';
+    if(card.pdf_url == null){
+        const buffer = await generateGuestPdf(guest_event_related[0], card);
+        data = await uploadPdfToFirebase(guest, buffer, null);
+        pdfUrl = data.url;
+    }else{
+        pdfUrl = card.pdf_url;
+    }
     try {
         await sendGuestEmail(guest, guest_event_related[0], token);
     } catch (error) {
@@ -99,8 +113,14 @@ const viewInvitation = async (req, res, next) => {
             // Sinon, génère et renvoie à la volée
             const event = await getEventByGuestId(guest.id);
             const card = await getEventInvitNote(event[0].eventId);
-            const buffer = await generateGuestPdf(guest, card);
-            const pdfUrl = await uploadPdfToFirebase(guest, buffer);
+            let pdfUrl = '';
+            if(card.pdf_url == null){
+                const buffer = await generateGuestPdf(guest, card);
+                data = await uploadPdfToFirebase(guest, buffer);
+                pdfUrl = data.url;
+            }else{
+                pdfUrl = card.pdf_url;
+            }
             //console.log('pdfUrl:', pdfUrl);
             res.redirect(pdfUrl);
         }

@@ -3,7 +3,8 @@ const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById, createInvitation } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
     sendGuestResponseToOrganizer, sendFileQRCodeMail,
-    sendPdfToGuestMail} = require('../services/notification.service');
+    sendPdfToGuestMail,
+    sendNewsUpdatesToUsers} = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
@@ -15,11 +16,12 @@ const {
         getGuestAndEventRelatedById,
         getAllConfirmedGuests
     } = require('../models/guests');
-const { getUserById } = require('../models/users');
+const { getUserById, getUsers } = require('../models/users');
 const { createNotification } = require('../models/notification');
 const { getLinkByToken, updateLink } = require('../models/links');
 const { v4: uuidv4 } = require('uuid');
 const { getEventInvitNote } = require('../models/event_invitation_notes');
+const { getAllUsers } = require('./feedback.controller');
 
 const addGuest = async (req, res, next) => {
     try {
@@ -77,9 +79,6 @@ const addGuestFromLink = async (req, res, next) => {
         if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
         link.used_count ++;
 
-        const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count, link.date_limit_link);
-        console.log('updated :: ', updated);
-
         const event = await getEventById(eventId);
         if(!event) return res.status(404).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
 
@@ -98,12 +97,14 @@ const addGuestFromLink = async (req, res, next) => {
         let invitationToken =guestId +':'+ uuidv4();
         try {
             qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.webp");//"ring.png"
-            const card = await getEventInvitNote(guest_event_related[0].eventId)
-            const buffer = await generateGuestPdf(guest_event_related[0], card, plusOneName);
-            await uploadPdfToFirebase(guest, buffer);
+            const card = await getEventInvitNote(guest_event_related[0].eventId);
+            if(!card.has_invitation_model_card){
+                const buffer = await generateGuestPdf(guest_event_related[0], card, plusOneName);
+                await uploadPdfToFirebase(guest, buffer);
+            } 
         } catch (error) {
             console.error('File ERROR:', error.message);
-            next(error);
+            return next(error);
         }
         const invitationId = await createInvitation(guestId, invitationToken, qrUrl);
         if(!invitationId) throw new Error({error: "Erreur lors de la création de l'invitation"});
@@ -114,8 +115,13 @@ const addGuestFromLink = async (req, res, next) => {
             const event = await getEventByGuestId(guestId);
             const guest = await getGuestAndInvitationRelatedById(guestId);
             const card = await getEventInvitNote(event[0].eventId);
-            const buffer = await generateGuestPdf(guest, card, plusOneName);
-            await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
+            let buffer = null;
+            if(!card.has_invitation_model_card){
+                buffer = await generateGuestPdf(guest, card, plusOneName);
+                await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
+            }else{
+                await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
+            }
             await createNotification(
                 event[0].eventId,
                 `Invitation envoyé.`,
@@ -144,14 +150,16 @@ const addGuestFromLink = async (req, res, next) => {
             }
         } catch (error) {
             console.error('send email ERROR:', error.message);
-            next(error);
+            return next(error);
         }
-        
+        //Mise a jour du lien
+        const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count, link.date_limit_link);
+        console.log('updated :: ', updated);
         return res.status(201).json({success: "Invité ajouter avec succès"});
         
     } catch (error) {
         console.error('AddGuestFromLink ERROR:', error.message);
-        next(error);
+        return next(error);
     }
 }
 
@@ -181,6 +189,23 @@ const getAllConfirmedGuest = async (req, res, next) => {
     } catch (error) {
         console.error('getAllConfirmedGuest ERROR:', error.message);
         next(error);
+    }
+}
+
+async function sendNewsUpdatesToAllUsers () {
+    try {
+        const users = await getUsers();
+        console.log('users: ', users[0]);
+        // await sendNewsUpdatesToUsers(users[0]);
+        // Envoi des mails en parallèle contrôlée (plus rapide)
+        await Promise.all(
+            users.map(u => {
+                //console.log('[user]: ', u.email);
+                sendNewsUpdatesToUsers(u);
+            })
+        );
+    } catch (error) {
+         console.error('getAllConfirmedGuest ERROR:', error.message);
     }
 }
 
@@ -263,9 +288,13 @@ const updateGuest = async (req, res, next) => {
                     const event = await getEventByGuestId(guest.id);
                     const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
                     const card = await getEventInvitNote(event[0].eventId);
-                    const buffer = await generateGuestPdf(invite, card);
-                    await sendInvitationToGuest(invite, invitation[0].qr_code_url, buffer);
-                    
+                    let buffer = null;
+                    if(!card.has_invitation_model_card){
+                        buffer = await generateGuestPdf(invite, card);
+                        await sendInvitationToGuest(invite, invitation[0].qr_code_url, buffer);
+                    }else{
+                        await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
+                    }
                     const organizer = await getUserById(event[0].organizerId);
                     await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                     await createNotification(
@@ -321,9 +350,14 @@ const updateGuest = async (req, res, next) => {
                     console.log('[plusOneName] plusOneName: ', plusOneName);
                     const event = await getEventByGuestId(guest.guest_id);
                     const card = await getEventInvitNote(event[0].eventId);
-                    const buffer = await generateGuestPdf(guest, card, plusOneName);
-                    await uploadPdfToFirebase(guest, buffer);
-                    await sendInvitationToGuest(guest, guest.qrCodeUrl, buffer);
+                    let buffer = null;
+                    if(!card.has_invitation_model_card){
+                        buffer = await generateGuestPdf(guest, card, plusOneName);
+                        await uploadPdfToFirebase(guest, buffer);
+                        await sendInvitationToGuest(guest, guest.qrCodeUrl, buffer);
+                    }else{
+                        await sendInvitationToGuest(guest, guest.qrCodeUrl, null);
+                    }
                     isValid = true;
                     
                     const organizer = await getUserById(event[0].organizerId);
@@ -443,8 +477,11 @@ const sendFileQRCode = async (req, res, next) => {
     }
 }
 
-module.exports = {addGuest, getGuest, getGuestsByEvent, updateGuest, getEventByGuest, 
+module.exports = {addGuest, getGuest, getGuestsByEvent, 
+                  updateGuest, getEventByGuest, 
                   updateRsvpStatus, deleteGuest, 
                   deleteSeveralGuests, getAllGuest, 
                   sendReminder, sendFileQRCode, 
-                  addGuestFromLink, getAllConfirmedGuest};
+                  addGuestFromLink, getAllConfirmedGuest,
+                  sendNewsUpdatesToAllUsers
+                };

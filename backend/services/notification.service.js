@@ -2,7 +2,8 @@ const Brevo = require('@getbrevo/brevo');
 const axios = require('axios');
 const { createNotification, getNotifications } = require('../models/notification');
 const { getEventScheduleByEventId, updateEventSchedule } = require('../models/event_schedules');
-const { getLogoUrlFromFirebase } = require('./qrCodeService');
+const { getLogoUrlFromFirebase, getPdfUrlFromFirebase } = require('./qrCodeService');
+const { getEventInvitNote } = require('../models/event_invitation_notes');
 require('dotenv').config();
 
 async function sendGuestEmail(guest, event, token) {
@@ -33,7 +34,6 @@ async function sendGuestEmail(guest, event, token) {
         article ='au '
         eventType = 'Mariage de ' + concerned
         sentence = 'Nous avons le plaisir de vous inviter à célébrer notre union '
-        lieu = ` ${event.event_civil_location} et banquet `
       break;
     case 'engagement':
         concerned = event.event_name_concerned1+' et '+event.event_name_concerned2
@@ -59,86 +59,87 @@ async function sendGuestEmail(guest, event, token) {
     sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
     subject: `🎉 Invitation ${article}${event.event_title}`,
     htmlContent: `
-    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <div style="
+                        max-width: 650px;
+                        background:#ffffff;
+                        margin: 30px auto;
+                        padding: 25px 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                      ">
+                          <h2 style="text-align: center; color: #D4AF37;">💍 Vous êtes invité ${article}${eventType}</h2>
+                          <p style="font-size: 14px; color: #333;">
+                              Bonjour <strong>${guest.full_name}</strong>,
+                          </p>
+                          <p style="font-size: 13px; color: #333;">
+                              ${sentence} le 
+                              <strong>${new Date(event.event_date).toLocaleDateString("fr-FR", {
+                              day: "numeric", month: "long", year: "numeric"
+                              })}</strong>.
+                          </p>
+                          
+                          <p style="font-size: 13px; color: #333;">
+                              Pour confirmer votre présence, merci de mettre à jour votre réponse (RSVP) en cliquant sur le bouton ci-dessous :
+                          </p>
+                          <div style="text-align: center; margin: 20px 0;">
+                              <a href="${rsvpLink}" 
+                              style="background-color: #D4AF37; color: white; padding: 12px 24px; border-radius: 6px; 
+                                      text-decoration: none; font-weight: bold;">
+                              ✅ Confirmer ma présence
+                              </a>
+                          </div>
+                          <p style="font-size: 14px; color: #666;">
+                              Si le bouton ne fonctionne pas, vous pouvez aussi copier ce lien dans votre navigateur :
+                          </p>
+                          <p style="font-size: 14px; color: #555; word-break: break-all;">
+                              <a href="${rsvpLink}" target="_blank">${rsvpLink}</a>
+                          </p>
+                          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                          <p style="font-size: 13px; color: #888; text-align: center;">
+                              Merci et à très bientôt 💖<br>
+                              ${concerned}
+                          </p>
+                      </div>
+                    </td>
+                  </tr>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-            <h2 style="text-align: center; color: #D4AF37;">💍 Vous êtes invité ${article}${eventType}</h2>
-            <p style="font-size: 16px; color: #333;">
-                Bonjour <strong>${guest.full_name}</strong>,
-            </p>
-            <p style="font-size: 16px; color: #333;">
-                ${sentence} le 
-                <strong>${new Date(event.event_date).toLocaleDateString("fr-FR", {
-                day: "numeric", month: "long", year: "numeric"
-                })}</strong>.
-            </p>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
 
-            <p>
-                ${event.type = 'wedding' ? `📍 Lieu de la Cérémonie Civile : <strong>${event.event_civil_location}</strong>, 🕒 Heure : <strong>${time}</strong>`:''}
-            </p>
-            <p>
-                ${event.show_wedding_religious_location = true ? `📍 Cérémonie Religieuse : <strong>${event.religious_location}</strong>, 🕒 Heure : <strong>${religiousTime}</strong>`:''} 
-            </p>
-            <p>
-                ${event.type = 'wedding' ? `📍 Lieu du Banquet : <strong>${event.event_location}</strong>, 🕒 Heure : <strong>${banquetTime}</strong>`:''} 
-            </p>
-            
-            <p style="font-size: 16px; color: #333;">
-                Pour confirmer votre présence, merci de mettre à jour votre réponse (RSVP) en cliquant sur le bouton ci-dessous :
-            </p>
-            <div style="text-align: center; margin: 20px 0;">
-                <a href="${rsvpLink}" 
-                style="background-color: #D4AF37; color: white; padding: 12px 24px; border-radius: 6px; 
-                        text-decoration: none; font-weight: bold;">
-                ✅ Confirmer ma présence
-                </a>
-            </div>
-            <p style="font-size: 14px; color: #666;">
-                Si le bouton ne fonctionne pas, vous pouvez aussi copier ce lien dans votre navigateur :
-            </p>
-            <p style="font-size: 14px; color: #555; word-break: break-all;">
-                <a href="${rsvpLink}" target="_blank">${rsvpLink}</a>
-            </p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-            <p style="font-size: 13px; color: #888; text-align: center;">
-                Merci et à très bientôt 💖<br>
-                ${concerned}
-            </p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `
   };
 
@@ -148,21 +149,36 @@ async function sendGuestEmail(guest, event, token) {
 };
 
 async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
+  console.log('data:', data);
+  // console.log('qrCodeUrl:', qrCodeUrl);
+  // console.log('pdfBuffer:', pdfBuffer);
+  const guest = data;
+  const event = data;
+  let pdfBase64 = null;
+  
+  // 1 Télécharger l’image du QR code sous forme de binaire
+  const qrResponse = await axios.get(qrCodeUrl, {
+      responseType: "arraybuffer",
+  });
+  // 2 La convertir en base64
+  const qrBase64 = Buffer.from(qrResponse.data).toString("base64");
+
+  if(pdfBuffer != null){
+    pdfBase64 = pdfBuffer.toString("base64");
+  }else{
+    const eventInvNote = await getEventInvitNote(event.eventId);
+    // console.log('[eventInvNote]: ', eventInvNote);
+    const pdfUrl = await getPdfUrlFromFirebase(`event_${event.eventId}_default_carte_${eventInvNote.code}.pdf`);
+    const pdfResponse = await axios.get(pdfUrl, {
+      responseType: "arraybuffer",
+    });
+    pdfBase64 = Buffer.from(pdfResponse.data).toString("base64");
+    // console.log('pdfBase64: ', pdfBase64);
+  }
   const logo = await getLogoUrlFromFirebase('logo.png');
   if(logo){
-    const guest = data;
-    const event = data;
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
-
-    // 1 Télécharger l’image du QR code sous forme de binaire
-    const qrResponse = await axios.get(qrCodeUrl, {
-        responseType: "arraybuffer",
-    });
-
-    // 2 La convertir en base64
-    const qrBase64 = Buffer.from(qrResponse.data).toString("base64");
-    const pdfBase64 = pdfBuffer.toString("base64");
 
     let article = '';
     let sentence ='';
@@ -200,68 +216,79 @@ async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
         break;
     }
     const htmlContent = `
-      <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <center>
+                        <div style="
+                          max-width: 650px;
+                          background:#ffffff;
+                          margin: 30px auto;
+                          padding: 25px 30px;
+                          border-radius: 8px;
+                          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                        ">
+                          <h2 style="color: #816405ff; margin-top:0;">
+                            💖 Merci d'avoir confirmé votre présence ${article}${eventType} !
+                          </h2>
 
-        <!-- BODY -->
-        <center>
-          <div style="
-            max-width: 650px;
-            background:#ffffff;
-            margin: 30px auto;
-            padding: 25px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-          ">
-            <h2 style="color: #816405ff; margin-top:0;">
-              💖 Merci d'avoir confirmé votre présence ${article}${eventType} !
-            </h2>
+                          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-            <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+                          <p>
+                            ${sentence}
+                            Votre présence compte énormément pour nous ❤️.
+                          </p>
 
-            <p>
-              ${sentence}
-              Votre présence compte énormément pour nous ❤️.
-            </p>
+                          <p>
+                            Vous trouverez en pièce jointe votre invitation officielle et votre <strong>QR-code d’accès</strong>.
+                          </p>
+                          <p>Merci de les présenter le jour de l'événement.</p>
 
-            <p>
-              Vous trouverez en pièce jointe votre invitation officielle et votre <strong>QR-code d’accès</strong>.
-            </p>
-            <p>Merci de les présenter le jour de l'événement.</p>
+                          <p>
+                            Si vous avez des questions, n’hésitez surtout pas à nous contacter.
+                          </p>
 
-            <p>
-              Si vous avez des questions, n’hésitez surtout pas à nous contacter.
-            </p>
+                          <p style="margin-top:25px;">À très bientôt,</p>
+                          <p><strong>${signature}</strong></p>
+                        </div>
+                      </center>
+                    </td>
+                  </tr>
 
-            <p style="margin-top:25px;">À très bientôt,</p>
-            <p><strong>${signature}</strong></p>
-          </div>
-        </center>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
 
-        <!-- FOOTER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 25px 0;
-          text-align: center;
-          color: #ffffff;
-          font-size: 14px;
-          ">
-          <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-          <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-            ${process.env.API_URL}
-          </a>
-        </div>
-      </div>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `;
 
     const sendSmtpEmail = {
@@ -330,87 +357,98 @@ async function sendReminderMail(guest, event) {
         break;
     }
     const htmlContent = `
-    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <div style="
+                        max-width: 650px;
+                        background:#ffffff;
+                        margin: 30px auto;
+                        padding: 25px 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                      ">
+                          <h2 style="text-align: center; color: #D4AF37;">🔔 Rappel de confirmation</h2>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-            <h2 style="text-align: center; color: #D4AF37;">🔔 Rappel de confirmation</h2>
+                          <p style="font-size: 16px; color: #333;">
+                          Bonjour <strong>${guest.full_name}</strong>,
+                          </p>
 
-            <p style="font-size: 16px; color: #333;">
-            Bonjour <strong>${guest.full_name}</strong>,
-            </p>
+                          <p style="font-size: 16px; color: #333;">
+                          Nous espérons que vous allez bien.  
+                          Vous aviez été invité(e) ${article}
+                          <strong>${eventType}</strong> prévu le 
+                          <strong>${new Date(event.eventDate).toLocaleDateString("fr-FR", {
+                              day: "numeric", month: "long", year: "numeric"
+                          })}</strong>
+                          au <strong>${event.eventLocation}</strong>.
+                          </p>
 
-            <p style="font-size: 16px; color: #333;">
-            Nous espérons que vous allez bien.  
-            Vous aviez été invité(e) ${article}
-            <strong>${eventType}</strong> prévu le 
-            <strong>${new Date(event.eventDate).toLocaleDateString("fr-FR", {
-                day: "numeric", month: "long", year: "numeric"
-            })}</strong>
-            au <strong>${event.eventLocation}</strong>.
-            </p>
+                          <p style="font-size: 16px; color: #333;">
+                          Nous n’avons pas encore reçu votre réponse.  
+                          Pour nous aider à finaliser l’organisation, merci de confirmer votre présence en cliquant ci-dessous :
+                          </p>
 
-            <p style="font-size: 16px; color: #333;">
-            Nous n’avons pas encore reçu votre réponse.  
-            Pour nous aider à finaliser l’organisation, merci de confirmer votre présence en cliquant ci-dessous :
-            </p>
+                          <div style="text-align: center; margin: 20px 0;">
+                          <a href="${rsvpLink}" 
+                              style="background-color: #D4AF37; color: white; padding: 12px 24px; 
+                                  border-radius: 6px; text-decoration: none; font-weight: bold;">
+                              📩 Répondre à l'invitation
+                          </a>
+                          </div>
 
-            <div style="text-align: center; margin: 20px 0;">
-            <a href="${rsvpLink}" 
-                style="background-color: #D4AF37; color: white; padding: 12px 24px; 
-                    border-radius: 6px; text-decoration: none; font-weight: bold;">
-                📩 Répondre à l'invitation
-            </a>
-            </div>
+                          <p style="font-size: 14px; color: #666;">
+                          Si le bouton ne s’affiche pas correctement, vous pouvez utiliser ce lien :
+                          </p>
+                          <p style="font-size: 14px; color: #555; word-break: break-all;">
+                          <a href="${rsvpLink}" target="_blank">${rsvpLink}</a>
+                          </p>
 
-            <p style="font-size: 14px; color: #666;">
-            Si le bouton ne s’affiche pas correctement, vous pouvez utiliser ce lien :
-            </p>
-            <p style="font-size: 14px; color: #555; word-break: break-all;">
-            <a href="${rsvpLink}" target="_blank">${rsvpLink}</a>
-            </p>
+                          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
 
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                          <p style="font-size: 13px; color: #888; text-align: center;">
+                          Merci d’avance pour votre retour 🙏<br>
+                          Au plaisir de vous compter parmi nous,<br>
+                          ${signature}
+                          </p>
+                      </div>
+                    </td>
+                  </tr>
 
-            <p style="font-size: 13px; color: #888; text-align: center;">
-            Merci d’avance pour votre retour 🙏<br>
-            Au plaisir de vous compter parmi nous,<br>
-            ${signature}
-            </p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `;
 
     const sendSmtpEmail = {
@@ -472,57 +510,68 @@ async function sendFileQRCodeMail(data, qrCodeUrl) {
         break;
     }
 
-    const htmlContent =
-    `<div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+    const htmlContent =`
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <div style="
+                        max-width: 650px;
+                        background:#ffffff;
+                        margin: 30px auto;
+                        padding: 25px 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                      ">
+                        <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+                          <p>
+                            Votre <strong>QR-code d’accès</strong> pour ${article}${eventType} est joint à ce mail.
+                            Il vous servira de laissez-passer le jour de l’événement.
+                          </p>
 
-            <p>
-              Votre <strong>QR-code d’accès</strong> pour ${article}${eventType} est joint à ce mail.
-              Il vous servira de laissez-passer le jour de l’événement.
-            </p>
+                          <p>
+                            Merci encore pour votre présence ✨  
+                          </p>
 
-            <p>
-              Merci encore pour votre présence ✨  
-            </p>
+                        <p>Cordialement,<br/><strong>${concerned}</strong></p>
+                      </div>
+                    </td>
+                  </tr>
 
-          <p>Cordialement,<br><strong>${concerned}</strong></p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `;
 
     const sendSmtpEmail = {
@@ -562,54 +611,65 @@ async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
         break;
     }
     const htmlContent = `
-    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <div style="
+                        max-width: 650px;
+                        background:#ffffff;
+                        margin: 30px auto;
+                        padding: 25px 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                      ">
+                        <p>Bonjour <strong>${organizer.name}</strong>,</p>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-          <p>Bonjour <strong>${organizer.name}</strong>,</p>
+                          <p>
+                            Nous vous informons que l'invité <strong>${guest.full_name}</strong> ${reponse} votre invitation.
+                          </p>
+                          <p>
+                            Vous pouvez consulter les détails dans votre espace organisateur.  
+                          </p>
 
-            <p>
-              Nous vous informons que l'invité <strong>${guest.full_name}</strong> ${reponse} votre invitation.
-            </p>
-            <p>
-              Vous pouvez consulter les détails dans votre espace organisateur.  
-            </p>
+                        <p>Smart Invite</p>
+                      </div>
+                    </td>
+                  </tr>
 
-          <p>Smart Invite</p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `;
 
     const sendSmtpEmail = {
@@ -630,49 +690,60 @@ async function sendGuestPresenceToOrganizer(organizer, guest) {
     const logo = await getLogoUrlFromFirebase('logo.png');
     if(!logo) throw new Error("Logo non trouvé.");
     const htmlContent = `
-    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <div style="
+                        max-width: 650px;
+                        background:#ffffff;
+                        margin: 30px auto;
+                        padding: 25px 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                      ">
+                        <p>
+                          L'invité <strong>${guest.full_name}</strong> vient d'arriver.
+                        </p>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-          <p>
-            L'invité <strong>${guest.full_name}</strong> vient d'arriver.
-          </p>
+                        <p>Smart Invite</p>
+                      </div>
+                    </td>
+                  </tr>
 
-          <p>Smart Invite</p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `;
 
     const sendSmtpEmail = {
@@ -698,49 +769,60 @@ async function sendPdfByEmail(data, pdfBuffer) {
     const base64Pdf = pdfBuffer.toString('base64');
 
     const htmlContent = `
-    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+        <!DOCTYPE html>
+        <html lang="fr">
+          <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                    
+                    <!-- Header -->
+                    <tr>
+                      <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                      <img src="${logo}" alt="SmartInvite Logo" 
+                      style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                      <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                    </td>
+                    </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                        <!-- BODY -->
+                        <div style="
+                          max-width: 650px;
+                          background:#ffffff;
+                          margin: 30px auto;
+                          padding: 25px 30px;
+                          border-radius: 8px;
+                          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                        ">
+                          <p>Bonjour,</p>
+                            <p>Veuillez trouver ci-joint le récapitulatif des invités pour l'événement <strong>${event.title}</strong>.</p>
+                            
+                            <p>Cordialement,</p>
+                          <p>Smart Invite</p>
+                        </div>
+                      </td>
+                    </tr>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-          <p>Bonjour,</p>
-            <p>Veuillez trouver ci-joint le récapitulatif des invités pour l'événement <strong>${event.title}</strong>.</p>
-            
-            <p>Cordialement,</p>
-          <p>Smart Invite</p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
+                    <!-- Footer -->
+                    <tr>
+                      <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                        © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                        <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                          ${process.env.API_URL}
+                        </a>
+                      </td>
+                    </tr>
+
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
     `;
 
     const sendSmtpEmail = {
@@ -781,15 +863,55 @@ async function sendPdfToGuestMail(data) {
       const pdfBase64 = pdfBuffer.toString("base64");
 
       const message = `
-        </center>
-          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+        <!DOCTYPE html>
+        <html lang="fr">
+          <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                    
+                    <!-- Header -->
+                    <tr>
+                      <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                      <img src="${logo}" alt="SmartInvite Logo" 
+                      style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                      <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                    </td>
+                    </tr>
 
-          <p>Vous trouverez en pièce jointe votre invitation officielle.</p>
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                        <!-- BODY -->
+                        </center>
+                          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-          <br>
-          <p>✨ À très bientôt</p>
-        </center>  
-        <p><strong>L'équipe Smart Invite</strong></p>
+                          <p>Vous trouverez en pièce jointe votre invitation officielle.</p>
+
+                          <br>
+                          <p>✨ À très bientôt</p>
+                        </center>  
+                        <p><strong>L'équipe Smart Invite</strong></p>
+                      </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                      <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                        © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                        <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                          ${process.env.API_URL}
+                        </a>
+                      </td>
+                    </tr>
+
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
       `;
 
       const sendSmtpEmail = {
@@ -857,61 +979,72 @@ async function sendThankYouMailToPresentGuests(event, schedules, organizer, gues
       break;
   }
   const htmlContent = `
-    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+    <!DOCTYPE html>
+    <html lang="fr">
+      <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                  <img src="${logo}" alt="SmartInvite Logo" 
+                  style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                  <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                </td>
+                </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                <!-- Content -->
+                <tr>
+                  <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                    <!-- BODY -->
+                    <div style="
+                      max-width: 650px;
+                      background:#ffffff;
+                      margin: 30px auto;
+                      padding: 25px 30px;
+                      border-radius: 8px;
+                      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                    ">
+                      <p>Bonjour <strong>${guest.full_name}</strong>,</p>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-          <p>Bonjour <strong>${guest.full_name}</strong>,</p>
+                        <p>
+                          ${sentences}
+                        </p>
+                        <p>
+                          Votre participation a contribué à rendre cette événement mémorable.
+                        </p>
 
-            <p>
-              ${sentences}
-            </p>
-            <p>
-              Votre participation a contribué à rendre cette événement mémorable.
-            </p>
+                        <p>
+                          ${sentences_2}
+                        </p>
 
-            <p>
-              ${sentences_2}
-            </p>
+                        <p style="margin-top:20px;">${sentences_3}</p>
 
-            <p style="margin-top:20px;">${sentences_3}</p>
+                      <p style="font-weight:bold;">${concerned}</p>
+                    </div>
+                  </td>
+                </tr>
 
-          <p style="font-weight:bold;">${concerned}</p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
-    `;
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                    © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                    <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                      ${process.env.API_URL}
+                    </a>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
 
     const sendSmtpEmail = {
       sender: { name: "Smart Invite", email: process.env.BREVO_SENDER_EMAIL },
@@ -959,50 +1092,61 @@ async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
     if(!logo) throw new Error("Logo non trouvé.");
     
     const htmlContent = `
-    <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
 
-        <!-- HEADER -->
-        <div style="
-          background: linear-gradient(90deg, #a89147ff, #D4AF37);
-          padding: 10px 0;
-          text-align: center;
-        ">
-          <img src="${logo}"
-            alt="SmartInvite Logo"
-            style="width:180px; height:130px; margin:auto; display:block;">
-        </div>
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <div style="
+                        max-width: 650px;
+                        background:#ffffff;
+                        margin: 30px auto;
+                        padding: 25px 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                      ">
+                        <p>
+                          Bonjour <strong>${organizer.name}</strong>
+                        </p>
+                        <p>
+                          Le message de remerciement automatique a bien été envoyé a tous les invités présents.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
 
-        <!-- BODY -->
-        <div style="
-          max-width: 650px;
-          background:#ffffff;
-          margin: 30px auto;
-          padding: 25px 30px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        ">
-          <p>
-            Bonjour <strong>${organizer.name}</strong>
-          </p>
-          <p>
-            Le message de remerciement automatique a bien été envoyé a tous les invités présents.
-          </p>
-        </div>
-        
-        <!-- FOOTER -->
-          <div style="
-            background: linear-gradient(90deg, #a89147ff, #D4AF37);
-            padding: 25px 0;
-            text-align: center;
-            color: #ffffff;
-            font-size: 14px;
-            ">
-            <p style="margin: 0;">Powered by <strong>Smart-Invite</strong></p>
-            <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-              ${process.env.API_URL}
-            </a>
-          </div>
-      </div>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `;
 
     const sendSmtpEmail = {
@@ -1026,52 +1170,66 @@ async function manualSendThankYouMailToPresentGuests(eventId, thankMessage, gues
 
   const formattedMessage = thankMessage.replace(/\n/g, '<br>');
   const htmlContent = `
-  <div style="width:100%; background:#f5f5f5; padding:0; margin:0; font-family: Arial, sans-serif;">
+    <!DOCTYPE html>
+    <html lang="fr">
+      <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                  <img src="${logo}" alt="SmartInvite Logo" 
+                  style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                  <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                </td>
+                </tr>
 
-    <!-- HEADER -->
-    <div style="background: linear-gradient(90deg, #a89147ff, #D4AF37); padding: 10px 0; text-align: center;">
-      <img src="${logo}" alt="SmartInvite Logo"
-        style="width:180px; height:130px; margin:auto; display:block;">
-    </div>
+                <!-- Content -->
+                <tr>
+                  <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                        <!-- BODY -->
+                  <div style="
+                    max-width: 650px;
+                    background:#ffffff;
+                    margin: 30px auto;
+                    padding: 25px 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                  ">
 
-    <!-- BODY -->
-    <div style="
-      max-width: 650px;
-      background:#ffffff;
-      margin: 30px auto;
-      padding: 25px 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    ">
+                    <!-- Message personnalisé -->
+                    <div style="
+                      margin: 20px 0;
+                      padding: 15px;
+                      background: #f9f7ef;
+                      border-left: 4px solid #D4AF37;
+                      font-style: italic;
+                    ">
+                      <p>${formattedMessage}</p>
+                    </div>
+                  </div>
+                  </td>
+                </tr>
 
-      <!-- Message personnalisé -->
-      <div style="
-        margin: 20px 0;
-        padding: 15px;
-        background: #f9f7ef;
-        border-left: 4px solid #D4AF37;
-        font-style: italic;
-      ">
-        <p>${formattedMessage}</p>
-      </div>
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                    © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                    <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                      ${process.env.API_URL}
+                    </a>
+                  </td>
+                </tr>
 
-    </div>
-
-    <!-- FOOTER -->
-    <div style="
-      background: linear-gradient(90deg, #a89147ff, #D4AF37);
-      padding: 25px 0;
-      text-align: center;
-      color: #ffffff;
-      font-size: 14px;
-    ">
-      <p style="margin: 0;">Powered by <strong>Smart-Invites</strong></p>
-      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-        ${process.env.API_URL}
-      </a>
-    </div>
-
-  </div>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
   `;
 
   const sendSmtpEmail = {
@@ -1115,12 +1273,52 @@ async function sendMailToAdmin(name, email, phone, subject, message) {
     sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
     subject: subj || 'Nouveau message de contact',
     htmlContent: ` 
-      <h3>Nouveau message de contact</h3>
-      <p><strong>Nom :</strong> ${name}</p>
-      <p><strong>Email :</strong> ${email}</p>
-      <p><strong>Téléphone :</strong> ${phone || 'Non renseigné'}</p>
-      <p><strong>Message :</strong></p>
-      <p>${formattedMessage}</p>
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <h3>Nouveau message de contact</h3>
+                      <p><strong>Nom :</strong> ${name}</p>
+                      <p><strong>Email :</strong> ${email}</p>
+                      <p><strong>Téléphone :</strong> ${phone || 'Non renseigné'}</p>
+                      <p><strong>Message :</strong></p>
+                      <p>${formattedMessage}</p>          
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
     `
   };
 
@@ -1133,7 +1331,7 @@ async function sendNewsLetterToUsers() {
   const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
-  const rsvpLink = `${process.env.API_URL}/dashboard`;
+  const rsvpLink = `${process.env.API_URL}`;
   const msg = `
     Bonjour,
 
@@ -1183,9 +1381,149 @@ async function sendNewsLetterToUsers() {
   console.log(`✅ Email(New letter) envoyé à aux users`);
 };
 
+async function sendNewsUpdatesToUsers(user) {
+  try {
+    console.log("📨 Envoi de la newsletter à:", user.email);
+
+    const logo = await getLogoUrlFromFirebase('logo.png');
+
+    if (!logo) {
+      console.error("❌ Logo introuvable");
+      return;
+    }
+
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey =
+      process.env.BREVO_API_KEY?.trim();
+
+    const rsvpLink = `${process.env.API_URL}`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Nouveautés SmartInvite</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <p>Bonjour,</p>
+
+                      <p>
+                        Nous sommes ravis de vous présenter les toutes dernières nouveautés de 
+                        <strong>SmartInvite</strong>, la plateforme pensée pour simplifier l’organisation 
+                        et la gestion de vos événements de mariage.
+                      </p>
+
+                      <h3 style="margin-top:30px; color:#0f172a;">🚀 Quoi de neuf ?</h3>
+
+                      <p>
+                        <strong>✅ Création d’événements améliorée</strong><br />
+                        Une gestion plus fluide, plus rapide et plus intuitive.
+                      </p>
+
+                      <p>
+                        <strong>🎨 Import de votre carte d’invitation (PDF)</strong><br />
+                        Importez votre propre modèle de carte d’invitation au format PDF et associez-le directement à votre événement.
+                      </p>
+
+                      <p>
+                        <strong>📱 Check-in rapide via QR Code</strong><br />
+                        Une amélioration majeure du scan de QR Code pour un accès plus rapide et sécurisé lors de vos événements.
+                      </p>
+
+                      <p>
+                        <strong>📊 Suivi de présence en temps réel</strong><br />
+                        Visualisez instantanément les invités présents et gérez vos statistiques en toute simplicité.
+                      </p>
+
+                      <p>
+                        <strong>💌 Messages de remerciement automatisés</strong><br />
+                        Envoyez automatiquement des messages de remerciement à vos invités après l’événement.
+                      </p>
+
+                      <p>
+                        Notre objectif est de vous offrir une expérience toujours plus fluide, moderne et intuitive.
+                      </p>
+
+                      <!-- CTA -->
+                      <div style="text-align:center; margin:40px 0;">
+                        <a href="${rsvpLink}" 
+                          style="
+                            background-color:#D4AF37;
+                            color:#ffffff;
+                            text-decoration:none;
+                            padding:14px 26px;
+                            border-radius:6px;
+                            font-weight:bold;
+                            display:inline-block;
+                          ">
+                          👉 Découvrir les nouveautés
+                        </a>
+                      </div>
+
+                      <p style="margin-top:40px;">
+                        À très bientôt, <strong>L’équipe SmartInvite </strong>
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const sendSmtpEmail = {
+      to: [{ email: user.email, name: user.name || "Utilisateur" }],
+      sender: {
+        email: process.env.BREVO_SENDER_EMAIL,
+        name: "Smart Invite",
+      },
+      subject: "✨ Nouveautés SmartInvite – Simplifiez vos événements",
+      htmlContent: htmlContent,
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log("✅ Email envoyé avec succès:", user.name);
+
+  } catch (error) {
+    console.error("❌ Erreur envoi newsletter Brevo:", error.response?.body || error.message);
+  }
+}
+
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
   sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
   notifications, manualSendThankYouMailToPresentGuests, sendMailToAdmin, sendNewsLetterToUsers,
-  sendPdfToGuestMail
+  sendPdfToGuestMail, sendNewsUpdatesToUsers
 };

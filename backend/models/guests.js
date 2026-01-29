@@ -292,7 +292,7 @@ async function getGuestAndInvitationRelatedById(guestId) {
         WHERE g.id = ?
         ORDER BY i.created_at DESC
         LIMIT 1
-    `, [guestId]);
+    `, [guestId ?? null]);
 
     return rows[0] || null;
 }

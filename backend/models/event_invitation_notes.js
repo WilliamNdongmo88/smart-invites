@@ -18,8 +18,11 @@ const initEventInvitationNotesModel = async () => {
       top_band_color VARCHAR(255),
       bottom_band_color VARCHAR(255),
       text_color VARCHAR(255),
+      pdf_url TEXT,
+      has_invitation_model_card BOOLEAN NOT NULL DEFAULT FALSE,
       logo_url VARCHAR(255),
       heart_icon_url VARCHAR(255),
+      code VARCHAR(100),
       FOREIGN KEY (event_id) REFERENCES EVENTS(id) ON DELETE CASCADE
     )
   `);
@@ -28,7 +31,7 @@ const initEventInvitationNotesModel = async () => {
 
 async function creatEventInvitNote(eventId, title, mainMessage, sousMainMessage, eventTheme, 
   priorityColors, qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-  topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl) {
+  topBandColor, bottomBandColor, textColor, pdfUrl, hasInvitationModelCard, code, logoUrl, heartIconUrl) {
   const [result] = await pool.query(`
       INSERT INTO EVENT_INVITATION_NOTES (event_id,
                                           title,
@@ -44,13 +47,16 @@ async function creatEventInvitNote(eventId, title, mainMessage, sousMainMessage,
                                           top_band_color,
                                           bottom_band_color,
                                           text_color,
+                                          pdf_url,
+                                          has_invitation_model_card,
+                                          code,
                                           logo_url,
                                           heart_icon_url
                                           )
-      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `,[eventId, title, mainMessage, sousMainMessage, eventTheme, 
   priorityColors, qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-  topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl]);
+  topBandColor, bottomBandColor, textColor, pdfUrl, hasInvitationModelCard, code, logoUrl, heartIconUrl]);
 
   return result;
 };
@@ -65,9 +71,28 @@ async function getEventInvitNote(eventId) {
   return result[0];
 };
 
+async function getEventInvitNoteById(eventInvNoteId) {
+  const [result] = await pool.query(`
+      SELECT *
+      FROM EVENT_INVITATION_NOTES
+      WHERE id=?
+  `,[eventInvNoteId]);
+
+  return result[0];
+};
+
+async function updateCodeEventInvNote(id, eventId, code) {
+  const [result] = await pool.query(`
+    UPDATE EVENT_INVITATION_NOTES 
+    SET event_id=?, code=?
+    WHERE id=?
+  `, [eventId, code, id]);
+  return result.insertId;
+}
+
 async function updateEventInvitNote(id, eventId, title, mainMessage, sousMainMessage, eventTheme, 
   priorityColors, qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-  topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl) {
+  topBandColor, bottomBandColor, textColor, pdfUrl, hasInvitationModelCard, code, logoUrl, heartIconUrl) {
   const [result] = await pool.query(`
     UPDATE EVENT_INVITATION_NOTES 
     SET event_id=?,
@@ -84,15 +109,18 @@ async function updateEventInvitNote(id, eventId, title, mainMessage, sousMainMes
         top_band_color=?,
         bottom_band_color=?,
         text_color=?,
+        pdf_url=?,
+        has_invitation_model_card=?,
+        code=?,
         logo_url=?,
         heart_icon_url=?
     WHERE id=?
   `, [eventId, title, mainMessage, sousMainMessage, eventTheme, 
   priorityColors, qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-  topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl, id]);
+  topBandColor, bottomBandColor, textColor, pdfUrl, hasInvitationModelCard, code, logoUrl, heartIconUrl, id]);
 
   return result.insertId;
 }
 
 module.exports = {initEventInvitationNotesModel, creatEventInvitNote, 
-                  getEventInvitNote, updateEventInvitNote}
+                  getEventInvitNote, updateEventInvitNote, updateCodeEventInvNote}

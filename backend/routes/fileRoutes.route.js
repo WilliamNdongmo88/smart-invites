@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const multerConfig = require('../middlewares/upload');
+const EventController = require('../controllers/event.controller');
+const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
 
 router.get("/", async (req, res) => {
   const imageUrl = req.query.url;
@@ -25,5 +28,19 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Failed to load image" });
   }
 });
+
+router.post(
+    '/create-event-file',
+    authenticateToken, 
+    multerConfig,
+    EventController.createEventWithFile
+);
+
+router.put(
+    '/update-event-file/:eventId',
+    authenticateToken, 
+    multerConfig,
+    EventController.updateEventWithFile
+);
 
 module.exports = router;

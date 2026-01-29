@@ -1,4 +1,6 @@
 require("dotenv").config({path: ".env.test"});
+const admin = require('../config/firebaseConfig');
+const { bucket} = require('../config/firebaseConfig');
 const {getUserById} = require('../models/users');
 const {createEvent, getEventById,updateEvent,updateEventStatus,
     getEventsByOrganizerId, getEventWithTotalGuest, deleteEvents, 
@@ -6,7 +8,7 @@ const {createEvent, getEventById,updateEvent,updateEventStatus,
     getUserByEventId} = require('../models/events');
 const {getGuestByEventIdAndConfirmedRsvp} = require('../models/guests');
 const {getGuestsCheckIns} = require('../models/checkins');
-const { generatePresentGuestsPdf, generateDualGuestListPdf } = require('../services/pdfService');
+const { generatePresentGuestsPdf, generateDualGuestListPdf, uploadPdfToFirebase } = require('../services/pdfService');
 
 const schedule = require('node-schedule');
 const { getGuestByInvitationId } = require('../models/invitations');
@@ -14,23 +16,67 @@ const { sendPdfByEmail } = require('../services/notification.service');
 const { sendScheduledThankMessage } = require('./checkin.controller');
 const { getEventScheduleByEventId, createEventSchedule, updateEventSchedule, deleteEventSchedule } = require('../models/event_schedules');
 const { creatEventInvitNote, getEventInvitNote, updateEventInvitNote } = require("../models/event_invitation_notes");
+const { deleteInvitationFiles } = require("../services/invitation.service");
 
 
 const create_Event = async (req, res, next) => {
     try {
-        if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
-        let datas = req.body;
+        const eventDatas = await createEventService(req.body);
+        return res.status(201).json({ eventDatas });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const createEventWithFile = async (req, res, next) => {
+    try {
+        const invitationFile = req.file;
+        const eventDatas = req.body.eventDatas;
+        // console.log('### eventDatas:', JSON.parse(eventDatas));
+        const datas = {
+            eventDatas: JSON.parse(eventDatas),
+            eventInvitationNote: null
+        }
+        if (!invitationFile) {
+            return res.status(400).json({ message: 'Erreur : Aucun fichier reçu.' });
+        }
+
+        console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
+
+        const event = await createEventService(datas);
+        // console.log('### event created:', event);
+
+        // Appelez la fonction pour uploader le fichier et attendez le résultat
+        const data = await uploadPdfToFirebase(null, invitationFile.buffer, event[0]);
+        // console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
+        const pdfUrl = data.url;
+        await creatEventInvitNote(event[0].id, null, null, null, null, null, null, 
+                   null, null, null, null, 
+                   null, null, null, pdfUrl, true, data.code, null, null);
+
+        res.status(200).json({
+            message: 'Fichier uploadé avec succès sur Firebase !',
+            fileUrl: pdfUrl // Renvoyez l'URL publique au client
+        });
+    } catch (error) {
+        console.error('CREATE EVENT WITH FILE ERROR:', error.message);
+        next(error);
+    }
+};
+
+const createEventService = async (datas) => {
+    try {
+        // console.log('datas :: ', typeof datas, ' :: ', datas);
+        if (datas.length==0) throw new Error("Liste vide");
         let eventDatas = datas.eventDatas;
         let eventInvitationNote = datas.eventInvitationNote;
-        console.log('eventDatas :: ', eventDatas);
-        console.log('eventInvitationNote :: ', eventInvitationNote);
-        const {invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, qrInstructions, 
-               dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-               topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl} = eventInvitationNote
+        //console.log('eventDatas :: ', eventDatas);
+        
         const existing = await getUserById(eventDatas[0].organizerId);
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
         for (const event of eventDatas) {
+            console.log('Creating event for organizerId:', event.organizerId);
             const {
                 organizerId, title, description, eventDate, banquetTime, religiousLocation, 
                 religiousTime, type, budget, eventNameConcerned1, eventNameConcerned2, 
@@ -41,13 +87,21 @@ const create_Event = async (req, res, next) => {
                                               eventNameConcerned1,eventNameConcerned2, 
                                               eventCivilLocation, eventLocation, maxGuests,hasPlusOne, 
                                               footRestriction, showWeddingReligiousLocation, status);
+            console.log('[create_Event] New event created with ID:', eventId);
             returnDatas.push({id: eventId, organizerId, title, description, eventDate, banquetTime, 
                 religiousLocation, religiousTime, type, budget, eventNameConcerned1,eventNameConcerned2, 
                 eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
                 showWeddingReligiousLocation, status});
-            await creatEventInvitNote(eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, qrInstructions, 
-               dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-               topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl);
+            
+            if(eventInvitationNote != null || eventInvitationNote != undefined){
+                const {invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, qrInstructions, 
+                       dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
+                       topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl
+                } = eventInvitationNote;
+                await creatEventInvitNote(eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, qrInstructions, 
+                   dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
+                   topBandColor, bottomBandColor, textColor, null, false, logoUrl, heartIconUrl);
+            }
 
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
@@ -63,15 +117,11 @@ const create_Event = async (req, res, next) => {
                 }
             } catch (error) {
                 console.error("Erreur planification scheduler:", error);
-                next(error);
             }
         }
-        return res.status(201).json({
-            eventDatas: returnDatas
-        });
+        return returnDatas;
     } catch (error) {
         console.error('CREATE EVENT ERROR:', error.message);
-        next(error);
     }
 };
 
@@ -98,7 +148,7 @@ const getAllEvents = async (req, res, next) => {
     }
   };
 
-    const getEventInvitationNote = async (req, res, next) => {
+  const getEventInvitationNote = async (req, res, next) => {
     try {
         const event = await getEventInvitNote(req.params.eventId);
         //console.log('### event:', event);
@@ -133,60 +183,10 @@ const getAllEvents = async (req, res, next) => {
     }
   }
 
-  const updateEventBy_Id = async (req, res, next) => {
+   const updateEventBy_Id = async (req, res, next) => {
     try {
         console.log('req.body: ', req.body);
-        let { organizerId, title, description, eventDate, banquetTime, religiousLocation, religiousTime, 
-            eventCivilLocation, eventLocation, maxGuests, hasPlusOne, footRestriction, 
-            showWeddingReligiousLocation, status, type, budget, eventNameConcerned1, eventNameConcerned2
-        } = req.body.eventDatas;
-
-        const event = await getEventById(req.params.eventId);
-        if(!event) return res.status(404).json({error: "Cet Evénement n'existe pas"});
-
-        if(organizerId == null){ organizerId = event.organizer_id};
-        if(title == null){ title = event.title};
-        if(description == null){ description = event.description};
-        if(eventDate == null){ eventDate = event.event_date};
-        if(banquetTime == null){ banquetTime = event.banquet_time};
-        if(religiousLocation == null){ religiousLocation = event.religious_location};
-        if(religiousTime == null){ religiousTime = event.religious_time};
-        if(eventCivilLocation == null){ eventCivilLocation = event.civil_location};
-        if(eventLocation == null){ eventLocation = event.event_location};
-        if(maxGuests == null){ maxGuests = event.max_guests};
-        if(hasPlusOne == null){ hasPlusOne = event.has_plus_one};
-        if(type == null){ type = event.type};
-        if(budget == null){ budget = event.budget};
-        if(eventNameConcerned1 == null){ eventNameConcerned1 = event.event_name_concerned1};
-        if(eventNameConcerned2 == null){ eventNameConcerned2 = event.event_name_concerned2};
-        if(footRestriction == null){ footRestriction = event.foot_restriction};
-        if(showWeddingReligiousLocation == null){ showWeddingReligiousLocation = event.show_wedding_religious_location};
-        if(status == null){ status = event.status};
-
-        const organizer = await getUserById(organizerId);
-        if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
-        await updateEvent(req.params.eventId, organizerId, title, description, eventDate, banquetTime,
-            religiousLocation, religiousTime, eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
-            footRestriction, showWeddingReligiousLocation, status, type, 
-            budget, eventNameConcerned1, eventNameConcerned2 );
-        const updatedEvent = await getEventById(req.params.eventId);
-
-        await updateEventInvitationNote(req.body.eventInvitationNote);
-        
-        const existingSchedule = await getEventScheduleByEventId(req.params.eventId);
-        console.log('### existing schedule:', existingSchedule);
-        const scheduleId = await updateEventSchedule(existingSchedule.id, req.params.eventId, eventDate, false, false);
-        console.log('### scheduleId:', scheduleId);
-
-        console.log(`Schedule mis à jour pour event ${req.params.eventId} → Exécution : ${eventDate}`);
-        console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
-        const user = await getUserByEventId(req.params.eventId);
-        if(user.attendance_notifications){
-            console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
-            if (process.env.NODE_ENV !== 'test') {
-                planSchedule(scheduleId, req.params.eventId, eventDate);
-            }
-        }
+        const updatedEvent = await updateEventService(req.params.eventId, req.body);
         
         return res.status(200).json({ eventDatas: updatedEvent });
     } catch (error) {
@@ -195,16 +195,158 @@ const getAllEvents = async (req, res, next) => {
     }
   };
 
+  const updateEventWithFile = async (req, res, next) => {
+    try {
+        console.log('req.params.eventId:', req.params.eventId);
+        const eventId = req.params.eventId;
+        const invitationFile = req.file;
+        // console.log('eventDatas:', JSON.parse(req.body.eventDatas));
+        // console.log('eventInvitationNote:', JSON.parse(req.body.eventInvitationNote));
+        const eventDatas = JSON.parse(req.body.eventDatas);
+        const eventInvitationNote = JSON.parse(req.body.eventInvitationNote);
+
+        if (!invitationFile) {
+        return res.status(400).json({ error: 'Aucun fichier reçu' });
+        }
+
+        if (!eventDatas) {
+        return res.status(400).json({ error: 'eventDatas manquant' });
+        }
+
+        const payload = {
+            eventDatas: eventDatas,
+            eventInvitationNote: null,
+        };
+        console.log('payload: ', payload);
+
+        // 1. Mise à jour de l’événement
+        const updatedEvent = await updateEventService(
+            eventId,
+            payload
+        );
+        console.log('updatedEvent:', updatedEvent);
+
+        // 2. Suppression ancien PDF
+        const eventInvNote = await getEventInvitNote(updatedEvent.id);
+        const path = `event_${updatedEvent.id}_default_carte_${eventInvNote.code}.pdf`;
+        console.log('[path]:', path);
+        const resDel = await deleteInvitationFiles(path);
+        // console.log('resDel:', resDel);
+
+        // 3. Upload nouveau PDF
+        if(!resDel.success) return res.status(500).json({error: "Erreur lors de la suppression du fichier"});
+        const data = await uploadPdfToFirebase(
+            null,
+            invitationFile.buffer,
+            updatedEvent
+        );
+        console.log('pdfUrl:', data.url);
+
+        const eventInvitNote = {
+            eventId: eventId,
+            invTitle: null,
+            mainMessage: null,
+            eventTheme: null,
+            priorityColors: null,
+            qrInstructions: null,
+            dressCodeMessage: null,
+            thanksMessage1: null,
+            sousMainMessage: null,
+            closingMessage: null,
+            titleColor: null,
+            topBandColor: null,
+            bottomBandColor: null,
+            textColor: null,
+            pdfUrl: data.url,
+            hasInvitationModelCard: eventInvitationNote.hasInvitationModelCard,
+            code: data.code,
+            logoUrl: null,
+            heartIconUrl: null
+        }
+        //console.log('[eventInvitNote]: ', eventInvitNote);
+        // 4. Update invitation note (PDF seulement)
+        await updateEventInvitationNote(eventInvitNote);
+
+        return res.status(200).json({
+            message: 'Événement mis à jour et fichier uploadé avec succès',
+            eventDatas: updatedEvent,
+            fileUrl: data.url
+        });
+
+    } catch (error) {
+        console.error('UPDATE EVENT WITH FILE ERROR:', error.message);
+        next(error);
+    }
+  };
+
+  async function updateEventService(eventId, payload) {
+    let { organizerId, title, description, eventDate, banquetTime, religiousLocation, religiousTime, 
+            eventCivilLocation, eventLocation, maxGuests, hasPlusOne, footRestriction, 
+            showWeddingReligiousLocation, status, type, budget, eventNameConcerned1, eventNameConcerned2
+        } = payload.eventDatas;
+
+    const event = await getEventById(eventId);
+    if(!event) return res.status(404).json({error: "Cet Evénement n'existe pas"});
+
+    if(organizerId == null){ organizerId = event.organizer_id};
+    if(title == null){ title = event.title};
+    if(description == null){ description = event.description};
+    if(eventDate == null){ eventDate = event.event_date};
+    if(banquetTime == null){ banquetTime = event.banquet_time};
+    if(religiousLocation == null){ religiousLocation = event.religious_location};
+    if(religiousTime == null){ religiousTime = event.religious_time};
+    if(eventCivilLocation == null){ eventCivilLocation = event.civil_location};
+    if(eventLocation == null){ eventLocation = event.event_location};
+    if(maxGuests == null){ maxGuests = event.max_guests};
+    if(hasPlusOne == null){ hasPlusOne = event.has_plus_one};
+    if(type == null){ type = event.type};
+    if(budget == null){ budget = event.budget};
+    if(eventNameConcerned1 == null){ eventNameConcerned1 = event.event_name_concerned1};
+    if(eventNameConcerned2 == null){ eventNameConcerned2 = event.event_name_concerned2};
+    if(footRestriction == null){ footRestriction = event.foot_restriction};
+    if(showWeddingReligiousLocation == null){ showWeddingReligiousLocation = event.show_wedding_religious_location};
+    if(status == null){ status = event.status};
+
+    const organizer = await getUserById(organizerId);
+    if(!organizer) return res.status(404).json({error: "Organizer non trouvé!"})
+    await updateEvent(eventId, organizerId, title, description, eventDate, banquetTime,
+        religiousLocation, religiousTime, eventCivilLocation, eventLocation, maxGuests, hasPlusOne, 
+        footRestriction, showWeddingReligiousLocation, status, type, 
+        budget, eventNameConcerned1, eventNameConcerned2 );
+    const updatedEvent = await getEventById(eventId);
+
+    if(payload.eventInvitationNote != null){
+        await updateEventInvitationNote(payload.eventInvitationNote);
+    }
+    
+    const existingSchedule = await getEventScheduleByEventId(eventId);
+    console.log('### existing schedule:', existingSchedule);
+    const scheduleId = await updateEventSchedule(existingSchedule.id, eventId, eventDate, false, false);
+    console.log('### scheduleId:', scheduleId);
+
+    console.log(`Schedule mis à jour pour event ${eventId} → Exécution : ${eventDate}`);
+    console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
+    const user = await getUserByEventId(eventId);
+    if(user.attendance_notifications){
+        console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
+        if (process.env.NODE_ENV !== 'test') {
+            planSchedule(scheduleId, eventId, eventDate);
+        }
+    }
+
+    return updatedEvent;
+  }
+
   async function updateEventInvitationNote(eventInvitationNote) {
     console.log('[updateEventInvitationNote] eventInvitationNote: ', eventInvitationNote);
     try {
         let {eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, 
             qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-            topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl
+            topBandColor, bottomBandColor, textColor, pdfUrl, hasInvitationModelCard, code, logoUrl, heartIconUrl
         } = eventInvitationNote;
 
         const event = await getEventInvitNote(eventId);
-        console.log('event: ', event);
+        // console.log('event: ', event);
         if(!event) throw new Error("La table de note de cet event n'existe pas");
         
         if(eventId == null){ eventId = event.event_id};
@@ -221,12 +363,16 @@ const getAllEvents = async (req, res, next) => {
         if(topBandColor == null){ topBandColor = event.top_band_color};
         if(bottomBandColor == null){ bottomBandColor = event.bottom_band_color};
         if(textColor == null){ textColor = event.text_color};
+        if(pdfUrl == null){ pdfUrl = event.pdf_url};
+        if(hasInvitationModelCard == null){ hasInvitationModelCard = event.has_invitation_model_card};
+        if(code == null){ code = event.code};
         if(logoUrl == null){ logoUrl = event.logo_url};
         if(heartIconUrl == null){ heartIconUrl = event.heart_icon_url};
 
+        //console.log('pdfUrl: ', pdfUrl);
         await updateEventInvitNote(event.id, eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, 
             qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
-            topBandColor, bottomBandColor, textColor, logoUrl, heartIconUrl);
+            topBandColor, bottomBandColor, textColor, pdfUrl, hasInvitationModelCard, code, logoUrl, heartIconUrl);
     } catch (error) {
         console.error('UPDATE EVENT-INVIT-NOTE BY EVENT-ID ERROR:', error.message);
     }
@@ -421,12 +567,14 @@ function formatDate(iso) {
 
 module.exports = {
     create_Event,
+    createEventWithFile,
     getAllEvents, 
     getEventBy_Id,
     getEventInvitationNote,
     getEventAndInvitationRelatedById,
     getOrganizerEvents,
     updateEventBy_Id,
+    updateEventWithFile,
     updateEvent_Status,
     deleteEvent,
     generatePresentGuests,

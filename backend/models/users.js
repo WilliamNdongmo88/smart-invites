@@ -68,6 +68,11 @@ async function getUserByFk(id) {
   return user.length ? user[0] : null;
 }
 
+async function getUsers() {
+  const [user] = await pool.query(`SELECT * FROM USERS`);
+  return user.length ? user : null;
+}
+
 async function getUserByEmail(email) {
   const [rows] = await pool.query(`SELECT * FROM USERS WHERE email = ?`, [email]);
   return rows.length ? rows[0] : null;
@@ -105,11 +110,12 @@ async function clearRefreshToken(userId) {
 
 async function updateUser(userId, updatedUser) {
     const [result] = await pool.query(`
-      UPDATE USERS SET name=?, phone=?, bio=?, avatar_url=?, 
+      UPDATE USERS SET name=?, email=?, phone=?, bio=?, avatar_url=?, 
       email_notifications=?, attendance_notifications=?, thank_notifications=?, event_reminders=?, marketing_emails=?
       WHERE id=?
   `, [  
       updatedUser.name,
+      updatedUser.email,
       updatedUser.phone,
       updatedUser.bio,  
       updatedUser.avatar_url,
@@ -132,6 +138,7 @@ module.exports = {
     initUserModel, 
     createDefaultAdmin, 
     createUser,
+    getUsers,
     updateUser, 
     getUserByFk,
     saveResetCode,

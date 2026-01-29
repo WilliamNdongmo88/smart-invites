@@ -115,7 +115,8 @@ const register = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
     try {
-        const { name, phone, bio, avatar_url,
+      console.log('-----> Update Profile Request Body:', req.body);
+        const { name, email, phone, bio, avatar_url,
             email_notifications, attendance_notifications,
             thank_notifications, event_reminders,
             marketing_emails } = req.body;
@@ -123,6 +124,7 @@ const updateProfile = async (req, res, next) => {
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
         const updatedUser = {
             name: name || user.name,
+            email: email || user.email,
             phone: phone || user.phone,
             bio: bio || user.bio,
             avatar_url: avatar_url || user.avatar_url,

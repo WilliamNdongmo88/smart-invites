@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const admin = require('firebase-admin');
 const path = require('path');
+const { getEventInvitNote, updateCodeEventInvNote } = require('../models/event_invitation_notes');
 require('pdfkit-table');
 
 async function generateGuestPdf(data, card = null, plusOneName = null) {
@@ -680,15 +681,21 @@ async function generateDualGuestListPdf(presentGuests = [], confirmedAbsentGuest
 }
 
 // Fonction pour uploader sur Firebase Storage
-async function uploadPdfToFirebase(guest, pdfBuffer) {
+async function uploadPdfToFirebase(guest, pdfBuffer, event = null) {
   const bucket = admin.storage().bucket();
+  let code = ''
+  if(event) code = generateRandom4Digits();
+  console.log('code:', code);
+  
   let fileName = null;
   if (process.env.NODE_ENV == 'development'){
-    if(guest.id!=undefined) fileName = `dev/pdfs/carte_${guest.id}.pdf`;
-    if(guest.guest_id!=undefined) fileName = `dev/pdfs/carte_${guest.guest_id}.pdf`;
+    if(guest != null && guest.id!=undefined) fileName = `dev/pdfs/carte_${guest.id}.pdf`;
+    if(guest != null && guest.guest_id!=undefined) fileName = `dev/pdfs/carte_${guest.guest_id}.pdf`;
+    if(event) fileName = `dev/pdfs/event_${event.id}_default_carte_${code}.pdf`;
   }else if(process.env.NODE_ENV == 'production'){
-    if(guest.id!=undefined) fileName = `prod/pdfs/carte_${guest.id}.pdf`;
-    if(guest.guest_id!=undefined) fileName = `prod/pdfs/carte_${guest.guest_id}.pdf`;
+    if(guest != null && guest.id!=undefined) fileName = `prod/pdfs/carte_${guest.id}.pdf`;
+    if(guest != null && guest.guest_id!=undefined) fileName = `prod/pdfs/carte_${guest.guest_id}.pdf`;
+    if(event) fileName = `prod/pdfs/event_${event.id}_default_carte_${code}.pdf`;
   }
   
   const file = bucket.file(fileName);
@@ -699,7 +706,15 @@ async function uploadPdfToFirebase(guest, pdfBuffer) {
     expires: '03-01-2030',
   });
 
-  return url;
+  const data = {
+    url: url,
+    code: code
+  }
+  return data;
+}
+
+function generateRandom4Digits() {
+    return Math.floor(1000 + Math.random() * 9000);
 }
 
 module.exports = { generateGuestPdf, uploadPdfToFirebase, 

@@ -13,14 +13,13 @@ const notificationRoutes = require('./routes/notification.routes');
 const linkRoutes = require('./routes/link.routes');
 const maintenaceRoutes = require('./routes/maintenance.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
-const imageProxy = require('./routes/imageProxy.route');
+const fileRoutes = require('./routes/fileRoutes.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
-const { sendScheduledReport } = require('./controllers/event.controller');
-const { sendNewsLetterToUsers } = require('./services/notification.service');
-const { getAllConfirmedGuest } = require('./controllers/guest.controller');
 const { createDefaultTableMaintenance } = require('./models/maintenance');
+const { sendNewsLetterToUsers } = require('./services/notification.service');
+const { sendNewsUpdatesToAllUsers } = require('./controllers/guest.controller');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -59,7 +58,7 @@ app.use('/api/notification', notificationRoutes);
 app.use('/api/link', linkRoutes);
 app.use('/api/maintenance', maintenaceRoutes);
 app.use('/api', feedbackRoutes);
-app.use("/api/image-proxy", imageProxy);
+app.use("/api/file", fileRoutes);
 
 app.use(errorHandler);
 
@@ -79,9 +78,9 @@ const startServer = async () => {
     await createDefaultAdmin();
     await createDefaultTableMaintenance();
     //await sendScheduledReport(3);
-    //await sendNewsLetterToUsers();
     if (process.env.NODE_ENV == 'development') {
       //await getAllConfirmedGuest();
+      await sendNewsUpdatesToAllUsers();
     }
 
     // 3 Démarrer le serveur

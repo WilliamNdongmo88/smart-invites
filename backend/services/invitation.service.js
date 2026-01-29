@@ -46,6 +46,34 @@ async function deleteGuestFiles(guestId, invitationToken) {
     console.error("Erreur lors de la suppression des fichiers Firebase:", error);
     throw new Error("Erreur suppression fichiers Firebase");
   }
+};
+
+async function deleteInvitationFiles(path) {
+  console.log('[deleteInvitationFilesCustom] path:', path);
+  let pdfPath = '';
+  if (process.env.NODE_ENV == 'development'){
+    pdfPath = `dev/pdfs/${path}`;
+  }else if(process.env.NODE_ENV == 'production'){
+    pdfPath = `prod/pdfs/${path}`;
+  }
+
+  console.log('pdfPath:', pdfPath);
+  const pdfFile = bucket.file(pdfPath);
+
+  try {
+    const [pdfExists] = await pdfFile.exists();
+    if (pdfExists) {
+      await pdfFile.delete();
+      console.log(`🗑️ PDF supprimé: ${pdfPath}`);
+    }else{
+      console.log(`❌ PDF non trouvé:  ${pdfPath} .`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression des fichiers Firebase:", error);
+    throw new Error("Erreur suppression fichiers Firebase");
+  }
 }
 
-module.exports = { validateAndUseInvitation, deleteGuestFiles };
+module.exports = { validateAndUseInvitation, deleteGuestFiles, deleteInvitationFiles };
