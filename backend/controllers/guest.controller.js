@@ -3,8 +3,7 @@ const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById, createInvitation } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
     sendGuestResponseToOrganizer, sendFileQRCodeMail,
-    sendPdfToGuestMail,
-    sendNewsUpdatesToUsers} = require('../services/notification.service');
+    sendPdfToGuestMail} = require('../services/notification.service');
 const { generateGuestQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {
@@ -16,7 +15,7 @@ const {
         getGuestAndEventRelatedById,
         getAllConfirmedGuests
     } = require('../models/guests');
-const { getUserById, getUsers } = require('../models/users');
+const { getUserById } = require('../models/users');
 const { createNotification } = require('../models/notification');
 const { getLinkByToken, updateLink } = require('../models/links');
 const { v4: uuidv4 } = require('uuid');
@@ -189,23 +188,6 @@ const getAllConfirmedGuest = async (req, res, next) => {
     } catch (error) {
         console.error('getAllConfirmedGuest ERROR:', error.message);
         next(error);
-    }
-}
-
-async function sendNewsUpdatesToAllUsers () {
-    try {
-        const users = await getUsers();
-        console.log('users: ', users[0]);
-        // await sendNewsUpdatesToUsers(users[0]);
-        // Envoi des mails en parallèle contrôlée (plus rapide)
-        await Promise.all(
-            users.map(u => {
-                //console.log('[user]: ', u.email);
-                sendNewsUpdatesToUsers(u);
-            })
-        );
-    } catch (error) {
-         console.error('getAllConfirmedGuest ERROR:', error.message);
     }
 }
 
@@ -483,5 +465,4 @@ module.exports = {addGuest, getGuest, getGuestsByEvent,
                   deleteSeveralGuests, getAllGuest, 
                   sendReminder, sendFileQRCode, 
                   addGuestFromLink, getAllConfirmedGuest,
-                  sendNewsUpdatesToAllUsers
                 };

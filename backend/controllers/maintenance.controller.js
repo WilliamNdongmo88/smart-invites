@@ -1,4 +1,8 @@
+const { getEvents } = require('../models/events');
 const { getMaintenanceById, updateMaintenance } = require('../models/maintenance');
+const { updateEventService } = require('./event.controller');
+const { sendNewsUpdatesToUsers } = require('../services/notification.service');
+const { getUsers } = require('../models/users');
 
 require('dotenv').config();
 
@@ -14,6 +18,68 @@ const  getTableMaintenance = async(req, res, next) => {
         next(error);
     }
 };
+
+const restartSchedule = async (req, res, next) => {
+    try {
+        const events = await getEvents();
+        
+        for (const event of events) {
+            const eventId = {
+                id: event.id,
+            }
+            const eventDatas = {
+                organizerId: event.organizer_id, 
+                title: event.title, 
+                description: event.description, 
+                eventDate: event.event_date, 
+                banquetTime: event.banquet_time, 
+                religiousLocation: event.religious_location, 
+                religiousTime: event.religious_time, 
+                eventCivilLocation: event.event_civil_location, 
+                eventLocation: event.event_location, 
+                maxGuests: event.max_guests, 
+                hasPlusOne: event.has_plus_one, 
+                footRestriction: event.foot_restriction, 
+                showWeddingReligiousLocation: event.show_wedding_religious_location, 
+                status: event.status, 
+                type: event.type, 
+                budget: event.budget, 
+                eventNameConcerned1: event.event_name_concerned1, 
+                eventNameConcerned2: event.event_name_concerned2
+            }
+            const payload = {
+                eventDatas: eventDatas
+            }
+            //console.log("payload: ", payload);
+            await updateEventService(eventId.id, payload);
+        }
+
+        return res.status(200).json({success: "Schedule relancé avec succès."});
+    } catch (error) {
+        console.log('[restartSchedule] Error:', error.message);
+        next(error);
+    }
+}
+
+const sendNotification = async (req, res, next) => {
+    try {
+        console.log('req.body:', req.body);
+        const users = await getUsers();
+        // console.log('users: ', users);
+        // Envoi des mails en parallèle contrôlée (plus rapide)
+        await Promise.all(
+            users.map(u => {
+                console.log('[user]: ', u.email);
+                sendNewsUpdatesToUsers(u);
+            })
+        );
+
+        return res.status(200).json({success: "Email envoyé avec succès."});
+    } catch (error) {
+        console.log('[sendNotification] Error:', error.message);
+        next(error);
+    }
+}
 
 const updateTableMaintenance = async(req, res, next) => {
     try {
@@ -40,4 +106,9 @@ const updateTableMaintenance = async(req, res, next) => {
     }
 }
 
-module.exports = {updateTableMaintenance, getTableMaintenance};
+module.exports = {
+    updateTableMaintenance, 
+    getTableMaintenance,
+    restartSchedule,
+    sendNotification
+};

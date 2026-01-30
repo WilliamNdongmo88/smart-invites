@@ -46,14 +46,14 @@ async function getUserRoleByToken(token) {
   const [rows] = await pool.query(
     `
     SELECT
-        l.id           AS linkId,
-        l.type         AS linkType,
+        l.id AS linkId,
+        l.type AS linkType,
 
-        e.id           AS eventId,
+        e.id AS eventId,
 
-        u.id           AS organizerId,
-        u.role         AS organizerRole,
-        u.email       AS organizerEmail
+        u.id AS organizerId,
+        u.role AS organizerRole,
+        u.email AS organizerEmail
     FROM LINKS l
     LEFT JOIN EVENTS e ON e.id = l.event_id
     LEFT JOIN USERS  u ON u.id = e.organizer_id

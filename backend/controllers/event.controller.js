@@ -584,5 +584,6 @@ module.exports = {
     planSchedule,
     cancelSchedule,
     runScheduledTask,
-    sendScheduledReport
+    sendScheduledReport,
+    updateEventService
 }

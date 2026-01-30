@@ -18,8 +18,6 @@ const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
 const { createDefaultTableMaintenance } = require('./models/maintenance');
-const { sendNewsLetterToUsers } = require('./services/notification.service');
-const { sendNewsUpdatesToAllUsers } = require('./controllers/guest.controller');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -80,7 +78,6 @@ const startServer = async () => {
     //await sendScheduledReport(3);
     if (process.env.NODE_ENV == 'development') {
       //await getAllConfirmedGuest();
-      await sendNewsUpdatesToAllUsers();
     }
 
     // 3 Démarrer le serveur
