@@ -13,7 +13,7 @@ const axios = require('axios')
 
 const viewPdfInvitation = async (req, res, next) => {
   try {
-    //console.log('qrCodes:', req.body.link);
+    console.log('qrCodes:', req.body.link);
     const pdfUrl = req.body.link;
 
     const response = await axios.get(pdfUrl, {
@@ -24,8 +24,27 @@ const viewPdfInvitation = async (req, res, next) => {
     res.setHeader("Content-Disposition", "inline; filename=invitation.pdf");
 
     res.send(response.data);
-  } catch (err) {
-    next(err);
+  } catch (error) {
+
+    if (error.response) {
+      // 👉 Le serveur a répondu avec un status ≠ 200
+      console.error("❌ Axios error response:");
+      console.error("Status :", error.response.status);
+      console.error("Headers :", error.response.headers);
+      console.error("Data :", error.response.data?.toString());
+
+    } else if (error.request) {
+      // 👉 La requête a été envoyée mais aucune réponse
+      console.error("❌ Axios no response:");
+      console.error(error.request);
+
+    } else {
+      // 👉 Erreur avant l’envoi (config, URL, etc.)
+      console.error("❌ Axios setup error:");
+      console.error(error.message);
+    }
+
+    throw error; // important pour ne pas masquer l’erreur
   }
 };
 

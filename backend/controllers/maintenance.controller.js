@@ -22,16 +22,25 @@ const  getTableMaintenance = async(req, res, next) => {
 const restartSchedule = async (req, res, next) => {
     try {
         const events = await getEvents();
-        
+        //console.log('events:', events);
         for (const event of events) {
             const eventId = {
                 id: event.id,
             }
+            const date = event.event_date.toISOString().split('T')[0];
+
+            const time = event.event_date.toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'UTC'
+            });
+            const eventDate = date + ' ' + time;
+            console.log('event_date:', eventDate);
             const eventDatas = {
                 organizerId: event.organizer_id, 
                 title: event.title, 
                 description: event.description, 
-                eventDate: event.event_date, 
+                eventDate: eventDate,//event.event_date, 
                 banquetTime: event.banquet_time, 
                 religiousLocation: event.religious_location, 
                 religiousTime: event.religious_time, 
