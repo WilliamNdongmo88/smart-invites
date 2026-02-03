@@ -33,6 +33,9 @@ const AuthController = require('../controllers/auth.controller');
  *         description: Identifiants invalides
  */
 router.get('/me', authenticateToken, AuthController.getMe );
+
+router.get('/users', authenticateToken, AuthController.getAllUsers );
+
 router.post('/contact-us', AuthController.contactUs );
 
 /**

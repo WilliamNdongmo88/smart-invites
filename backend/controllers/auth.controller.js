@@ -13,7 +13,8 @@ const {
   clearRefreshToken,
   updateUser,
   deleteAccount,
-  updateUserActiveAccount
+  updateUserActiveAccount,
+  getUsers
 } = require('../models/users');
 const { getEventsByOrganizerId, deleteEvents } = require('../models/events');
 const { getGuestByEventId, getGuestAndInvitationRelatedById, delete_guest } = require('../models/guests');
@@ -60,6 +61,32 @@ const getMe = async (req, res, next) => {
       created_at: user.created_at,
       last_login_at: user.last_login_at
     });
+  } catch (error) {
+    console.error('GET ME ERROR:', error.message);
+    next(error);
+  }
+}
+
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await getUsers();
+    console.log('[users] :', users);
+    if(users.length == 0) return res.json({message: "Utilisateurs non trouvé"});
+    const datas = [];
+    for (const user of users) {
+      datas.push({
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        eventsCreated: user.total_eventsCreated, 
+        plan: user.plan,
+        lastLogin: user.lastLogin,
+        created_at: user.created_at,
+        isBlocked: user.is_blocked,
+        last_login_at: user.last_login_at
+      });
+    }
+    return res.json(datas);
   } catch (error) {
     console.error('GET ME ERROR:', error.message);
     next(error);
@@ -510,5 +537,10 @@ const deleteProfile = async (req, res, next) => {
     }
 };
 
-module.exports = { register, login, loginWithGoogle, refresh, logout, updatePassword,
-  getMe, contactUs, forgotPassword, checkCode, resetPassword, updateProfile, deleteProfile };
+module.exports = { 
+  register, login, loginWithGoogle, 
+  refresh, logout, updatePassword,
+  getMe, contactUs, forgotPassword, 
+  checkCode, resetPassword, updateProfile, 
+  deleteProfile, getAllUsers 
+};

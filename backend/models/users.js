@@ -13,6 +13,8 @@ const initUserModel = async () => {
       role VARCHAR(50) DEFAULT 'user',
       phone VARCHAR(20),
       bio TEXT,
+      plan VARCHAR(50) NOT NULL DEFAULT 'gratuit',
+      is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
       avatar_url TEXT,
       email_notifications BOOLEAN NOT NULL DEFAULT FALSE,
       attendance_notifications BOOLEAN NOT NULL DEFAULT TRUE,
@@ -69,8 +71,16 @@ async function getUserByFk(id) {
 }
 
 async function getUsers() {
-  const [user] = await pool.query(`SELECT * FROM USERS`);
-  return user.length ? user : null;
+  const [users] = await pool.query(`
+    SELECT 
+      u.*,
+      COUNT(e.id) AS total_eventsCreated
+    FROM USERS u
+    LEFT JOIN EVENTS e ON e.organizer_id = u.id
+    GROUP BY u.id
+  `);
+
+  return users.length ? users : null;
 }
 
 async function getUserByEmail(email) {
