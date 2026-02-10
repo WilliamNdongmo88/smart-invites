@@ -67,6 +67,26 @@ const getMe = async (req, res, next) => {
   }
 }
 
+const getUserInfo = async (req, res, next) => {
+  try {
+    const user = await getUserById(req.params.userId);
+    return res.status(200).json({
+      message: 'Info Forfait User',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        plan: user.plan,
+        currentEvent: user.total_eventsCreated
+      },
+    });
+  } catch (error) {
+    console.error('getUserInfo ERROR:', error.message);
+    next(error);
+  }
+}
+
 const getAllUsers = async (req, res, next) => {
   try {
     const users = await getUsers();
@@ -78,7 +98,8 @@ const getAllUsers = async (req, res, next) => {
         id: user.id, 
         name: user.name, 
         email: user.email, 
-        eventsCreated: user.total_eventsCreated, 
+        eventsCreated: user.total_eventsCreated,
+        totalGuests: user.total_guests,
         plan: user.plan,
         lastLogin: user.lastLogin,
         created_at: user.created_at,
@@ -88,7 +109,7 @@ const getAllUsers = async (req, res, next) => {
     }
     return res.json(datas);
   } catch (error) {
-    console.error('GET ME ERROR:', error.message);
+    console.error('GET USERS ERROR:', error.message);
     next(error);
   }
 }
@@ -257,7 +278,8 @@ const login = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        plan: user.plan
       },
       accessToken,
       refreshToken
@@ -318,7 +340,8 @@ const loginWithGoogle = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        plan: user.plan
       },
       accessToken,
       refreshToken
@@ -542,5 +565,5 @@ module.exports = {
   refresh, logout, updatePassword,
   getMe, contactUs, forgotPassword, 
   checkCode, resetPassword, updateProfile, 
-  deleteProfile, getAllUsers 
+  deleteProfile, getAllUsers, getUserInfo
 };

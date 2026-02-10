@@ -58,6 +58,8 @@ router.post('/contact-us', AuthController.contactUs );
  */
 router.post('/register', AuthController.register);
 
+router.get('/user-info/:userId', AuthController.getUserInfo);
+
 router.put('/:userId', AuthController.updateProfile);
 
 /**

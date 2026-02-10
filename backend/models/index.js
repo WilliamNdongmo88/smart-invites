@@ -9,6 +9,7 @@ const { initInvitationModel } = require('./invitations');
 const { initLinkModel } = require('./links');
 const { initMaintenanceModel } = require('./maintenance');
 const { initNotificationModel } = require('./notification');
+const { initPaymentModel } = require('./payment');
 const { initUserNewsModel } = require('./usernews');
 const {initUserModel} = require('./users');
 
@@ -27,6 +28,7 @@ const initModels = async () => {
   await initEventInvitationNotesModel();
   await initFeedbacksModel();
   await initMaintenanceModel();
+  await initPaymentModel();
 };
 
 module.exports = {

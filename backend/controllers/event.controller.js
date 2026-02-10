@@ -21,8 +21,24 @@ const { deleteInvitationFiles } = require("../services/invitation.service");
 
 const create_Event = async (req, res, next) => {
     try {
-        const eventDatas = await createEventService(req.body);
-        return res.status(201).json({ eventDatas });
+        // console.log('req.body:', req.body);
+        const user = await getUserById(req.body.eventDatas[0].organizerId);
+        // console.log('user:', user);
+        if(user.plan == 'gratuit' && user.total_eventsCreated < 1){
+          console.log('### Plan Gratuit ###');
+          const eventDatas = await createEventService(req.body);
+          return res.status(201).json({ eventDatas });  
+        }else if(user.plan == 'professionnel'){
+          console.log('### Plan Pro ###');
+          const eventDatas = await createEventService(req.body);
+          return res.status(201).json({ eventDatas });
+        }else{
+          return res.status(402).json({
+            error: "PAYMENT_REQUIRED",
+            message: "Veuillez changer de plan pour créer plus d'événements"
+          });
+        }
+
     } catch (error) {
         next(error);
     }
@@ -31,33 +47,69 @@ const create_Event = async (req, res, next) => {
 const createEventWithFile = async (req, res, next) => {
     try {
         const invitationFile = req.file;
-        const eventDatas = req.body.eventDatas;
-        // console.log('### eventDatas:', JSON.parse(eventDatas));
-        const datas = {
-            eventDatas: JSON.parse(eventDatas),
-            eventInvitationNote: null
+        const eventDatas = JSON.parse(req.body.eventDatas);
+        const user = await getUserById(eventDatas[0].organizerId);
+        console.log('### eventDatas:', eventDatas);
+        if(user.plan == 'gratuit' && user.total_eventsCreated < 1){
+            console.log('### Plan Gratuit ###');
+            const datas = {
+                eventDatas: eventDatas,
+                eventInvitationNote: null
+            }
+            if (!invitationFile) {
+                return res.status(400).json({ message: 'Erreur : Aucun fichier reçu.' });
+            }
+
+            console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
+
+            const event = await createEventService(datas);
+            // console.log('### event created:', event);
+
+            // Appelez la fonction pour uploader le fichier et attendez le résultat
+            const data = await uploadPdfToFirebase(null, invitationFile.buffer, event[0]);
+            // console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
+            const pdfUrl = data.url;
+            await creatEventInvitNote(event[0].id, null, null, null, null, null, null, 
+                    null, null, null, null, 
+                    null, null, null, pdfUrl, true, data.code, null, null);
+
+            res.status(200).json({
+                message: 'Fichier uploadé avec succès sur Firebase !',
+                fileUrl: pdfUrl // Renvoyez l'URL publique au client
+            });
+        }else if(user.plan == 'professionnel'){
+            console.log('### Plan Pro ###');
+            const datas = {
+                eventDatas: eventDatas,
+                eventInvitationNote: null
+            }
+            if (!invitationFile) {
+                return res.status(400).json({ message: 'Erreur : Aucun fichier reçu.' });
+            }
+
+            console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
+
+            const event = await createEventService(datas);
+            // console.log('### event created:', event);
+
+            // Appelez la fonction pour uploader le fichier et attendez le résultat
+            const data = await uploadPdfToFirebase(null, invitationFile.buffer, event[0]);
+            // console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
+            const pdfUrl = data.url;
+            await creatEventInvitNote(event[0].id, null, null, null, null, null, null, 
+                    null, null, null, null, 
+                    null, null, null, pdfUrl, true, data.code, null, null);
+
+            res.status(200).json({
+                message: 'Fichier uploadé avec succès sur Firebase !',
+                fileUrl: pdfUrl // Renvoyez l'URL publique au client
+            });
+        }else{
+          return res.status(402).json({
+            error: "PAYMENT_REQUIRED",
+            message: "Veuillez changer de plan pour créer plus d'événements"
+          });
         }
-        if (!invitationFile) {
-            return res.status(400).json({ message: 'Erreur : Aucun fichier reçu.' });
-        }
-
-        console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
-
-        const event = await createEventService(datas);
-        // console.log('### event created:', event);
-
-        // Appelez la fonction pour uploader le fichier et attendez le résultat
-        const data = await uploadPdfToFirebase(null, invitationFile.buffer, event[0]);
-        // console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
-        const pdfUrl = data.url;
-        await creatEventInvitNote(event[0].id, null, null, null, null, null, null, 
-                   null, null, null, null, 
-                   null, null, null, pdfUrl, true, data.code, null, null);
-
-        res.status(200).json({
-            message: 'Fichier uploadé avec succès sur Firebase !',
-            fileUrl: pdfUrl // Renvoyez l'URL publique au client
-        });
     } catch (error) {
         console.error('CREATE EVENT WITH FILE ERROR:', error.message);
         next(error);

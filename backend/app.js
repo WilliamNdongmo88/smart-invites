@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./config/bd')
 const {initModels} = require('./models');
-const {createDefaultAdmin} = require('./models/users')
+const {createDefaultAdmin, getUserById} = require('./models/users')
 const authRoutes = require('./routes/auth.routes');
 const eventRoutes = require('./routes/events.routes');
 const guestRoutes = require('./routes/guests.routes');
@@ -18,6 +18,7 @@ const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
 const { createDefaultTableMaintenance } = require('./models/maintenance');
+const { getUserByEvtId } = require('./models/events');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -78,6 +79,7 @@ const startServer = async () => {
     //await sendScheduledReport(3);
     if (process.env.NODE_ENV == 'development') {
       //await getAllConfirmedGuest();
+      await getUserByEvtId(2);
     }
 
     // 3 Démarrer le serveur

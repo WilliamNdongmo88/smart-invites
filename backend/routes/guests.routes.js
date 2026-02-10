@@ -9,6 +9,7 @@ router.get('/all-guests',authenticateToken, GuestController.getAllGuest);
 router.get('/:guestId',authenticateToken, GuestController.getGuest);
 router.get('/:guestId/event', GuestController.getEventByGuest);
 router.get('/event/:eventId',authenticateToken, GuestController.getGuestsByEvent);
+router.get('/event-info/:eventId',authenticateToken, GuestController.getUserByEvent);
 router.put('/:guestId', GuestController.updateGuest);
 router.put('/rsvp/:guestId',authenticateToken, GuestController.updateRsvpStatus);
 router.delete('/:guestId',authenticateToken, GuestController.deleteGuest);

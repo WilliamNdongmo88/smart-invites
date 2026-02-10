@@ -48,13 +48,18 @@ async function deleteGuestFiles(guestId, invitationToken) {
   }
 };
 
-async function deleteInvitationFiles(path) {
+async function deleteInvitationFiles(path, fileProof=false) {
   console.log('[deleteInvitationFilesCustom] path:', path);
   let pdfPath = '';
-  if (process.env.NODE_ENV == 'development'){
+  if (!fileProof && process.env.NODE_ENV == 'development'){
     pdfPath = `dev/pdfs/${path}`;
-  }else if(process.env.NODE_ENV == 'production'){
+  }else if(!fileProof && process.env.NODE_ENV == 'production'){
     pdfPath = `prod/pdfs/${path}`;
+  }
+  if (fileProof && process.env.NODE_ENV == 'development'){
+    pdfPath = `dev/payment/${path}`;
+  }else if(fileProof && process.env.NODE_ENV == 'production'){
+    pdfPath = `prod/payment/${path}`;
   }
 
   console.log('pdfPath:', pdfPath);

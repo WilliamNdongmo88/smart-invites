@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multerConfig = require('../middlewares/upload');
 const EventController = require('../controllers/event.controller');
+const PaymentController = require('../controllers/payment.controller');
 const { authenticateToken, requireRole } = require('../middlewares/jwtFilter');
 
 router.get("/", async (req, res) => {
@@ -28,6 +29,13 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Failed to load image" });
   }
 });
+
+router.post(
+    '/payment/proof',
+    authenticateToken,
+    multerConfig,
+    PaymentController.addProofPaymentFile
+);
 
 router.post(
     '/create-event-file',

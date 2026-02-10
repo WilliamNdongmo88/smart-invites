@@ -713,10 +713,42 @@ async function uploadPdfToFirebase(guest, pdfBuffer, event = null) {
   return data;
 }
 
+async function uploadPaymentProofFileToFirebase(paymentFile, user) {
+  const bucket = admin.storage().bucket();
+  let code = ''
+  if(user) code = generateRandom4Digits();
+  console.log('code:', code);
+  // console.log('paymentFile:', paymentFile);
+
+  const fileType = String(paymentFile.mimetype).split('/')[1];
+  
+  let fileName = null;
+  if (process.env.NODE_ENV == 'development'){
+    if(user) fileName = `dev/payment/proof_user_${user.id}_${code}.${fileType}`;
+  }else if(process.env.NODE_ENV == 'production'){
+    if(user) fileName = `prod/payment/proof_user_${user.id}_${code}.${fileType}`;
+  }
+  
+  const file = bucket.file(fileName);
+
+  await file.save(paymentFile.buffer, { contentType: paymentFile.minetype });
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: '03-01-2030',
+  });
+
+  const data = {
+    url: url,
+    code: code
+  }
+  return data;
+}
+
 function generateRandom4Digits() {
     return Math.floor(1000 + Math.random() * 9000);
 }
 
 module.exports = { generateGuestPdf, uploadPdfToFirebase, 
                    generatePresentGuestsPdf, generateDualGuestListPdf,
+                   uploadPaymentProofFileToFirebase
                  };

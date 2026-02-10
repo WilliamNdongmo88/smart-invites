@@ -1,4 +1,4 @@
-const { getEventById, getGuestEmailRelatedToEvent, getUserByEventId} = require('../models/events');
+const { getEventById, getGuestEmailRelatedToEvent, getUserByEventId, getUserByEvtId} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById, createInvitation } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
@@ -24,34 +24,76 @@ const { getAllUsers } = require('./feedback.controller');
 
 const addGuest = async (req, res, next) => {
     try {
-        if (!Array.isArray(req.body) || req.body.length === 0) {
-            return res.status(400).json({ error: "La liste ne doit pas être vide" });
-        }
         let guestDatas = req.body;
-        console.log('guestDatas :: ', guestDatas);
-        let returnDatas = [];
-        for (const guest of guestDatas) {
-            const { eventId, fullName, email, phoneNumber, rsvpStatus, 
-                guesthasPlusOneAutoriseByAdmin} = guest;
-            //console.log('guest :: ', guest);
-            const event = await getEventById(eventId);
-            //console.log('event :: ', event);
-            if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
-            const user = await getUserByEventId(event.id);
-
-            //Permettre aux organisateurs d'event de créer des invités avec leur email(user.email);
-            const result = await getGuestEmailRelatedToEvent(email, event.id);
-            if (result && user.email != result.email) {
-                return res.status(409).json({
-                    error: `L'invité ${email} existe déjà`
-                });
+        const user = await getUserByEvtId(req.body[0].eventId);
+        console.log('User:', user);
+        if(guestDatas.length > user.max_guests) return res.status(402).json({
+            error: "PAYMENT_REQUIRED",
+            message: "Veuillez changer de plan pour ajouter plus d'invités"
+          });
+        if(user.plan == 'gratuit' && user.total_guests < user.max_guests ){
+            if (!Array.isArray(req.body) || req.body.length === 0) {
+                return res.status(400).json({ error: "La liste ne doit pas être vide" });
             }
-            const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
-                                              rsvpStatus, guesthasPlusOneAutoriseByAdmin);
-            returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
-                              rsvpStatus, guesthasPlusOneAutoriseByAdmin});
+            console.log('guestDatas :: ', guestDatas);
+            let returnDatas = [];
+            for (const guest of guestDatas) {
+                const { eventId, fullName, email, phoneNumber, rsvpStatus, 
+                    guesthasPlusOneAutoriseByAdmin} = guest;
+                //console.log('guest :: ', guest);
+                const event = await getEventById(eventId);
+                //console.log('event :: ', event);
+                if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
+                const user = await getUserByEventId(event.id);
+
+                //Permettre aux organisateurs d'event de créer des invités avec leur email(user.email);
+                const result = await getGuestEmailRelatedToEvent(email, event.id);
+                if (result && user.email != result.email) {
+                    return res.status(409).json({
+                        error: `L'invité ${email} existe déjà`
+                    });
+                }
+                const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
+                                                rsvpStatus, guesthasPlusOneAutoriseByAdmin);
+                returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
+                                rsvpStatus, guesthasPlusOneAutoriseByAdmin});
+            }
+            return res.status(201).json(returnDatas);
+        }else if(user.plan == 'professionnel'){
+            if (!Array.isArray(req.body) || req.body.length === 0) {
+                return res.status(400).json({ error: "La liste ne doit pas être vide" });
+            }
+            let guestDatas = req.body;
+            console.log('guestDatas :: ', guestDatas);
+            let returnDatas = [];
+            for (const guest of guestDatas) {
+                const { eventId, fullName, email, phoneNumber, rsvpStatus, 
+                    guesthasPlusOneAutoriseByAdmin} = guest;
+                //console.log('guest :: ', guest);
+                const event = await getEventById(eventId);
+                //console.log('event :: ', event);
+                if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
+                const user = await getUserByEventId(event.id);
+
+                //Permettre aux organisateurs d'event de créer des invités avec leur email(user.email);
+                const result = await getGuestEmailRelatedToEvent(email, event.id);
+                if (result && user.email != result.email) {
+                    return res.status(409).json({
+                        error: `L'invité ${email} existe déjà`
+                    });
+                }
+                const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
+                                                rsvpStatus, guesthasPlusOneAutoriseByAdmin);
+                returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
+                                rsvpStatus, guesthasPlusOneAutoriseByAdmin});
+            }
+            return res.status(201).json(returnDatas);
+        }else{
+          return res.status(402).json({
+            error: "PAYMENT_REQUIRED",
+            message: "Veuillez changer de plan pour ajouter plus d'invités"
+          });
         }
-        return res.status(201).json(returnDatas);
     } catch (error) {
         console.error('CREATE GUEST ERROR:', error.message);
         //next(error);
@@ -64,98 +106,199 @@ const addGuestFromLink = async (req, res, next) => {
         console.log('guestData :: ', req.body);
         const { eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, 
             dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName, token} = req.body;
-        const link = await getLinkByToken(token);
-        console.log('link :: ', link);
-
-        if(!link) return res.status(404).json({error: `Lien d'invitation introuvable`});
-        link.used_count = Number(link.used_count) || 0;
-
-        if (link.date_limit_link && new Date(link.date_limit_link) < new Date()) {
-            console.log("### Lien expiré");
-            return res.status(410).json({ error: "Lien expiré" });
-        }
-
-        if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
-        link.used_count ++;
-
-        const event = await getEventById(eventId);
-        if(!event) return res.status(404).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
-
-        const result = await getGuestEmailRelatedToEvent(email, event.id);
-        if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
-
-        const guestId = await createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpStatus, 
-            guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName);
-
-        // Gestion des fichiers
-        const guest = { id: guestId };
-        let qrUrl = '';
-        const existing_invitations = await getGuestInvitationById(guestId);
-        if (existing_invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
-        const guest_event_related = await getGuestAndEventRelatedById(guestId);
-        let invitationToken =guestId +':'+ uuidv4();
-        try {
-            qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.webp");//"ring.png"
-            const card = await getEventInvitNote(guest_event_related[0].eventId);
-            if(!card.has_invitation_model_card){
-                const buffer = await generateGuestPdf(guest_event_related[0], card, plusOneName);
-                await uploadPdfToFirebase(guest, buffer);
-            } 
-        } catch (error) {
-            console.error('File ERROR:', error.message);
-            return next(error);
-        }
-        const invitationId = await createInvitation(guestId, invitationToken, qrUrl);
-        if(!invitationId) throw new Error({error: "Erreur lors de la création de l'invitation"});
-
-        // Notification
-        const invitation = await getGuestInvitationById(guestId);
-        try {
-            const event = await getEventByGuestId(guestId);
-            const guest = await getGuestAndInvitationRelatedById(guestId);
-            const card = await getEventInvitNote(event[0].eventId);
-            let buffer = null;
-            if(!card.has_invitation_model_card){
-                buffer = await generateGuestPdf(guest, card, plusOneName);
-                await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
-            }else{
-                await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
-            }
-            await createNotification(
-                event[0].eventId,
-                `Invitation envoyé.`,
-                `L'invitation Qr Code a été envoyé à ${fullName}.`,
-                'info',
-                false
-            );
-            const organizer = await getUserById(event[0].organizerId);
-            await sendGuestResponseToOrganizer(organizer, guest_event_related[0], rsvpStatus);
-            if(hasPlusOne){
-                await createNotification(
-                    event[0].eventId,
-                    `Reponse Invité.`,
-                    `L'invité ${fullName} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
-                    'info',
-                    false
-                );
-            }else{
-                await createNotification(
-                    event[0].eventId,
-                    `Reponse Invité.`,
-                    `L'invité ${fullName} vient d’accepter votre invitation.`,
-                    'info',
-                    false
-                );
-            }
-        } catch (error) {
-            console.error('send email ERROR:', error.message);
-            return next(error);
-        }
-        //Mise a jour du lien
-        const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count, link.date_limit_link);
-        console.log('updated :: ', updated);
-        return res.status(201).json({success: "Invité ajouter avec succès"});
         
+        const user = await getUserByEvtId(req.body.eventId);
+        console.log('user:', user);
+        if(user.plan == 'gratuit' && user.total_guests <= 50 ){
+            const link = await getLinkByToken(token);
+            console.log('link :: ', link);
+
+            if(!link) return res.status(404).json({error: `Lien d'invitation introuvable`});
+            link.used_count = Number(link.used_count) || 0;
+
+            if (link.date_limit_link && new Date(link.date_limit_link) < new Date()) {
+                console.log("### Lien expiré");
+                return res.status(410).json({ error: "Lien expiré" });
+            }
+
+            if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
+            link.used_count ++;
+
+            const event = await getEventById(eventId);
+            if(!event) return res.status(404).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
+
+            const result = await getGuestEmailRelatedToEvent(email, event.id);
+            if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
+
+            const guestId = await createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpStatus, 
+                guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName);
+
+            // Gestion des fichiers
+            const guest = { id: guestId };
+            let qrUrl = '';
+            const existing_invitations = await getGuestInvitationById(guestId);
+            if (existing_invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
+            const guest_event_related = await getGuestAndEventRelatedById(guestId);
+            let invitationToken =guestId +':'+ uuidv4();
+            try {
+                qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.webp");//"ring.png"
+                const card = await getEventInvitNote(guest_event_related[0].eventId);
+                if(!card.has_invitation_model_card){
+                    const buffer = await generateGuestPdf(guest_event_related[0], card, plusOneName);
+                    await uploadPdfToFirebase(guest, buffer);
+                } 
+            } catch (error) {
+                console.error('File ERROR:', error.message);
+                return next(error);
+            }
+            const invitationId = await createInvitation(guestId, invitationToken, qrUrl);
+            if(!invitationId) throw new Error({error: "Erreur lors de la création de l'invitation"});
+
+            // Notification
+            const invitation = await getGuestInvitationById(guestId);
+            try {
+                const event = await getEventByGuestId(guestId);
+                const guest = await getGuestAndInvitationRelatedById(guestId);
+                const card = await getEventInvitNote(event[0].eventId);
+                let buffer = null;
+                if(!card.has_invitation_model_card){
+                    buffer = await generateGuestPdf(guest, card, plusOneName);
+                    await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
+                }else{
+                    await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
+                }
+                await createNotification(
+                    event[0].eventId,
+                    `Invitation envoyé.`,
+                    `L'invitation Qr Code a été envoyé à ${fullName}.`,
+                    'info',
+                    false
+                );
+                const organizer = await getUserById(event[0].organizerId);
+                await sendGuestResponseToOrganizer(organizer, guest_event_related[0], rsvpStatus);
+                if(hasPlusOne){
+                    await createNotification(
+                        event[0].eventId,
+                        `Reponse Invité.`,
+                        `L'invité ${fullName} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
+                        'info',
+                        false
+                    );
+                }else{
+                    await createNotification(
+                        event[0].eventId,
+                        `Reponse Invité.`,
+                        `L'invité ${fullName} vient d’accepter votre invitation.`,
+                        'info',
+                        false
+                    );
+                }
+            } catch (error) {
+                console.error('send email ERROR:', error.message);
+                return next(error);
+            }
+            //Mise a jour du lien
+            const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count, link.date_limit_link);
+            console.log('updated :: ', updated);
+            return res.status(201).json({success: "Invité ajouter avec succès"});
+        }else if(user.plan == 'professionnel'){
+            const link = await getLinkByToken(token);
+            console.log('link :: ', link);
+
+            if(!link) return res.status(404).json({error: `Lien d'invitation introuvable`});
+            link.used_count = Number(link.used_count) || 0;
+
+            if (link.date_limit_link && new Date(link.date_limit_link) < new Date()) {
+                console.log("### Lien expiré");
+                return res.status(410).json({ error: "Lien expiré" });
+            }
+
+            if(link.used_count >= link.limit_count) return res.status(401).json({error: `Limite d'utilisation du lien déjà atteinte.`});
+            link.used_count ++;
+
+            const event = await getEventById(eventId);
+            if(!event) return res.status(404).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
+
+            const result = await getGuestEmailRelatedToEvent(email, event.id);
+            if(result) return res.status(409).json({error: `L'invité ${email} existe déjà`});
+
+            const guestId = await createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpStatus, 
+                guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName);
+
+            // Gestion des fichiers
+            const guest = { id: guestId };
+            let qrUrl = '';
+            const existing_invitations = await getGuestInvitationById(guestId);
+            if (existing_invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
+            const guest_event_related = await getGuestAndEventRelatedById(guestId);
+            let invitationToken =guestId +':'+ uuidv4();
+            try {
+                qrUrl = await generateGuestQr(guestId, invitationToken, "wedding-ring.webp");//"ring.png"
+                const card = await getEventInvitNote(guest_event_related[0].eventId);
+                if(!card.has_invitation_model_card){
+                    const buffer = await generateGuestPdf(guest_event_related[0], card, plusOneName);
+                    await uploadPdfToFirebase(guest, buffer);
+                } 
+            } catch (error) {
+                console.error('File ERROR:', error.message);
+                return next(error);
+            }
+            const invitationId = await createInvitation(guestId, invitationToken, qrUrl);
+            if(!invitationId) throw new Error({error: "Erreur lors de la création de l'invitation"});
+
+            // Notification
+            const invitation = await getGuestInvitationById(guestId);
+            try {
+                const event = await getEventByGuestId(guestId);
+                const guest = await getGuestAndInvitationRelatedById(guestId);
+                const card = await getEventInvitNote(event[0].eventId);
+                let buffer = null;
+                if(!card.has_invitation_model_card){
+                    buffer = await generateGuestPdf(guest, card, plusOneName);
+                    await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
+                }else{
+                    await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
+                }
+                await createNotification(
+                    event[0].eventId,
+                    `Invitation envoyé.`,
+                    `L'invitation Qr Code a été envoyé à ${fullName}.`,
+                    'info',
+                    false
+                );
+                const organizer = await getUserById(event[0].organizerId);
+                await sendGuestResponseToOrganizer(organizer, guest_event_related[0], rsvpStatus);
+                if(hasPlusOne){
+                    await createNotification(
+                        event[0].eventId,
+                        `Reponse Invité.`,
+                        `L'invité ${fullName} vient d’accepter votre invitation et viendra accompagné de ${plusOneName}.`,
+                        'info',
+                        false
+                    );
+                }else{
+                    await createNotification(
+                        event[0].eventId,
+                        `Reponse Invité.`,
+                        `L'invité ${fullName} vient d’accepter votre invitation.`,
+                        'info',
+                        false
+                    );
+                }
+            } catch (error) {
+                console.error('send email ERROR:', error.message);
+                return next(error);
+            }
+            //Mise a jour du lien
+            const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count, link.date_limit_link);
+            console.log('updated :: ', updated);
+            return res.status(201).json({success: "Invité ajouter avec succès"});
+        }else{
+          return res.status(402).json({
+            // error: "PAYMENT_REQUIRED",
+            error: "Nombre limite d'invités atteint."
+          });
+        }        
     } catch (error) {
         console.error('AddGuestFromLink ERROR:', error.message);
         return next(error);
@@ -223,16 +366,26 @@ const getEventByGuest = async (req, res, next) => {
     }
 }
 
-const getGuestsByEvent = async (req, res) => {
+const getGuestsByEvent = async (req, res, next) => {
     try {
         const guests = await getAllGuestAndInvitationRelatedByEventId(req.params.eventId);
         if(guests.length == 0) return res.status(401).json({error: "Aucun invité n'est lié a cette événement! "});
         return res.status(200).json({guests});
-    } catch (error) {
+    }catch (error) {
         console.error('GET EVENT GUEST ERROR:', error.message);
-        res.status(500).json({ error: 'Erreur serveur' });
+        next(error);
     }
 };
+
+const getUserByEvent = async (req, res) => {
+    try {
+        const info = await getUserByEvtId(req.params.eventId);
+        return res.status(200).json(info);
+    } catch (error) {
+        console.error('getUserByEvent ERROR:', error.message);
+        next(error);
+    }
+}
 
 const updateGuest = async (req, res, next) => {
     try {
@@ -465,4 +618,5 @@ module.exports = {addGuest, getGuest, getGuestsByEvent,
                   deleteSeveralGuests, getAllGuest, 
                   sendReminder, sendFileQRCode, 
                   addGuestFromLink, getAllConfirmedGuest,
+                  getUserByEvent,
                 };

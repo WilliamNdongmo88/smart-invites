@@ -314,10 +314,30 @@ async function getUserByEventId(eventId) {
     return result[0];
 }
 
+async function getUserByEvtId(eventId) {
+  const [result] = await pool.query(`
+    SELECT
+      e.id AS eventId,
+      e.title,
+      e.max_guests,
+      u.id AS organizerId,
+      u.plan,
+      COUNT(g.id) AS total_guests
+    FROM EVENTS e
+    JOIN USERS u ON u.id = e.organizer_id
+    LEFT JOIN GUESTS g ON g.event_id = e.id
+    WHERE e.id = ?
+    GROUP BY e.id, u.id
+  `, [eventId]);
+
+//   console.log('getUserByEvtId:', result[0]);
+  return result[0] || null;
+}
+
 module.exports = {
     initEventsModel, createEvent, getEvents, updateEvent,updateEventStatus,
     getEventById, getEventsByOrganizerId,deleteEvents,
     getEventWithTotalGuestById, getEventWithTotalGuest,
     getGuestEmailRelatedToEvent, getEventAndInvitationById,
-    getUserByEventId
+    getUserByEventId,getUserByEvtId
 };

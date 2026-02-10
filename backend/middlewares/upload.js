@@ -4,13 +4,20 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 
 // Filtre pour n'accepter que les fichiers PDF
+const allowedMimeTypes = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg'
+];
+
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true); // Accepter le fichier
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
   } else {
-    cb(new Error('Format de fichier non supporté ! Seuls les PDF sont acceptés.'), false); // Rejeter le fichier
+    cb(new Error('Format non supporté ! PDF, PNG ou JPG uniquement.'), false);
   }
 };
 
 // On exporte le middleware Multer configuré
-module.exports = multer({ storage: storage, fileFilter: fileFilter }).single('pdfFile');
+module.exports = multer({ storage: storage, fileFilter: fileFilter }).single('file');

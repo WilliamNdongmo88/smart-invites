@@ -46,8 +46,8 @@ async function createDefaultAdmin() {
         }
         const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
         await pool.query(
-            "INSERT INTO USERS (name, email, password, role) VALUES (?, ?, ?, ?)",
-            [process.env.ADMIN_NAME ,process.env.ADMIN_EMAIL, hashedPassword, "admin"]
+            "INSERT INTO USERS (name, email, password, role, plan) VALUES (?, ?, ?, ?, ?)",
+            [process.env.ADMIN_NAME ,process.env.ADMIN_EMAIL, hashedPassword, "admin", "professionnel"]
         );
 
         console.log("---Default admin created successfully---");
@@ -74,10 +74,21 @@ async function getUsers() {
   const [users] = await pool.query(`
     SELECT 
       u.*,
-      COUNT(e.id) AS total_eventsCreated
+
+      (
+        SELECT COUNT(*)
+        FROM EVENTS e
+        WHERE e.organizer_id = u.id
+      ) AS total_eventsCreated,
+
+      (
+        SELECT COUNT(*)
+        FROM GUESTS g
+        JOIN EVENTS e ON e.id = g.event_id
+        WHERE e.organizer_id = u.id
+      ) AS total_guests
+
     FROM USERS u
-    LEFT JOIN EVENTS e ON e.organizer_id = u.id
-    GROUP BY u.id
   `);
 
   return users.length ? users : null;
@@ -89,7 +100,25 @@ async function getUserByEmail(email) {
 }
 
 async function getUserById(id) {
-  const [rows] = await pool.query(`SELECT * FROM USERS WHERE id = ?`, [id]);
+  const [rows] = await pool.query(`
+    SELECT 
+      u.*,
+
+      (
+        SELECT COUNT(*)
+        FROM EVENTS e
+        WHERE e.organizer_id = u.id
+      ) AS total_eventsCreated,
+
+      (
+        SELECT COUNT(*)
+        FROM GUESTS g
+        JOIN EVENTS e ON e.id = g.event_id
+        WHERE e.organizer_id = u.id
+      ) AS total_guests
+    FROM USERS u WHERE id = ?
+  `, [id]);
+  // console.log('rows:', rows[0]);
   return rows.length ? rows[0] : null;
 }
 
