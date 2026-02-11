@@ -1,6 +1,7 @@
 const { createPaymentProof, getPaymentProof, updatePaymentProof } = require("../models/payment");
-const { getUserById } = require("../models/users");
+const { getUserById, updateUserPlan } = require("../models/users");
 const { deleteInvitationFiles } = require("../services/invitation.service");
+const { sendPaymentProofToAdminAboutChangePlan, sendNotificationToUserAboutChangePlan } = require("../services/notification.service");
 const { uploadPaymentProofFileToFirebase } = require("../services/pdfService");
 
 require("dotenv").config({path: ".env.test"});
@@ -36,7 +37,8 @@ const addProofPaymentFile = async (req, res, next) => {
         // console.log('### datas:', datas);
 
         await createPaymentService(datas);
-
+        // Envoi mail
+        await sendPaymentProofToAdminAboutChangePlan(user, paymentFile.buffer);
         res.status(200).json({
             message: 'Fichier uploadé avec succès sur Firebase !',
             fileUrl: fileUrl // Renvoyez l'URL publique au client
@@ -81,6 +83,7 @@ async function updatePaymentService(paymentFile, userData, payment) {
         }
         // console.log('## data:', data);
         await updatePaymentProof(payment.id, data.organizerId, data.fileUrl, data.fileType, data.code);
+        await sendPaymentProofToAdminAboutChangePlan(user, paymentFile.buffer);
         return dataReturn = {
             message: 'Preuve de payment mis à jour et fichier uploadé avec succès',
             fileUrl: data.url
@@ -90,6 +93,24 @@ async function updatePaymentService(paymentFile, userData, payment) {
     }
 };
 
+async function changeUserPlan(req, res, next) {
+    try {
+        const {plan} = req.body;
+        const user = await getUserById(req.params.userId);
+        if (!user) return res.status(409).json({ error: "Organizer not found with ID: " + userData.userId });
+        const payment = await getPaymentProof(user.id);
+        if(!payment) return res.status(409).json({ error: "### Payment table not found ###" });
+        const userUpdated = await updateUserPlan(user.id, plan);
+        // Envoi du mail a l'utlisateur
+        await sendNotificationToUserAboutChangePlan(userUpdated);
+        return res.status(200).json({success: "Plan professionnel activé avec succès."})
+    } catch (error) {
+        console.error('changeUserPlan ERROR:', error.message);
+        next(error);
+    }
+}
+
 module.exports = {
-    addProofPaymentFile
+    addProofPaymentFile,
+    changeUserPlan
 }

@@ -86,10 +86,14 @@ async function getUsers() {
         FROM GUESTS g
         JOIN EVENTS e ON e.id = g.event_id
         WHERE e.organizer_id = u.id
-      ) AS total_guests
+      ) AS total_guests,
+      
+      p.id AS paymentId,
+      p.file_url AS fileUrl
 
     FROM USERS u
-  `);
+    LEFT JOIN PAYMENTS p ON u.id = p.organizer_id
+  `);//    ORDER BY u.id DESC
 
   return users.length ? users : null;
 }
@@ -169,6 +173,15 @@ async function updateUser(userId, updatedUser) {
   return userId;
 }
 
+async function updateUserPlan(userId, plan) {
+    const [result] = await pool.query(`
+      UPDATE USERS SET plan=?
+      WHERE id=?
+  `, [plan, userId]);
+  const user = await getUserById(userId);
+  return user;
+}
+
 async function deleteAccount(userId) {
     await pool.query(`DELETE FROM USERS WHERE id = ?`, [userId]);
 }
@@ -178,7 +191,8 @@ module.exports = {
     createDefaultAdmin, 
     createUser,
     getUsers,
-    updateUser, 
+    updateUser,
+    updateUserPlan,
     getUserByFk,
     saveResetCode,
     getUserByEmail,

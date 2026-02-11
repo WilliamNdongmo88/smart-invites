@@ -104,7 +104,8 @@ const getAllUsers = async (req, res, next) => {
         lastLogin: user.lastLogin,
         created_at: user.created_at,
         isBlocked: user.is_blocked,
-        last_login_at: user.last_login_at
+        last_login_at: user.last_login_at,
+        userPaymentProof: user.fileUrl
       });
     }
     return res.json(datas);

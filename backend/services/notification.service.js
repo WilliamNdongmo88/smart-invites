@@ -1521,9 +1521,225 @@ async function sendNewsUpdatesToUsers(user) {
   }
 }
 
+async function sendPaymentProofToAdminAboutChangePlan(user, fileBuffer) {
+  try {
+    const logo = await getLogoUrlFromFirebase('logo.png');
+
+    if (!logo) {
+      console.error("❌ Logo introuvable");
+      return;
+    }
+
+    const adminLink = `${process.env.API_URL}/admin`;
+
+    // Convertir en base64
+    const fileBase64 = fileBuffer.toString("base64");
+
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Nouveautés SmartInvite</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <h2 style="color:#1a3c8b;">Demande de changement de plan</h2>
+
+                      <p><strong>Utilisateur :</strong> ${user.name}</p>
+                      <p><strong>Email :</strong> ${user.email}</p>
+                      <p><strong>Plan :</strong> ${user.plan}</p>
+
+                      <p>
+                        Une preuve de paiement est jointe à cet email.
+                        Merci de vérifier et valider la demande.
+                      </p>
+
+                      <div style="margin-top:30px;">
+                        <a href="${adminLink}" 
+                          style="
+                            background-color:#1a3c8b;
+                            color:#ffffff;
+                            padding:12px 20px;
+                            text-decoration:none;
+                            border-radius:5px;
+                            display:inline-block;
+                            font-weight:bold;
+                          ">
+                          Vérifier et modifier le plan
+                        </a>
+                      </div>
+
+                      <hr style="margin-top:30px;">
+                      <p style="font-size:12px;color:#777;">
+                        Email automatique - SmartInvite
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const sendSmtpEmail = {
+      to: [{ email: process.env.BREVO_SENDER_EMAIL, name: process.env.ADMIN_NAME || "Utilisateur" }],
+      sender: {
+        email: process.env.BREVO_SENDER_EMAIL,
+        name: "Smart Invite",
+      },
+      subject: "✨ Preuve de paiement - Changement de plan",
+      htmlContent: htmlContent,
+      attachment: [
+        {
+          name: `${formatFullName(user.name)}-payment_proof.png`,
+          content: fileBase64,
+        }
+      ],
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log("✅ Email envoyé avec succès:", user.name);
+
+  } catch (error) {
+    console.error("❌ Erreur envoi newsletter Brevo:", error.response?.body || error.message);
+  }
+}
+
+async function sendNotificationToUserAboutChangePlan(user) {
+  try {
+    const logo = await getLogoUrlFromFirebase('logo.png');
+
+    if (!logo) {
+      console.error("❌ Logo introuvable");
+      return;
+    }
+
+    const brevo = new Brevo.TransactionalEmailsApi();
+    brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Nouveautés SmartInvite</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <h2 style="color:#1a3c8b;">Changement de plan confirmé</h2>
+
+                      <p>Bonjour <strong>${user.name}</strong>,</p>
+
+                      <p>
+                        Nous vous informons que votre plan a été mis à jour avec succès.
+                      </p>
+
+                      <p>
+                        <strong>Nouveau plan :</strong> ${user.plan || "Non spécifié"}
+                      </p>
+
+                      <p>
+                        Si vous n'êtes pas à l'origine de cette modification,
+                        veuillez contacter notre support immédiatement.
+                      </p>
+
+                      <p style="margin-top:30px;">
+                        Merci de faire confiance à <strong>SmartInvite</strong>.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const sendSmtpEmail = {
+      to: [{ email: user.email, name: user.name || "Utilisateur" }],// 'williamndongmo899@gmail.com'
+      sender: {
+        email: process.env.BREVO_SENDER_EMAIL,
+        name: "Smart Invite",
+      },
+      subject: "✨ Votre plan Pro a été activé",
+      htmlContent: htmlContent,
+    };
+
+    await brevo.sendTransacEmail(sendSmtpEmail);
+    console.log("✅ Email envoyé avec succès:", user.name);
+
+  } catch (error) {
+    console.error("❌ Erreur envoi newsletter Brevo:", error.response?.body || error.message);
+  }
+}
+
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
   sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
   notifications, manualSendThankYouMailToPresentGuests, sendMailToAdmin, sendNewsLetterToUsers,
-  sendPdfToGuestMail, sendNewsUpdatesToUsers
+  sendPdfToGuestMail, sendNewsUpdatesToUsers, 
+  sendNotificationToUserAboutChangePlan, sendPaymentProofToAdminAboutChangePlan
 };
