@@ -1370,7 +1370,7 @@ async function sendNewsLetterToUsers() {
 
   const sendSmtpEmail = {
     to: [{ email: 'williamndongmo88@gmail.com', name: process.env.ADMIN_NAME }],
-    sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
+    sender: { email: process.env.ADMIN_EMAIL, name: 'Smart Invite' },
     subject: "✨ Nouveautés SmartInvite – Simplifiez vos événements",
     htmlContent: ` 
       <p>${formattedMessage}</p>
