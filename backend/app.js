@@ -69,6 +69,12 @@ let server; // Stocke l'instance du serveur HTTP
 
 const startServer = async () => {
   try {
+    console.log('##################',{
+      host: process.env.MYSQLHOST,
+      port: process.env.MYSQLPORT,
+      user: process.env.MYSQLUSER,
+      database: process.env.MYSQLDATABASE,
+    });
     // 1 Vérifier la connexion à MySQL
     const [rows] = await pool.query('SELECT NOW() AS now');
     console.log('🕐 MySQL test query result:', rows[0]);
