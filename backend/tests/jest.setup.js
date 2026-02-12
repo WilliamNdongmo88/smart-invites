@@ -9,7 +9,7 @@ const dbConfig = {
   password: process.env.MYSQL_PASSWORD,
 };
 
-const TEST_DB_NAME = process.env.MYSQL_DATABASE;
+const TEST_DB_NAME = process.env.MYSQLDATABASE;
 
 // Connexion sans spécifier de base de données pour créer/supprimer la base de données de test
 let connection;

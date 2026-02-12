@@ -13,7 +13,7 @@ const pool = mysql.createPool({
   timezone: 'Z',
 });
 
-console.log("📌 Connected to DB:", process.env.MYSQL_DATABASE);
+console.log("📌 Connected to DB:", process.env.MYSQLDATABASE);
 console.log('✅ Pool MySQL initialisé');
 
 module.exports = pool;
