@@ -12,6 +12,7 @@ const checkin_ParamRoutes = require('./routes/checkin_param.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const linkRoutes = require('./routes/link.routes');
 const maintenaceRoutes = require('./routes/maintenance.routes');
+const paymentRoutes = require('./routes/payment.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const fileRoutes = require('./routes/fileRoutes.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
@@ -58,6 +59,7 @@ app.use('/api/link', linkRoutes);
 app.use('/api/maintenance', maintenaceRoutes);
 app.use('/api', feedbackRoutes);
 app.use("/api/file", fileRoutes);
+app.use("/api/payment", paymentRoutes);
 
 app.use(errorHandler);
 

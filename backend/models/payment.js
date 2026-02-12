@@ -27,7 +27,8 @@ async function createPaymentProof(organizerId, fileUrl, fileType, code) {
 
 async function getPaymentProof(organizerId) {
   const [result] = await pool.query(`
-      SELECT *
+      SELECT 
+        *
       FROM PAYMENTS
       WHERE organizer_id=?
   `,[organizerId]);
