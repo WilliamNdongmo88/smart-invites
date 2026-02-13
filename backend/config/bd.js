@@ -18,6 +18,6 @@ const pool = mysql.createPool({
 });
 
 console.log("📌 Connected to DB:", process.env.MYSQLDATABASE);
-console.log('✅ Pool MySQL initialisé');
+console.log('✅ Pool MySQL initialisé.');
 
 module.exports = pool;
