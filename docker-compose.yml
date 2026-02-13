@@ -25,8 +25,8 @@ services:
     container_name: res-smart_invite_prod
     restart: always
     environment:
-      MYSQLROOT_PASSWORD: ${MYSQLROOTPASSWORD}
-      MYSQLDATABASE: ${MYSQLDATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQLROOTPASSWORD}
+      MYSQL_DATABASE: ${MYSQLDATABASE}
     ports:
       - "3309:3306"
     networks:
