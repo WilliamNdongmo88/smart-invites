@@ -6,6 +6,7 @@ const initEventSchedulesModel = async () => {
     CREATE TABLE IF NOT EXISTS EVENT_SCHEDULES (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         event_id INT UNSIGNED NOT NULL,
+        payment_id INT UNSIGNED NOT NULL,
         scheduled_for DATETIME NOT NULL,
         is_checkin_executed BOOLEAN NOT NULL DEFAULT FALSE,
         executed BOOLEAN NOT NULL DEFAULT FALSE
@@ -16,9 +17,18 @@ const initEventSchedulesModel = async () => {
 
 async function createEventSchedule(eventId, scheduledFor, executed) {
     const [result] = await pool.query(`
-        INSERT INTO EVENT_SCHEDULES (event_id, scheduled_for, executed)
-        VALUES(?,?,?)
-    `,[eventId, scheduledFor, executed]);
+        INSERT INTO EVENT_SCHEDULES (event_id, payment_id, scheduled_for, executed)
+        VALUES(?,?,?,?)
+    `,[eventId, 0, scheduledFor, executed]);
+
+    return result.insertId;
+}
+
+async function createPaymentSchedule(paymentId, scheduledFor, executed) {
+    const [result] = await pool.query(`
+        INSERT INTO EVENT_SCHEDULES (event_id, payment_id, scheduled_for, executed)
+        VALUES(?,?,?,?)
+    `,[0, paymentId, scheduledFor, executed]);
 
     return result.insertId;
 }
@@ -46,5 +56,8 @@ async function deleteEventSchedule(eventId) {
     await pool.query(`DELETE FROM EVENT_SCHEDULES WHERE id=?`, [eventId]);
 }
 
-module.exports = {initEventSchedulesModel, createEventSchedule, 
-    getEventScheduleByEventId, updateEventSchedule, deleteEventSchedule};
+module.exports = {
+    initEventSchedulesModel, createEventSchedule, 
+    getEventScheduleByEventId, updateEventSchedule, 
+    deleteEventSchedule, createPaymentSchedule
+};

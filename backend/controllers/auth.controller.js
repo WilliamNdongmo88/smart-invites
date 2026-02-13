@@ -90,7 +90,7 @@ const getUserInfo = async (req, res, next) => {
 const getAllUsers = async (req, res, next) => {
   try {
     const users = await getUsers();
-    console.log('[users] :', users);
+    //console.log('[users] :', users);
     if(users.length == 0) return res.json({message: "Utilisateurs non trouvé"});
     const datas = [];
     for (const user of users) {
@@ -105,9 +105,11 @@ const getAllUsers = async (req, res, next) => {
         created_at: user.created_at,
         isBlocked: user.is_blocked,
         last_login_at: user.last_login_at,
-        userPaymentProof: user.fileUrl
+        userPaymentProof: user.fileUrl,
+        userPaymentProofCreatedAt: user.paymentCreatedAt
       });
     }
+    //console.log('datas:', datas);
     return res.json(datas);
   } catch (error) {
     console.error('GET USERS ERROR:', error.message);

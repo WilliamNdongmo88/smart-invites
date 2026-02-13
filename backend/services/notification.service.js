@@ -1639,7 +1639,7 @@ async function sendPaymentProofToAdminAboutChangePlan(user, fileBuffer) {
   }
 }
 
-async function sendNotificationToUserAboutChangePlan(user) {
+async function sendNotificationToUserAboutChangePlan(user, plan) {
   try {
     const logo = await getLogoUrlFromFirebase('logo.png');
 
@@ -1648,10 +1648,13 @@ async function sendNotificationToUserAboutChangePlan(user) {
       return;
     }
 
+    const pricingLink = `${process.env.API_URL}`;
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
-    const htmlContent = `
+    let htmlContent = '';
+
+    if(plan == 'professionnel') htmlContent = `
       <!DOCTYPE html>
       <html lang="fr">
         <head>
@@ -1718,13 +1721,101 @@ async function sendNotificationToUserAboutChangePlan(user) {
       </html>
     `;
 
+    if(plan == 'gratuit') htmlContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Nouveautés SmartInvite</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <h2 style="color:#1a3c8b;">Annulation du plan Pro</h2>
+
+                      <p>Bonjour <strong>${user.name}</strong>,</p>
+
+                      <p>
+                        Nous vous informons que votre plan a été annulé.
+                      </p>
+
+                      <p>
+                        <strong>Nouveau plan :</strong> ${user.plan || "Non spécifié"}
+                      </p>
+
+                      <p>
+                        À partir de maintenant, vous n’avez plus accès aux fonctionnalités avancées du plan Pro.
+                      </p>
+
+                      <p>
+                        Si cette annulation est une erreur ou si vous souhaitez réactiver votre abonnement,
+                        vous pouvez le faire à tout moment depuis votre espace personnel.
+                      </p>
+
+                      <p style="margin-top:20px;">
+                        <a href="${pricingLink}/pricing"
+                          style="background-color:#1a3c8b;
+                                  color:#ffffff;
+                                  padding:10px 20px;
+                                  text-decoration:none;
+                                  border-radius:5px;
+                                  display:inline-block;">
+                          Voir les plans disponibles
+                        </a>
+                      </p>
+
+                      <p style="margin-top:30px;">
+                        Si vous avez des questions, notre équipe support reste à votre disposition.
+                      </p>
+
+                      <p>
+                        Cordialement,<br>
+                        <strong>L’équipe Smart Invites</strong>
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
     const sendSmtpEmail = {
       to: [{ email: user.email, name: user.name || "Utilisateur" }],// 'williamndongmo899@gmail.com'
       sender: {
         email: process.env.BREVO_SENDER_EMAIL,
         name: "Smart Invite",
       },
-      subject: "✨ Votre plan Pro a été activé",
+      subject: plan == 'professionnel' ? "✨ Votre plan Pro a été activé" : "❌ Annulation du pla Pro",
       htmlContent: htmlContent,
     };
 

@@ -89,7 +89,8 @@ async function getUsers() {
       ) AS total_guests,
       
       p.id AS paymentId,
-      p.file_url AS fileUrl
+      p.file_url AS fileUrl,
+      p.created_at AS paymentCreatedAt
 
     FROM USERS u
     LEFT JOIN PAYMENTS p ON u.id = p.organizer_id

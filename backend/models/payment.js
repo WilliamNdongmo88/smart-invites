@@ -21,8 +21,19 @@ async function createPaymentProof(organizerId, fileUrl, fileType, code) {
   const [result] = await pool.query(`
       INSERT INTO PAYMENTS (organizer_id, file_url, file_type, code) VALUES(?,?,?,?)
     `,[organizerId, fileUrl, fileType, code]);
+  const payment = await getPaymentProof(organizerId);
+  return payment;
+};
 
-  return result;
+async function getPaymentProofById(paymentId) {
+  const [result] = await pool.query(`
+      SELECT 
+        *
+      FROM PAYMENTS
+      WHERE id=?
+  `,[paymentId]);
+
+  return result[0];
 };
 
 async function getPaymentProof(organizerId) {
@@ -49,9 +60,15 @@ async function updatePaymentProof(id, organizerId, fileUrl, fileType, code) {
   return result.insertId;
 }
 
+async function deletePayment(paymentId) {
+    await pool.query(`DELETE FROM PAYMENTS WHERE id=?`, [paymentId]);
+}
+
 module.exports = {
     initPaymentModel,
+    getPaymentProofById,
     createPaymentProof,
     getPaymentProof,
-    updatePaymentProof
+    updatePaymentProof,
+    deletePayment
 }

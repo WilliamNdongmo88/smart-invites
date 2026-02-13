@@ -36,7 +36,7 @@ const fetchRecentFeedback = async (req, res, next) => {
 const getAllUsers = async (req, res, next) => {
   try {
     const datas = req.body;
-    console.log('datas ::', datas);
+    //console.log('datas ::', datas);
     const users = [];
     for (const data of datas) {
         const user = await getUserByEmail(data.email);
@@ -46,7 +46,7 @@ const getAllUsers = async (req, res, next) => {
         }
         users.push(user.email);
     }
-    console.log('users ::', users);
+    //console.log('users ::', users);
     res.json(users);
   } catch (err) {
     console.log('[getAllUsers] Error:', err.message);
