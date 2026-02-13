@@ -136,7 +136,7 @@ async function changeUserPlan(req, res, next) {
         console.log('[schedule 3] paymentDate :', paymentDate);
         if(paymentDate==null || paymentDate==undefined) throw new Error("La date est invalide");
         // Conversion finale selon ta logique métier
-        const scheduleDate = addOneMonthAndFormat(newPayment.created_at)// "2026-01-13T20:52:00.000Z"
+        const scheduleDate = addOneMonthAndFormat(newPayment.created_at)//test value: "2026-01-13T20:52:00.000Z"
         console.log('[schedule 3] scheduleDate (réelle pour scheduler):', scheduleDate);
 
         // 🔁 Sécurité : annuler s'il existe déjà
