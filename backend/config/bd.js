@@ -5,12 +5,14 @@ require('dotenv').config({
     : '.env'
 });
 
+const isTest = process.env.NODE_ENV === 'test';
+console.log("📌 isTest:", isTest);
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST || 'localhost',
   port: process.env.MYSQLPORT || 3308,
   user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQLPASSWORD || 'dev-root',
-  database: process.env.MYSQLDATABASE || 'dev_smart_invite_db',
+  database: isTest ? undefined : process.env.MYSQLDATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   charset: "utf8mb4",
