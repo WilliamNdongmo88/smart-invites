@@ -7,11 +7,11 @@ module.exports = {
   development: {
     client: "mysql2",
     connection: {
-      host: process.env.MYSQLHOST || "localhost",
-      port: process.env.MYSQLPORT || 3308,
-      user: process.env.MYSQLUSER || "root",
-      password: process.env.MYSQLPASSWORD || "dev-root",
-      database: process.env.MYSQLDATABASE || "dev_smart_invite_db"
+      host: process.env.MYSQL_HOST || "localhost",
+      port: process.env.MYSQL_PORT || 3308,
+      user: process.env.MYSQL_USER || "root",
+      password: process.env.MYSQL_PASSWORD || "dev-root",
+      database: process.env.MYSQL_DATABASE || "dev_smart_invite_db"
     },
     migrations: {
       directory: path.resolve(__dirname, "backend/migrations")
@@ -20,11 +20,11 @@ module.exports = {
   // test: {
   //   client: "mysql2",
   //   connection: {
-  //     host: "localhost",
-  //     port: 3308,
-  //     user: "root",
-  //     password: "dev-root",
-  //     database: "test_smart_invite_db"
+  //     host: process.env.MYSQL_HOST || "localhost",
+  //     port: process.env.MYSQL_PORT || 3308,
+  //     user: process.env.MYSQL_USER || "root",
+  //     password: process.env.MYSQL_PASSWORD || "dev-root",
+  //     database: process.env.MYSQL_DATABASE || "test_smart_invite_db"
   //   },
   //   migrations: {
   //     directory: path.resolve(__dirname, "backend/migrations")

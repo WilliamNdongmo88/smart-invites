@@ -3,13 +3,13 @@ const mysql = require('mysql2/promise');
 require('dotenv').config({ path: '.env.test' });
 
 const dbConfig = {
-  host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
+  host: process.env.MYSQ_LHOST,
+  port: process.env.MYSQL_PORT,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
 };
 
-const TEST_DB_NAME = process.env.MYSQLDATABASE;
+const TEST_DB_NAME = process.env.MYSQL_DATABASE;
 
 // Connexion sans spécifier de base de données pour créer/supprimer la base de données de test
 let connection;
