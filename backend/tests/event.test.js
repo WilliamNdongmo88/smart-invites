@@ -85,7 +85,7 @@ describe("Events API", () => {
             eventId = res.body.eventDatas[0].id;
             expect(res.statusCode).toBe(201);
             expect(res.body.eventDatas[0]).toHaveProperty("organizerId");
-            expect(res.body.eventDatas[0].organizerId).toBe(2);
+            expect(res.body.eventDatas[0].organizerId).toBe(1);
         });
 
         test("GET ALL EVENT", async () => {

@@ -11,7 +11,7 @@ let email;
 
 describe("Auth API", () => {
     beforeAll(async () => {
-        server = await startServer();
+        await startServer();
     });
 
     describe("Auth API", () => {

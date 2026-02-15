@@ -12,7 +12,6 @@ const checkin_ParamRoutes = require('./routes/checkin_param.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const linkRoutes = require('./routes/link.routes');
 const maintenaceRoutes = require('./routes/maintenance.routes');
-const paymentRoutes = require('./routes/payment.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const fileRoutes = require('./routes/fileRoutes.route');
 const errorHandler = require('../backend/middlewares/errorHandler');
@@ -59,7 +58,6 @@ app.use('/api/link', linkRoutes);
 app.use('/api/maintenance', maintenaceRoutes);
 app.use('/api', feedbackRoutes);
 app.use("/api/file", fileRoutes);
-app.use("/api/payment", paymentRoutes);
 
 app.use(errorHandler);
 
@@ -71,19 +69,22 @@ let server; // Stocke l'instance du serveur HTTP
 
 const startServer = async () => {
   try {
-    // console.log('##################',{
-    //   host: process.env.MYSQLHOST,
-    //   port: process.env.MYSQLPORT,
-    //   user: process.env.MYSQLUSER,
-    //   database: process.env.MYSQLDATABASE,
-    // });
+    console.log('##################',{
+      host: process.env.MYSQLHOST,
+      port: process.env.MYSQLPORT,
+      user: process.env.MYSQLUSER,
+      database: process.env.MYSQLDATABASE,
+    });
     // 1 Vérifier la connexion à MySQL
     const [rows] = await pool.query('SELECT NOW() AS now');
     console.log('🕐 MySQL test query result:', rows[0]);
     // 2 Initialiser toutes les tables
     await initModels();
-    await createDefaultAdmin();
-    await createDefaultTableMaintenance();
+
+    if (process.env.NODE_ENV !== 'test') {
+      await createDefaultAdmin();
+      await createDefaultTableMaintenance();
+    }
     //await sendScheduledReport(3);
     if (process.env.NODE_ENV == 'development') {
       //await getAllConfirmedGuest();
