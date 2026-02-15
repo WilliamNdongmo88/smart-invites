@@ -5,6 +5,8 @@ require('dotenv').config({
     : '.env'
 });
 
+const isTest = process.env.NODE_ENV;
+console.log('isTest:', isTest);
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST || 'localhost',
   port: process.env.MYSQLPORT || 3308,
