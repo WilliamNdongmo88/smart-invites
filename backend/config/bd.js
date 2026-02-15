@@ -12,7 +12,7 @@ const pool = mysql.createPool({
   port: process.env.MYSQLPORT || 3308,
   user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQLPASSWORD || 'dev-root',
-  database: isTest ? undefined : process.env.MYSQLDATABASE,
+  database: isTest ? "test_smart_invite_db" : process.env.MYSQLDATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   charset: "utf8mb4",
