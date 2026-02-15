@@ -42,8 +42,8 @@ jobs:
           MYSQL_HOST: 127.0.0.1
           MYSQL_PORT: 3308
           MYSQL_USER: root
-          MYSQLPASSWORD: ${{ secrets.MYSQLPASSWORD }}
-          MYSQLDATABASE: ${{ secrets.MYSQLDATABASE }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQLPASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQLDATABASE }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
