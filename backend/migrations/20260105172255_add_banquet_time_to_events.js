@@ -11,7 +11,7 @@ exports.up = async function (knex) {
 
 exports.down = async function (knex) {
   const hasColumn = await knex.schema.hasColumn('EVENTS', 'banquet_time');
-  if(!hasColumn){
+  if(hasColumn){
     return knex.schema.table('EVENTS', function (table) {
       table.dropColumn('banquet_time');
     });

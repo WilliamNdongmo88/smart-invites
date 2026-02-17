@@ -10,6 +10,7 @@ const initUserModel = async () => {
       name VARCHAR(100),
       email VARCHAR(255) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
+      accept_terms BOOLEAN,
       role VARCHAR(50) DEFAULT 'user',
       phone VARCHAR(20),
       bio TEXT,
@@ -45,9 +46,10 @@ async function createDefaultAdmin() {
             return;
         }
         const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+        const acceptTerms = 1; // Accepte les termes par défaut pour l'admin
         await pool.query(
-            "INSERT INTO USERS (name, email, password, role, plan) VALUES (?, ?, ?, ?, ?)",
-            [process.env.ADMIN_NAME ,process.env.ADMIN_EMAIL, hashedPassword, "admin", "professionnel"]
+            "INSERT INTO USERS (name, email, password, accept_terms, role, plan) VALUES (?, ?, ?, ?, ?, ?)",
+            [process.env.ADMIN_NAME ,process.env.ADMIN_EMAIL, hashedPassword, acceptTerms, "admin", "professionnel"]
         );
 
         console.log("---Default admin created successfully---");
@@ -56,11 +58,11 @@ async function createDefaultAdmin() {
     }
 }
 
-async function createUser({ name, email, password, role = 'user', isActive = false, avatar_url = null }) {
+async function createUser({ name, email, password, acceptTerms, role = 'user', isActive = false, avatar_url = null }) {
   const hashed = await bcrypt.hash(password, 10);
   const [result] = await pool.query(
-    `INSERT INTO USERS (name, email, password, role, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?)`,
-    [name, email, hashed, role, isActive, avatar_url]
+    `INSERT INTO USERS (name, email, password, accept_terms, role, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [name, email, hashed, acceptTerms, role, isActive, avatar_url]
   );
   return result.insertId;
 }

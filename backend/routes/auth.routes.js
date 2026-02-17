@@ -86,7 +86,8 @@ router.put('/:userId', AuthController.updateProfile);
  */
 router.post('/login', loginLimiter, AuthController.login);
 
-router.post('/google', loginLimiter, AuthController.loginWithGoogle);
+router.post('/google-signin', loginLimiter, AuthController.loginWithGoogle);
+router.post('/google-signup', loginLimiter, AuthController.signupWithGoogle);
 
 /**
  * @swagger

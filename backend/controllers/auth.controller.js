@@ -119,13 +119,13 @@ const getAllUsers = async (req, res, next) => {
 
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, acceptTerms, role } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
 
     const existing = await getUserByEmail(email);
     if (existing) return res.status(409).json({ error: 'Email déjà utilisé' });
 
-    const userId = await createUser({ name, email, password, role });
+    const userId = await createUser({ name, email, password, acceptTerms, role });
     console.log('userId:', userId);
     
     // Génère un code à 6 chiffres
@@ -171,6 +171,8 @@ const updateProfile = async (req, res, next) => {
             email_notifications, attendance_notifications,
             thank_notifications, event_reminders,
             marketing_emails } = req.body;
+        const existing = await getUserByEmail(email);
+        if(existing) return res.status(409).json({ error: 'Cet utilisateur existe déjà.' });
         const user = await getUserByFk(req.params.userId);
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
         const updatedUser = {
@@ -317,12 +319,67 @@ const loginWithGoogle = async (req, res, next) => {
     
     let user = await getUserByEmail(email);
     console.log('user info:', user);
+    if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé. Veuillez vous inscrire avant.' });
+
+    if(process.env.NODE_ENV !== 'test') {
+      const maintenanceMode = await getMaintenanceById(1);
+      if (user.role == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
+        return res.status(503).json({ error: 'Le service est en maintenance. Veuillez réessayer plus tard.' });
+      }
+    }
+
+    const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
+    const refreshToken = signRefreshToken({ id: user.id });
+    await saveRefreshToken(user.id, refreshToken);
+    return res.status(200).json({
+      message: 'Connexion Google réussie ✅',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        plan: user.plan
+      },
+      accessToken,
+      refreshToken
+    });
+  } catch (error) {
+    console.error('GOOGLE LOGIN ERROR:', error.message);
+    next(error);
+  }
+};
+
+const signupWithGoogle = async (req, res, next) => {
+  try {
+    const { tokenId, acceptTerms } = req.body;
+    console.log('req.body:', req.body);
+    if (!tokenId) {
+      return res.status(400).json({ error: 'Token ID requis' });
+    }
+    // Vérification du token avec Google
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    console.log('GOOGLE TOKEN VERIFICATION SUCCESS:', ticket);
+    const payload = ticket.getPayload();
+    console.log('[signupWithGoogle] PAYLOAD:', payload);
+
+    const { email, name, sub: googleId, picture } = payload;
+    console.log('Extracted Google user info:', { email, name, googleId, picture });
+    // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
+    
+    let user = await getUserByEmail(email);
+    console.log('user info:', user);
+    if(user) return res.status(409).json({ error: 'Cet utilisateur existe déjà.' });
     if (!user) {
       // Crée un nouvel utilisateur si non existant
       const name = payload.name;
       const randomPassword = Math.random().toString(36).slice(-8);
       const userId = await createUser({ 
-        name, email, password: randomPassword, role: 'user', isActive: true, avatar_url: picture 
+        name, email, password: randomPassword, acceptTerms, role: 'user', isActive: true, avatar_url: picture 
       });
       user = await getUserById(userId);
     }
@@ -338,7 +395,7 @@ const loginWithGoogle = async (req, res, next) => {
     const refreshToken = signRefreshToken({ id: user.id });
     await saveRefreshToken(user.id, refreshToken);
     return res.status(200).json({
-      message: 'Connexion Google réussie ✅',
+      message: 'Inscription Google réussie ✅',
       user: {
         id: user.id,
         name: user.name,
@@ -564,7 +621,7 @@ const deleteProfile = async (req, res, next) => {
 };
 
 module.exports = { 
-  register, login, loginWithGoogle, 
+  register, login, loginWithGoogle, signupWithGoogle,
   refresh, logout, updatePassword,
   getMe, contactUs, forgotPassword, 
   checkCode, resetPassword, updateProfile, 
