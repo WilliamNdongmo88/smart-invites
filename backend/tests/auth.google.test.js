@@ -6,7 +6,10 @@ const router = express.Router();
 const app = express();
 app.use(express.json());
 
-// Mock de tes fonctions et modules
+process.env.GOOGLE_CLIENT_ID = 'dummy-client-id';
+process.env.NODE_ENV = 'test';
+
+// ---------------- MOCK GOOGLE ----------------
 jest.mock('google-auth-library', () => {
   return {
     OAuth2Client: jest.fn().mockImplementation(() => {
@@ -24,113 +27,110 @@ jest.mock('google-auth-library', () => {
   };
 });
 
+// ---------------- MOCK DB ----------------
 const getUserByEmail = jest.fn();
-const getUserById = jest.fn();
-const createUser = jest.fn();
+const getMaintenanceById = jest.fn();
 const saveRefreshToken = jest.fn();
 
 const JWT_SECRET = 'testsecret';
-const JWT_EXPIRES_IN = '1h';
-const REFRESH_TOKEN_EXPIRES_IN = '7d';
 
-// Fonctions de création de token
 function signAccessToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
 }
 function signRefreshToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
 
-// Contrôleur
+// ---------------- CONTROLLER ----------------
 const loginWithGoogle = async (req, res, next) => {
   try {
     const { tokenId } = req.body;
-    if (!tokenId) return res.status(400).json({ error: 'Token ID requis' });
 
-    const { OAuth2Client } = require('google-auth-library');
-    const client = new OAuth2Client('dummy-client-id');
-    const ticket = await client.verifyIdToken({
-      idToken: tokenId,
-      audience: 'dummy-client-id',
-    });
-    const payload = ticket.getPayload();
-    const { email, name, sub: googleId, picture } = payload;
-
-    let user = await getUserByEmail(email);
-    if (!user) {
-      const userId = await createUser({ name, email, password: 'random', role: 'user', isActive: true, avatar_url: picture });
-      user = await getUserById(userId);
+    if (!tokenId) {
+      return res.status(400).json({ error: 'Token ID requis' });
     }
 
-    const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email } = payload;
+
+    let user = await getUserByEmail(email);
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'Utilisateur non trouvé. Veuillez vous inscrire avant.'
+      });
+    }
+
+    const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken({ id: user.id });
+
     await saveRefreshToken(user.id, refreshToken);
 
     return res.status(200).json({
       message: 'Connexion Google réussie ✅',
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user,
       accessToken,
       refreshToken
     });
+
   } catch (error) {
     next(error);
   }
 };
 
-// Route
-router.post('/google', loginWithGoogle);
+router.post('/google-signin', loginWithGoogle);
 app.use('/auth', router);
 
-// --- TESTS ---
-describe('POST /auth/google', () => {
+// ---------------- TESTS ----------------
+describe('POST /auth/google-signin', () => {
+
   beforeEach(() => {
-    getUserByEmail.mockReset();
-    getUserById.mockReset();
-    createUser.mockReset();
-    saveRefreshToken.mockReset();
+    jest.clearAllMocks();
   });
 
   it('devrait retourner 400 si tokenId manquant', async () => {
-    const res = await request(app).post('/auth/google').send({});
+    const res = await request(app).post('/auth/google-signin').send({});
     expect(res.statusCode).toBe(400);
-    expect(res.body.error).toBe('Token ID requis');
   });
 
-  it('devrait créer un nouvel utilisateur si non existant et retourner tokens', async () => {
-    getUserByEmail.mockResolvedValue(null);        // utilisateur non existant
-    createUser.mockResolvedValue('user123');       // ID du nouvel utilisateur
-    getUserById.mockResolvedValue({               // infos utilisateur créé
-      id: 'user123',
-      name: 'Test User',
-      email: 'test@example.com',
-      role: 'user'
-    });
+  it('devrait retourner 404 si utilisateur inexistant', async () => {
+    getUserByEmail.mockResolvedValue(null);
 
-    const res = await request(app).post('/auth/google').send({ tokenId: 'dummy-token' });
+    const res = await request(app)
+      .post('/auth/google-signin')
+      .send({ tokenId: 'dummy-token' });
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe('Connexion Google réussie ✅');
-    expect(res.body.user).toEqual({
-      id: 'user123',
-      name: 'Test User',
-      email: 'test@example.com',
-      role: 'user'
-    });
-    expect(res.body.accessToken).toBeDefined();
-    expect(res.body.refreshToken).toBeDefined();
+    expect(res.statusCode).toBe(404);
+    expect(res.body.error)
+      .toBe('Utilisateur non trouvé. Veuillez vous inscrire avant.');
   });
 
-  it('devrait utiliser un utilisateur existant si trouvé', async () => {
+  it('devrait connecter un utilisateur existant', async () => {
+
     getUserByEmail.mockResolvedValue({
       id: 'existingUser',
       name: 'Existing User',
       email: 'test@example.com',
-      role: 'user'
+      role: 'user',
+      plan: 'free'
     });
 
-    const res = await request(app).post('/auth/google').send({ tokenId: 'dummy-token' });
+    const res = await request(app)
+      .post('/auth/google-signin')
+      .send({ tokenId: 'dummy-token' });
 
     expect(res.statusCode).toBe(200);
     expect(res.body.user.id).toBe('existingUser');
+    expect(res.body.accessToken).toBeDefined();
+    expect(res.body.refreshToken).toBeDefined();
   });
+
 });

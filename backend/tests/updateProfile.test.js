@@ -8,6 +8,7 @@ const express = require('express');
  */
 jest.mock('../models/users', () => ({
   getUserByFk: jest.fn(),
+  getUserByEmail: jest.fn(),
   updateUser: jest.fn()
 }));
 
