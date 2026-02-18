@@ -2,7 +2,12 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const {sendEmailCode, checkUserByCode, resetUserPassword} = require('../services/auth.service');
+const {
+  sendEmailCode, 
+  checkUserByCode, 
+  resetUserPassword,
+  sendNotificationToAdmin
+} = require('../services/auth.service');
 const {
   createUser,
   getUserByFk,
@@ -139,6 +144,7 @@ const register = async (req, res, next) => {
       // ✅ Correction : Créer l'objet user ou passer userId et email
       const user = { id: userId, name, email };
       await sendEmailCode(user, code, true);
+      await sendNotificationToAdmin(user);
       
       // ✅ Correction : Retourner une seule réponse
       return res.status(201).json({ 
@@ -389,6 +395,7 @@ const signupWithGoogle = async (req, res, next) => {
       if (user.role == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
         return res.status(503).json({ error: 'Le service est en maintenance. Veuillez réessayer plus tard.' });
       }
+      await sendNotificationToAdmin(user);
     }
 
     const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });

@@ -42,6 +42,89 @@ async function sendEmailCode(user, code, isActive=false) {
   console.log(`✅ Email envoyé à ${user.email}`);
 }
 
+async function sendNotificationToAdmin(user) {
+  const brevo = new Brevo.TransactionalEmailsApi();
+  brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+  const htmlContent = `
+  <div style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding:20px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0"
+            style="background:#ffffff;border-radius:8px;padding:30px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+
+            <!-- Header -->
+            <tr>
+              <td align="center" style="padding-bottom:20px;">
+                <h2 style="margin:0;color:#2c3e50;">
+                  🎉 Nouvel abonné sur Smart Invite
+                </h2>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td style="color:#444;font-size:15px;line-height:1.6;">
+                <p>Bonjour <strong>${process.env.ADMIN_NAME || 'Administrateur'}</strong>,</p>
+
+                <p>
+                  Un nouvel utilisateur vient de s’inscrire sur votre plateforme 
+                  <strong>Smart Invite</strong>.
+                </p>
+
+                <p>Voici ses informations de base :</p>
+
+                <!-- Infos box -->
+                <div style="
+                  background:#f8fafc;
+                  border:1px solid #e5e7eb;
+                  border-radius:6px;
+                  padding:15px;
+                  margin:15px 0;
+                ">
+                  <!-- Exemple champs -->
+                  <p style="margin:5px 0;"><strong>Nom :</strong> ${user.name}</p>
+                  <p style="margin:5px 0;"><strong>Email :</strong> ${user.email}</p>
+                </div>
+
+                <p>
+                  Vous pouvez consulter les détails complets depuis votre tableau de bord administrateur.
+                </p>
+
+                <p style="margin-top:25px;">
+                  Cordialement,<br/>
+                  <strong>L’équipe Smart Invite</strong>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td align="center"
+                  style="padding-top:25px;font-size:12px;color:#888;border-top:1px solid #eee;">
+                © ${new Date().getFullYear()} Smart Invite — Tous droits réservés
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+`;
+
+  const sendSmtpEmail = {
+    to: [{ email: process.env.ADMIN_EMAIL, name: process.env.ADMIN_NAME }],
+    sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Smart Invite' },
+    subject: 'Nouvel utilisateur créé',
+    htmlContent: htmlContent
+  };
+
+  await brevo.sendTransacEmail(sendSmtpEmail);
+  console.log(`✅ Email envoyé à ${user.email}`);
+}
+
 async function checkUserByCode(email, code, isActive=false) {
   // Recherche l'utilisateur
   const user = await getUserByEmail(email);
@@ -82,4 +165,4 @@ async function resetUserPassword(email, newpassword) {
   return userUpdate;
 }
 
-module.exports = {sendEmailCode, checkUserByCode, resetUserPassword};
+module.exports = {sendEmailCode, checkUserByCode, resetUserPassword, sendNotificationToAdmin};
