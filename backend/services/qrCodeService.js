@@ -62,6 +62,7 @@ async function getLogoFromFirebase(logoFileName) {
 async function generateGuestQr(guestId, token, logoFileName = null) {
   try {
     const url = process.env.BASE_URL + "/api/invitation/view/" + guestId +':'+ token;
+    console.log('URL à encoder dans le QR code:', url);
 
     const qrBuffer = await QRCode.toBuffer(url, {
       errorCorrectionLevel: "H",
