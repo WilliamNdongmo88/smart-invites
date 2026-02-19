@@ -28,22 +28,11 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Autorise les requêtes venant d'Angular
-const allowedOrigins = [
-  "https://smart-invite.com",
-  "https://www.smart-invite.com"
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
+  origin: [process.env.API_URL, "https://www.smart-invite.com"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 
 // 1. Désactiver les rate limiters en mode test (ils utilisent des timers)
 if (process.env.NODE_ENV !== 'test') {
