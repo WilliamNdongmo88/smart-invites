@@ -29,7 +29,7 @@ if (process.env.NODE_ENV === "production") {
 
 // Autorise les requêtes venant d'Angular
 app.use(cors({
-  origin: process.env.API_URL,
+  origin: [process.env.API_URL, "https://www.smart-invite.com"],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
