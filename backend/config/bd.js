@@ -22,6 +22,16 @@ if(ENVIRONMENT=='development') pool = mysql.createPool({
   timezone: 'Z',
 });
 
+// ✅ KEEP ALIVE RAILWAY
+setInterval(async () => {
+  try {
+    await pool.query('SELECT 1');
+    console.log('✅ MySQL keepalive OK');
+  } catch (err) {
+    console.error('❌ MySQL keepalive error:', err.message);
+  }
+}, 240000);
+
 if(ENVIRONMENT=='production') pool = mysql.createPool({
   host: process.env.MYSQLHOST || 'localhost',
   port: process.env.MYSQLPORT || 3308,
