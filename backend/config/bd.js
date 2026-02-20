@@ -16,6 +16,8 @@ if(ENVIRONMENT=='development') pool = mysql.createPool({
   database: process.env.MYSQL_DATABASE || 'dev_smart_invite_db',
   waitForConnections: true,
   connectionLimit: 10,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
   charset: "utf8mb4",
   timezone: 'Z',
 });
