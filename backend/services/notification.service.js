@@ -1249,6 +1249,9 @@ async function sendMailToAdmin(name, email, phone, subject, message) {
   const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
+  const logo = await getLogoUrlFromFirebase('logo.png');
+  if (!logo) throw new Error("Logo non trouvé.");
+
   const formattedMessage = message.replace(/\n/g, '<br>');
   let subj = '';
   switch (subject) {
