@@ -7,5 +7,6 @@ router.get('/feedback/stats', FeedbackController.fetchFeedbackStats);
 router.get('/feedback/recent', FeedbackController.fetchRecentFeedback);
 router.put('/feedback/:id', FeedbackController.changeStatusFeedback);
 router.post('/feedback-users', FeedbackController.getAllUsers);
+router.post('/notification/send', FeedbackController.sendNotificationToUsers);
 
 module.exports = router;

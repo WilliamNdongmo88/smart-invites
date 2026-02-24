@@ -1830,10 +1830,70 @@ async function sendNotificationToUserAboutChangePlan(user, plan) {
   }
 }
 
+async function sendMailToAdminFromPortfolio(name, email, message, subject) {
+  const brevo = new Brevo.TransactionalEmailsApi();
+  brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
+
+  const formattedMessage = message.replace(/\n/g, '<br>');
+  const sendSmtpEmail = {
+    to: [{ email: process.env.ADMIN_EMAIL, name: process.env.ADMIN_NAME }],
+    sender: { email: process.env.BREVO_SENDER_EMAIL, name: 'Will Portfolio' },
+    subject: subject,
+    htmlContent: ` 
+      <!DOCTYPE html>
+      <html lang="fr">
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #0f172a; padding:20px; text-align:center;">
+                    <p style="margin:5px 0 0; color:#ffffff;">Will Portfolio</p>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <!-- BODY -->
+                      <h3>Nouveau message de contact</h3>
+                      <p><strong>Nom :</strong> ${name}</p>
+                      <p><strong>Email :</strong> ${email}</p>
+                      <p><strong>Message :</strong></p>
+                      <p>${formattedMessage}</p>          
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#0f172a; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} WillPortfolio. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `
+  };
+
+  await brevo.sendTransacEmail(sendSmtpEmail);
+  console.log(`✅ Email(Contact Us) envoyé à Admin Portfolio`);
+};
+
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,
   sendFileQRCodeMail, sendGuestResponseToOrganizer, sendGuestPresenceToOrganizer,
   sendThankYouMailToPresentGuests, notifyOrganizerAboutSendThankYouMailToPresentGuests,
   notifications, manualSendThankYouMailToPresentGuests, sendMailToAdmin, sendNewsLetterToUsers,
-  sendPdfToGuestMail, sendNewsUpdatesToUsers, 
-  sendNotificationToUserAboutChangePlan, sendPaymentProofToAdminAboutChangePlan
+  sendPdfToGuestMail, sendNewsUpdatesToUsers, sendPaymentProofToAdminAboutChangePlan,
+  sendNotificationToUserAboutChangePlan, sendMailToAdminFromPortfolio
 };

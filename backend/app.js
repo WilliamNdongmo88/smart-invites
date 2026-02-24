@@ -15,6 +15,7 @@ const maintenaceRoutes = require('./routes/maintenance.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const fileRoutes = require('./routes/fileRoutes.route');
 const paymentRoutes = require('./routes/payment.routes');
+const portfolioRoutes = require('./routes/feedback.routes');
 const errorHandler = require('../backend/middlewares/errorHandler');
 const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./middlewares/rateLimiter');
 const setupSwagger = require('./docs/swagger');
@@ -60,6 +61,7 @@ app.use('/api/maintenance', maintenaceRoutes);
 app.use('/api', feedbackRoutes);
 app.use("/api/file", fileRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/portfolio", portfolioRoutes);
 
 app.use(errorHandler);
 

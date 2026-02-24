@@ -1,5 +1,6 @@
 const { createFeedback, getFeedbackStats, getRecentFeedback, updateStatusFeedback } = require("../models/feedbacks");
 const { getUserByEmail } = require("../models/users");
+const { sendMailToAdminFromPortfolio } = require("../services/notification.service");
 
 const addFeedback = async (req, res, next) => {
   try {
@@ -66,9 +67,23 @@ const changeStatusFeedback = async (req, res, next) => {
     }
 }
 
+const sendNotificationToUsers = async (req, res, next) => {
+  try {
+    console.log('[sendNotificationToUsers] req.body ::', req.body);
+    const { name, email, message, subject } = req.body;
+    await sendMailToAdminFromPortfolio(name, email, message, subject);
+
+    res.status(201).json({ message: 'Notification sent successfully' });
+  } catch (err) {
+    console.log('[sendNotificationToUsers] Error:', err.message);
+    next(err);
+  }
+};
+
 module.exports = { addFeedback, 
                    fetchFeedbackStats, 
                    fetchRecentFeedback,
                    changeStatusFeedback,
-                   getAllUsers
+                   getAllUsers,
+                   sendNotificationToUsers
                 };
