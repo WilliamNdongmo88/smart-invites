@@ -1871,8 +1871,8 @@ async function sendMailToAdminFromPortfolio(name, email, message, subject) {
                   <tr>
                     <td style="background-color:#0f172a; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
                       © ${new Date().getFullYear()} WillPortfolio. Tous droits réservés.
-                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-                        ${process.env.API_URL}
+                      <a href="https://will-portfolio-rosy.vercel.app" style="color:#ffffff; text-decoration:none;">
+                        https://will-portfolio.com
                       </a>
                     </td>
                   </tr>
