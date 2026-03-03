@@ -174,12 +174,14 @@ async function getEventsByOrganizerId(organizerId) {
             e.budget,
             e.event_name_concerned1,
             e.event_name_concerned2,
+            u.id As organizerId,
             COUNT(g.id) AS total_guests,
             SUM(CASE WHEN g.rsvp_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count,
             SUM(CASE WHEN g.rsvp_status = 'PENDING' THEN 1 ELSE 0 END) AS pending_count,
             SUM(CASE WHEN g.rsvp_status = 'DECLINED' THEN 1 ELSE 0 END) AS declined_count
         FROM EVENTS e
         LEFT JOIN GUESTS g ON g.event_id = e.id
+        LEFT JOIN USERS u ON e.organizer_id = u.id
         WHERE organizer_id = ?
         GROUP BY e.id,
             e.title,

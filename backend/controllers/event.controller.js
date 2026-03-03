@@ -227,7 +227,7 @@ const getAllEvents = async (req, res, next) => {
     try {
         const organizerEvent = await getEventsByOrganizerId(req.params.organizerId);
         if(organizerEvent.length == 0) return res.status(404).json({ error: 'Aucun Evénement trouvé' });
-        //console.log('organizerEvent:', organizerEvent);
+        console.log('organizerEvent:', organizerEvent);
         return res.status(200).json({ events: organizerEvent });
     } catch (error) {
         console.error('GET EVENT BY OrganizerID ERROR:', error.message);

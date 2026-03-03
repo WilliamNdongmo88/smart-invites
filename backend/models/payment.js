@@ -7,8 +7,9 @@ const initPaymentModel = async () => {
     CREATE TABLE IF NOT EXISTS PAYMENTS (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       organizer_id INT UNSIGNED NOT NULL,
-      file_url TEXT,
       file_type VARCHAR(100),
+      file_url TEXT,
+      plan_name VARCHAR(100),
       code VARCHAR(100),
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (organizer_id) REFERENCES USERS(id) ON DELETE CASCADE
@@ -17,10 +18,10 @@ const initPaymentModel = async () => {
   console.log('✅ Table PAYMENTS prête !');
 };
 
-async function createPaymentProof(organizerId, fileUrl, fileType, code) {
+async function createPaymentProof(organizerId, planName, fileUrl, fileType, code) {
   const [result] = await pool.query(`
-      INSERT INTO PAYMENTS (organizer_id, file_url, file_type, code) VALUES(?,?,?,?)
-    `,[organizerId, fileUrl, fileType, code]);
+      INSERT INTO PAYMENTS (organizer_id, plan_name, file_url, file_type, code) VALUES(?,?,?,?,?)
+    `,[organizerId, planName, fileUrl, fileType, code]);
   const payment = await getPaymentProof(organizerId);
   return payment;
 };
@@ -47,15 +48,16 @@ async function getPaymentProof(organizerId) {
   return result[0];
 };
 
-async function updatePaymentProof(id, organizerId, fileUrl, fileType, code) {
+async function updatePaymentProof(id, organizerId, planName, fileUrl, fileType, code) {
   const [result] = await pool.query(`
     UPDATE PAYMENTS 
     SET organizer_id=?,
+        plan_name=?,
         file_url=?,
         file_type=?,
         code=?
     WHERE id=?
-  `, [organizerId, fileUrl, fileType, code, id]);
+  `, [organizerId, planName, fileUrl, fileType, code, id]);
 
   return result.insertId;
 }

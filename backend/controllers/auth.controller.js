@@ -6,7 +6,8 @@ const {
   sendEmailCode, 
   checkUserByCode, 
   resetUserPassword,
-  sendNotificationToAdmin
+  sendNotificationToAdmin,
+  sendCredentialToUser
 } = require('../services/auth.service');
 const {
   createUser,
@@ -19,10 +20,12 @@ const {
   updateUser,
   deleteAccount,
   updateUserActiveAccount,
-  getUsers
+  getUsers,
+  getUsersLinkedToManager,
+  updateUserBlokedAccount
 } = require('../models/users');
 const { getEventsByOrganizerId, deleteEvents } = require('../models/events');
-const { getGuestByEventId, getGuestAndInvitationRelatedById, delete_guest } = require('../models/guests');
+const { getGuestByEventId, getGuestAndInvitationRelatedById, delete_guest, getAllGuestAndInvitationRelatedByEventId } = require('../models/guests');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { sendMailToAdmin } = require('../services/notification.service');
 const { createUserNews, getUserNewsByEmail, updateUserNews } = require('../models/usernews');
@@ -80,6 +83,7 @@ const getUserInfo = async (req, res, next) => {
       user: {
         id: user.id,
         name: user.name,
+        accountType: user.account_type,
         email: user.email,
         role: user.role,
         plan: user.plan,
@@ -94,15 +98,104 @@ const getUserInfo = async (req, res, next) => {
 
 const getAllUsers = async (req, res, next) => {
   try {
-    const users = await getUsers();
-    //console.log('[users] :', users);
-    if(users.length == 0) return res.json({message: "Utilisateurs non trouvé"});
+    const currentusers = await getUsers();
+
+    if (!currentusers.length) {
+      return res.status(404).json({ message: "Utilisateurs non trouvés" });
+    }
+
+    const AllUsers = await getAllUsersService(currentusers);
+
+    const events = [];
+    const guests = [];
+
+    for (const user of AllUsers) {
+
+      const userEvents = await getEventsByOrganizerId(user.id);
+
+      if (userEvents.length) {
+        events.push(...userEvents); // push tous les events
+      }
+
+      for (const e of userEvents) {
+        const eventGuests =
+          await getAllGuestAndInvitationRelatedByEventId(e.event_id);
+
+        if (eventGuests.length) {
+          guests.push(...eventGuests); // push tous les guests
+        }
+      }
+    }
+
+    const datas = {
+      users: AllUsers,
+      events: events,
+      guests: guests
+    };
+    console.log('datas:', datas);
+    return res.json(datas);
+  } catch (error) {
+    console.error("GET USERS ERROR:", error.message);
+    next(error);
+  }
+};
+
+const getAllUsersLinkedToManager = async (req, res, next) => {
+  try {
+    const currentUsers = await getUsers();
+    const usersManager = await getUsersLinkedToManager(req.params.managerId);
+
+    const managerIds = new Set(usersManager.map(u => u.id));
+
+    const filteredUsers = currentUsers.filter(user =>
+      managerIds.has(user.manager_id)
+    );
+
+    const events = [];
+    const guests = [];
+
+    for (const user of filteredUsers) {
+
+      const userEvents = await getEventsByOrganizerId(user.id);
+
+      if (userEvents.length) {
+        events.push(...userEvents);
+      }
+
+      for (const e of userEvents) {
+        const eventGuests =
+          await getAllGuestAndInvitationRelatedByEventId(e.event_id);
+
+        if (eventGuests.length) {
+          guests.push(...eventGuests);
+        }
+      }
+    }
+
+    const allUsers = await getAllUsersService(filteredUsers);
+
+    const datas = {
+      users: allUsers,
+      events: events,
+      guests: guests
+    };
+    // console.log('datas:', datas);
+    return res.json(datas);
+
+  } catch (error) {
+    console.error('GET USERS LINKED TO MANAGER ERROR:', error.message);
+    next(error);
+  }
+};
+
+getAllUsersService = async (users) => {
     const datas = [];
     for (const user of users) {
       datas.push({
         id: user.id, 
         name: user.name, 
-        email: user.email, 
+        email: user.email,
+        accountType: user.account_type,
         eventsCreated: user.total_eventsCreated,
         totalGuests: user.total_guests,
         plan: user.plan,
@@ -110,43 +203,45 @@ const getAllUsers = async (req, res, next) => {
         created_at: user.created_at,
         isBlocked: user.is_blocked,
         last_login_at: user.last_login_at,
+        userPaymentPlanName: user.planName,
         userPaymentProof: user.fileUrl,
         userPaymentProofCreatedAt: user.paymentCreatedAt
       });
     }
     //console.log('datas:', datas);
-    return res.json(datas);
-  } catch (error) {
-    console.error('GET USERS ERROR:', error.message);
-    next(error);
-  }
+  return datas;
 }
 
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, acceptTerms, role } = req.body;
+    let { name, email, accountType, password, acceptTerms, role } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
 
     const existing = await getUserByEmail(email);
     if (existing) return res.status(409).json({ error: 'Email déjà utilisé' });
 
-    const userId = await createUser({ name, email, password, acceptTerms, role });
-    console.log('userId:', userId);
-    
+    if(accountType == 'business') console.log('#### accountType: ', accountType);
+    let userId = null;
+    if(accountType == 'business'){
+      role = 'manager';
+      userId = await createUser({ name, email, accountType, password, acceptTerms, role });
+    }else{
+      userId = await createUser({ name, email, accountType, password, acceptTerms, role });
+    }
+    console.log('### userId:', userId);
+
     // Génère un code à 6 chiffres
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // ✅ Correction : Utiliser userId au lieu de user.id
     await saveResetCode(userId, code);
 
     // Envoie du mail via Brevo
     try {
-      // ✅ Correction : Créer l'objet user ou passer userId et email
       const user = { id: userId, name, email };
       await sendEmailCode(user, code, true);
       await sendNotificationToAdmin(user);
       
-      // ✅ Correction : Retourner une seule réponse
+      // On retourne une seule réponse
       return res.status(201).json({ 
         id: userId, 
         name, 
@@ -166,6 +261,70 @@ const register = async (req, res, next) => {
 
   } catch (error) {
     console.error('REGISTER ERROR:', error.message);
+    next(error);
+  }
+};
+
+const addUsersLinkedToManager = async (req, res, next) => {
+  try {
+    const { managerId, name, email, acceptTerms } = req.body;
+    const manager = await getUserById(managerId);
+    console.log('manager plan:', manager.plan);
+    if(manager.plan != 'Entreprise') return res.status(400).json({ error: 'Vous devez souscrire au plan entreprise avant.' });
+    if (!email) return res.status(400).json({ error: 'Email requis' });
+
+    const existing = await getUserByEmail(email);
+    if (existing) return res.status(409).json({ error: 'Email déjà utilisé' });
+
+    const accountType = 'personal';
+    const role = 'user';
+    const password = Math.random().toString(36).slice(-8); // Génère un mot de passe aléatoire
+    const plan = 'professionnel'
+    const userId = await createUser({ managerId, name, email, accountType, password, acceptTerms, role, plan });
+    console.log('### userId:', userId);
+
+    // Envoie du mail via Brevo
+    try {
+      // Crée l'objet user
+      const user = { id: userId, name, email, password };
+      await sendCredentialToUser(user);
+      await sendNotificationToAdmin(user);
+      
+      // On retourne une seule réponse
+      return res.status(201).json({ 
+        id: userId, 
+        name, 
+        email, 
+        message: 'Utilisateur créé. Email de vérification envoyé.' 
+      });
+    } catch (error) {
+      console.error("SEND EMAIL ERROR:", error.message);
+      // ✅ L'utilisateur est créé mais l'email a échoué
+      return res.status(201).json({ 
+        id: userId, 
+        name, 
+        email, 
+        warning: 'Utilisateur créé mais email non envoyé' 
+      });
+    }
+
+  } catch (error) {
+    console.error('REGISTER 2 ERROR:', error.message);
+    next(error);
+  }
+};
+
+const updateUserStatus = async (req, res, next) => {
+  try {
+    console.log("body", req.body);
+    const { email, isBlocked } = req.body;
+    const user = await getUserByEmail(email);
+    console.log("user", user);
+    if(!user) res.status(400).json({ error: 'User not found'});
+    await updateUserBlokedAccount(email, isBlocked);
+
+    return res.status(200).json({ message: 'Status modifié avec succès'});
+  } catch (error) {
     next(error);
   }
 };
@@ -249,9 +408,8 @@ const login = async (req, res, next) => {
 
     if(process.env.NODE_ENV !== 'test') {
       const user = await getUserByEmail(email);
-      if(!user) {
-        return res.status(401).json({ error: 'Utilisateur non trouvé' });
-      }
+      if(!user) return res.status(401).json({ error: 'Utilisateur non trouvé' });
+
       const maintenanceMode = await getMaintenanceById(1);
       if (user.role == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
         return res.status(503).json({ error: 'Le service est en maintenance. Veuillez réessayer plus tard.' });
@@ -266,6 +424,12 @@ const login = async (req, res, next) => {
     console.log('user: ', user);
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur non trouvé' });
+    }
+
+    if (user.is_blocked) {
+      return res.status(403).json({
+        error: "Votre compte a été bloqué. Veuillez contacter votre administrateur Smart Invite."
+      });
     }
 
     if (user.is_active==false) {
@@ -289,6 +453,7 @@ const login = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        accountType: user.account_type,
         role: user.role,
         plan: user.plan
       },
@@ -317,14 +482,14 @@ const loginWithGoogle = async (req, res, next) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-    console.log('GOOGLE PAYLOAD:', payload);
+    // console.log('GOOGLE PAYLOAD:', payload);
 
     const { email, name, sub: googleId, picture } = payload;
     console.log('Extracted Google user info:', { email, name, googleId, picture });
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
-    console.log('user info:', user);
+    // console.log('user info:', user);
     if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé. Veuillez vous inscrire avant.' });
 
     if(process.env.NODE_ENV !== 'test') {
@@ -332,6 +497,12 @@ const loginWithGoogle = async (req, res, next) => {
       if (user.role == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
         return res.status(503).json({ error: 'Le service est en maintenance. Veuillez réessayer plus tard.' });
       }
+    }
+
+    if (user.is_blocked) {
+      return res.status(403).json({
+        error: "Votre compte a été bloqué. Veuillez contacter votre administrateur Smart Invite."
+      });
     }
 
     const accessToken = signAccessToken({ id: user.id, email: user.email, role: user.role });
@@ -343,6 +514,7 @@ const loginWithGoogle = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        accountType: user.account_type,
         role: user.role,
         plan: user.plan
       },
@@ -357,7 +529,7 @@ const loginWithGoogle = async (req, res, next) => {
 
 const signupWithGoogle = async (req, res, next) => {
   try {
-    const { tokenId, acceptTerms } = req.body;
+    const { tokenId, acceptTerms, accountType } = req.body;
     console.log('req.body:', req.body);
     if (!tokenId) {
       return res.status(400).json({ error: 'Token ID requis' });
@@ -378,15 +550,23 @@ const signupWithGoogle = async (req, res, next) => {
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
-    console.log('user info:', user);
+    // console.log('user info:', user);
     if(user) return res.status(409).json({ error: 'Cet utilisateur existe déjà.' });
     if (!user) {
       // Crée un nouvel utilisateur si non existant
       const name = payload.name;
       const randomPassword = Math.random().toString(36).slice(-8);
-      const userId = await createUser({ 
-        name, email, password: randomPassword, acceptTerms, role: 'user', isActive: true, avatar_url: picture 
-      });
+      let userId = null;
+      if(accountType == 'business'){
+          role = 'manager';
+          userId = await createUser({ 
+          name, email, accountType, password: randomPassword, acceptTerms, role, isActive: true, avatar_url: picture 
+        });
+      }else{
+          userId = await createUser({ 
+          name, email, accountType, password: randomPassword, acceptTerms, role: 'user', isActive: true, avatar_url: picture 
+        });
+      }
       user = await getUserById(userId);
     }
 
@@ -632,5 +812,8 @@ module.exports = {
   refresh, logout, updatePassword,
   getMe, contactUs, forgotPassword, 
   checkCode, resetPassword, updateProfile, 
-  deleteProfile, getAllUsers, getUserInfo
+  deleteProfile, getAllUsers, getUserInfo,
+  getAllUsersLinkedToManager,
+  addUsersLinkedToManager,
+  updateUserStatus
 };

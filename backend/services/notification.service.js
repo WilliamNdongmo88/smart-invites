@@ -1524,7 +1524,7 @@ async function sendNewsUpdatesToUsers(user) {
   }
 }
 
-async function sendPaymentProofToAdminAboutChangePlan(user, fileBuffer) {
+async function sendPaymentProofToAdminAboutChangePlan(user, planName, fileBuffer) {
   try {
     const logo = await getLogoUrlFromFirebase('logo.png');
 
@@ -1571,8 +1571,9 @@ async function sendPaymentProofToAdminAboutChangePlan(user, fileBuffer) {
 
                       <p><strong>Utilisateur :</strong> ${user.name}</p>
                       <p><strong>Email :</strong> ${user.email}</p>
-                      <p><strong>Plan :</strong> ${user.plan}</p>
+                      <p><strong>Plan en cours :</strong> ${user.plan}</p>
 
+                      <p><strong>Nouveau plan souhaité : ${planName}</strong></p>
                       <p>
                         Une preuve de paiement est jointe à cet email.
                         Merci de vérifier et valider la demande.

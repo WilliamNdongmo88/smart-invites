@@ -36,6 +36,10 @@ router.get('/me', authenticateToken, AuthController.getMe );
 
 router.get('/users', authenticateToken, AuthController.getAllUsers );
 
+router.post('/add-user-linked-to-manager', authenticateToken, AuthController.addUsersLinkedToManager );
+
+router.get('/users-linked-to-manager/:managerId', authenticateToken, AuthController.getAllUsersLinkedToManager );
+
 router.post('/contact-us', AuthController.contactUs );
 
 /**
@@ -60,6 +64,7 @@ router.post('/register', AuthController.register);
 
 router.get('/user-info/:userId', AuthController.getUserInfo);
 
+router.put('/status', AuthController.updateUserStatus);
 router.put('/:userId', AuthController.updateProfile);
 
 /**
