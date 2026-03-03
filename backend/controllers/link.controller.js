@@ -38,7 +38,7 @@ const editLink = async (req, res, next) => {
 const getLinks = async (req, res, next) => {
     try {
         const links = await getAllLinks();
-        console.log('links ::', links);
+        // console.log('links ::', links);
         //if(links.length==0) return res.status(404).json({info: "Aucun lien trouvé."});
         return res.status(200).json(links);
     } catch (error) {

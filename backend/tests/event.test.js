@@ -16,7 +16,14 @@ describe("Events API", () => {
     });
 
     describe("Test", () => {
-        const userData = {email: "will@example.com", password: "Willfr123", role: "admin"};
+        const userData = {
+            name: "Will Smith",
+            email: "will@example.com",
+            accountType: "business",
+            password: "Will@fr123",
+            acceptTerms: true,
+            role: "admin"
+        };
         
         test("REGISTER USER", async () => {
             const res = await request(app).post('/api/auth/register').send(userData);

@@ -17,8 +17,11 @@ describe("Auth API", () => {
     describe("Auth API", () => {
 
         const userData = {
+            name: "Will Smith",
             email: "will@example.com",
+            accountType: "business",
             password: "Will@fr123",
+            acceptTerms: true,
             role: "admin"
         };
 

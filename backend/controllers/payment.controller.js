@@ -14,6 +14,7 @@ const addProofPaymentFile = async (req, res, next) => {
         console.log('### paymentFile:', paymentFile);
         const fileType = String(paymentFile.mimetype).split('/')[1];
         const userData = JSON.parse(req.body.userData);
+        console.log('### userData:', userData);
         
         const payment = await getPaymentProof(userData.userId);
         if (payment) {
@@ -34,7 +35,8 @@ const addProofPaymentFile = async (req, res, next) => {
             organizerId: userData.userId,
             fileUrl: fileUrl,
             fileType: fileType,
-            code: data.code
+            code: data.code,
+            planName: userData.selectedPlan.name,
         }
         // console.log('### datas:', datas);
 
@@ -50,7 +52,7 @@ const addProofPaymentFile = async (req, res, next) => {
             await planSchedule(scheduleId, newPayment.id, newPayment.created_at);
         }
         // Envoi mail
-        await sendPaymentProofToAdminAboutChangePlan(user, paymentFile.buffer);
+        await sendPaymentProofToAdminAboutChangePlan(user, userData.selectedPlan.name, paymentFile.buffer);
         res.status(200).json({
             message: 'Fichier uploadé avec succès sur Firebase !',
             fileUrl: fileUrl // Renvoyez l'URL publique au client
@@ -64,7 +66,7 @@ const addProofPaymentFile = async (req, res, next) => {
 const createPaymentService = async (data) => {
     try {
         // console.log('data :: ', data);
-        const payment = await createPaymentProof(data.organizerId, data.fileUrl, data.fileType, data.code);
+        const payment = await createPaymentProof(data.organizerId, data.planName, data.fileUrl, data.fileType, data.code);
         return payment;
     } catch (error) {
         console.error('createPaymentService ERROR:', error.message);
@@ -95,8 +97,8 @@ async function updatePaymentService(paymentFile, userData, payment) {
             code: file.code
         }
         // console.log('## data:', data);
-        await updatePaymentProof(payment.id, data.organizerId, data.fileUrl, data.fileType, data.code);
-        await sendPaymentProofToAdminAboutChangePlan(user, paymentFile.buffer);
+        await updatePaymentProof(payment.id, data.organizerId, userData.selectedPlan.name, data.fileUrl, data.fileType, data.code);
+        await sendPaymentProofToAdminAboutChangePlan(user, userData.selectedPlan.name, paymentFile.buffer);
         return dataReturn = {
             message: 'Preuve de payment mis à jour et fichier uploadé avec succès',
             fileUrl: data.url

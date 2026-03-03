@@ -7,8 +7,10 @@ const initUserModel = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS USERS (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      manager_id INT UNSIGNED,
       name VARCHAR(100),
       email VARCHAR(255) NOT NULL UNIQUE,
+      account_type VARCHAR(50) NOT NULL DEFAULT 'personal',
       password VARCHAR(255) NOT NULL,
       accept_terms BOOLEAN,
       role VARCHAR(50) DEFAULT 'user',
@@ -48,8 +50,8 @@ async function createDefaultAdmin() {
         const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
         const acceptTerms = 1; // Accepte les termes par défaut pour l'admin
         await pool.query(
-            "INSERT INTO USERS (name, email, password, accept_terms, role, plan) VALUES (?, ?, ?, ?, ?, ?)",
-            [process.env.ADMIN_NAME ,process.env.ADMIN_EMAIL, hashedPassword, acceptTerms, "admin", "professionnel"]
+            "INSERT INTO USERS (manager_id, name, email, account_type, password, accept_terms, role, plan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [null, process.env.ADMIN_NAME ,process.env.ADMIN_EMAIL, "business", hashedPassword, acceptTerms, "admin", "professionnel"]
         );
 
         console.log("---Default admin created successfully---");
@@ -58,11 +60,12 @@ async function createDefaultAdmin() {
     }
 }
 
-async function createUser({ name, email, password, acceptTerms, role = 'user', isActive = false, avatar_url = null }) {
+async function createUser({ managerId=null, name, email, accountType, password, acceptTerms, role = 'user', plan='gratuit', isActive = false, avatar_url = null }) {
+  // console.log('### Creating user with data:', { name, email, accountType, password, acceptTerms, role, isActive, avatar_url });
   const hashed = await bcrypt.hash(password, 10);
   const [result] = await pool.query(
-    `INSERT INTO USERS (name, email, password, accept_terms, role, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [name, email, hashed, acceptTerms, role, isActive, avatar_url]
+    `INSERT INTO USERS (manager_id, name, email, account_type, password, accept_terms, role, plan, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [managerId || null , name, email, accountType, hashed, acceptTerms, role, plan, isActive, avatar_url]
   );
   return result.insertId;
 }
@@ -91,12 +94,43 @@ async function getUsers() {
       ) AS total_guests,
       
       p.id AS paymentId,
+      p.plan_name AS planName,
       p.file_url AS fileUrl,
       p.created_at AS paymentCreatedAt
 
     FROM USERS u
     LEFT JOIN PAYMENTS p ON u.id = p.organizer_id
   `);//    ORDER BY u.id DESC
+
+  return users.length ? users : null;
+}
+
+async function getUsersLinkedToManager(managerId) {
+  const [users] = await pool.query(`
+    SELECT 
+      u.*,
+
+      (
+        SELECT COUNT(*)
+        FROM EVENTS e
+        WHERE e.organizer_id = u.id
+      ) AS total_eventsCreated,
+
+      (
+        SELECT COUNT(*)
+        FROM GUESTS g
+        JOIN EVENTS e ON e.id = g.event_id
+        WHERE e.organizer_id = u.id
+      ) AS total_guests,
+      
+      p.id AS paymentId,
+      p.file_url AS fileUrl,
+      p.created_at AS paymentCreatedAt
+
+    FROM USERS u
+    LEFT JOIN PAYMENTS p ON u.id = p.organizer_id
+    WHERE u.id = ? AND u.role = 'manager'
+  `, [managerId]);//    ORDER BY u.id DESC
 
   return users.length ? users : null;
 }
@@ -140,6 +174,10 @@ async function saveResetCode(userId, code) {
 async function updateUserPassword(email, newpassword) {
     const hashedPassword = await bcrypt.hash(newpassword, 10);
     await pool.query(`UPDATE USERS SET password = ? WHERE email = ?`, [hashedPassword, email]);
+}
+
+async function updateUserBlokedAccount(email, isBlocked) {
+    await pool.query(`UPDATE USERS SET is_blocked = ? WHERE email = ?`, [isBlocked, email]);
 }
 
 async function updateUserActiveAccount(email, isActive) {
@@ -200,9 +238,11 @@ module.exports = {
     saveResetCode,
     getUserByEmail,
     getUserById,
+    getUsersLinkedToManager,
     saveRefreshToken,
     updateUserPassword,
     clearRefreshToken,
     deleteAccount,
-    updateUserActiveAccount
+    updateUserActiveAccount,
+    updateUserBlokedAccount
 }

@@ -1524,7 +1524,7 @@ async function sendNewsUpdatesToUsers(user) {
   }
 }
 
-async function sendPaymentProofToAdminAboutChangePlan(user, fileBuffer) {
+async function sendPaymentProofToAdminAboutChangePlan(user, planName, fileBuffer) {
   try {
     const logo = await getLogoUrlFromFirebase('logo.png');
 
@@ -1571,8 +1571,9 @@ async function sendPaymentProofToAdminAboutChangePlan(user, fileBuffer) {
 
                       <p><strong>Utilisateur :</strong> ${user.name}</p>
                       <p><strong>Email :</strong> ${user.email}</p>
-                      <p><strong>Plan :</strong> ${user.plan}</p>
+                      <p><strong>Plan en cours :</strong> ${user.plan}</p>
 
+                      <p><strong>Nouveau plan souhaité : ${planName}</strong></p>
                       <p>
                         Une preuve de paiement est jointe à cet email.
                         Merci de vérifier et valider la demande.
@@ -1871,8 +1872,8 @@ async function sendMailToAdminFromPortfolio(name, email, message, subject) {
                   <tr>
                     <td style="background-color:#0f172a; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
                       © ${new Date().getFullYear()} WillPortfolio. Tous droits réservés.
-                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
-                        ${process.env.API_URL}
+                      <a href="https://will-portfolio-rosy.vercel.app" style="color:#ffffff; text-decoration:none;">
+                        https://will-portfolio.com
                       </a>
                     </td>
                   </tr>
