@@ -45,7 +45,6 @@ if (process.env.NODE_ENV !== 'test') {
   app.use("/api/invitation", apiLimiter);
 }
 
-// Notifications sans rate-limit
 app.use("/api/notification", noRateLimit);
 
 app.use(express.json());
