@@ -102,9 +102,9 @@ async function generateGuestQr(guestId, token, logoFileName = null) {
   }
 }
 
-async function generateAttendeeQr(attendeeId, logoFileName = "wedding-ring.webp") {
+async function generateAttendeeQr(attendeeId, token, logoFileName = null) {
   try {
-    const url = process.env.BASE_URL + "/api/invitation/view/" + attendeeId +':'+ 'token';
+    const url = process.env.BASE_URL + "/api/invitation/view/" + attendeeId +':'+ token;
     console.log('URL à encoder dans le QR code:', url);
 
     const qrBuffer = await QRCode.toBuffer(url, {
