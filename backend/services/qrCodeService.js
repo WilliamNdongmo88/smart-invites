@@ -110,7 +110,7 @@ async function generateAttendeeQr(attendeeId, logoFileName = "wedding-ring.webp"
     const qrBuffer = await QRCode.toBuffer(url, {
       errorCorrectionLevel: "H",
       width: 300,
-      color: { dark: "rgb(105, 224, 251)", light: "#ffffff" },
+      color: { dark: "#876c36ff", light: "#ffffff" },
     });
 
     let qrImage = sharp(qrBuffer);
