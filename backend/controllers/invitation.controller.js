@@ -98,7 +98,7 @@ const generateAttendeeQrCode = async (req, res, next) => {
         let token = uuidv4();
         const {logoFileName, attendeeId} = req.body;
         const qrCodeUrl = await generateAttendeeQr(attendeeId, token, logoFileName);
-        console.log('### qrCodeUrl: ', qrCodeUrl);
+        console.log('### qrCode_Url: ', qrCodeUrl);
     } catch (error) {
         console.error("Erreur génération :", err.message);
         next(err)
