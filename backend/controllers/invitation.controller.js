@@ -95,7 +95,8 @@ const genererInvitation = async (req, res, next) => {
 const generateAttendeeQrCode = async (req, res, next) => {
     try {
         console.log('###req.body: ', req.body);
-        //await generateAttendeeQr();
+        const {logoFileName, attendeeId} = req.body;
+        await generateAttendeeQr(logoFileName, attendeeId);
     } catch (error) {
         console.error("Erreur génération :", err.message);
         next(err)
