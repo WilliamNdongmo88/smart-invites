@@ -94,7 +94,7 @@ const genererInvitation = async (req, res, next) => {
 
 const generateAttendeeQrCode = async (req, res, next) => {
     try {
-        console.log('###req.body: ', req.body);
+        console.log('### body: ', req.body);
         let token = uuidv4();
         const {logoFileName, attendeeId} = req.body;
         const qrUrl = await generateAttendeeQr(attendeeId, token, logoFileName);
