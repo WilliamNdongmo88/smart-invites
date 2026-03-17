@@ -4,7 +4,7 @@ const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById, getEve
 const {createInvitation, getGuestInvitationById, 
     getGuestInvitationByToken, deleteGuestInvitation,
     getUserRoleByToken} = require('../models/invitations');
-const { generateGuestQr, getLogoUrlFromFirebase } = require("../services/qrCodeService");
+const { generateGuestQr, getLogoUrlFromFirebase, generateAttendeeQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {deleteGuestFiles} = require('../services/invitation.service');
 const {sendGuestEmail} = require('../services/notification.service');
@@ -91,6 +91,16 @@ const genererInvitation = async (req, res, next) => {
     next(err)
   }
 };
+
+const generateAttendeeQrCode = async (req, res, next) => {
+    try {
+        console.log('###req.body: ', req.body);
+        //await generateAttendeeQr();
+    } catch (error) {
+        console.error("Erreur génération :", err.message);
+        next(err)
+    }
+}
 
 const viewInvitation = async (req, res, next) => {
     try {
@@ -239,5 +249,5 @@ const deleteInvitation = async (req, res, next) => {
 }
 
 module.exports = {genererInvitation, genererSeveralInvitations, viewInvitation, viewQrCode, 
-                    rsvpGuestStatus, deleteInvitation, downloadQRCode,
+                    rsvpGuestStatus, deleteInvitation, downloadQRCode, generateAttendeeQrCode
                 };

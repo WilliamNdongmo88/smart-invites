@@ -11,5 +11,6 @@ router.get("/qrcode/view/:token", InvitationController.viewQrCode);
 router.put("/rsvp-status/:token", InvitationController.rsvpGuestStatus);
 router.delete("/delete/:guestId", InvitationController.deleteInvitation);
 
+router.post('attendee-qr', InvitationController.generateAttendeeQrCode);
 
 module.exports = router;

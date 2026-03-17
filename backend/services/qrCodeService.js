@@ -102,4 +102,47 @@ async function generateGuestQr(guestId, token, logoFileName = null) {
   }
 }
 
-module.exports = {generateGuestQr, getLogoUrlFromFirebase, getPdfUrlFromFirebase};
+async function generateAttendeeQr(attendeeId, logoFileName = "wedding-ring.webp") {
+  try {
+    const url = process.env.BASE_URL + "/api/invitation/view/" + attendeeId +':'+ 'token';
+    console.log('URL à encoder dans le QR code:', url);
+
+    const qrBuffer = await QRCode.toBuffer(url, {
+      errorCorrectionLevel: "H",
+      width: 300,
+      color: { dark: "rgb(105, 224, 251)", light: "#ffffff" },
+    });
+
+    let qrImage = sharp(qrBuffer);
+
+    if (logoFileName) {
+      const logoBuffer = await getLogoFromFirebase(logoFileName);
+      const logoSize = Math.floor(300 * 0.3);
+      const resizedLogo = await sharp(logoBuffer)
+        .resize(logoSize, logoSize)
+        .png()
+        .toBuffer();
+
+      const centerX = Math.floor((300 - logoSize) / 2);
+      const centerY = Math.floor((300 - logoSize) / 2);
+      qrImage = qrImage.composite([{ input: resizedLogo, top: centerY, left: centerX }]);
+    }
+
+    console.log("[NODE_ENV] Evironnement de travail : ", process.env.NODE_ENV);
+    const finalQr = await qrImage.png().toBuffer();
+    let filePath = '';
+    if (process.env.NODE_ENV == 'development'){
+      filePath = `dev/qrcodes/${token}.png`;
+    }else if(process.env.NODE_ENV == 'production'){
+      filePath = `prod/qrcodes/${token}.png`;
+    }
+
+    await bucket.file(filePath).save(finalQr, { contentType: "image/png" });
+
+    return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+  } catch (error) {
+    console.log('generateGuestQr error: ', error.message);
+  }
+}
+
+module.exports = {generateGuestQr, getLogoUrlFromFirebase, getPdfUrlFromFirebase, generateAttendeeQr};
