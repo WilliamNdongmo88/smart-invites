@@ -110,7 +110,7 @@ async function generateAttendeeQr(attendeeId, token, logoFileName = null) {
     const qrBuffer = await QRCode.toBuffer(url, {
       errorCorrectionLevel: "H",
       width: 300,
-      color: { dark: "#876c36ff", light: "#ffffff" },
+      color: { dark: "#0d9dda", light: "#ffffff" },
     });
 
     let qrImage = sharp(qrBuffer);
