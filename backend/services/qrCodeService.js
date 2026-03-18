@@ -134,7 +134,7 @@ async function generateAttendeeQr(attendeeId, token, logoFileName = null) {
     if (process.env.NODE_ENV == 'development'){
       filePath = `dev/qrcodes/${token}.png`;
     }else if(process.env.NODE_ENV == 'production'){
-      filePath = `prod/qrcodes/${token}.png`;
+      filePath = `prod/sf-qrCode/${token}.png`;
     }
 
     await bucket.file(filePath).save(finalQr, { contentType: "image/png" });
