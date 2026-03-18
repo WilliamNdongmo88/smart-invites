@@ -104,10 +104,10 @@ async function generateGuestQr(guestId, token, logoFileName = null) {
 
 async function generateAttendeeQr(attendeeId, token, logoFileName = null) {
   try {
-    const url = process.env.BASE_URL + "/api/invitation/view/" + attendeeId +':'+ token;
-    console.log('URL à encoder dans le QR code:', url);
+    const sfUrl = `https://wise-fox-n41nm9-dev-ed--c.trailblaze.vf.force.com/apex/AttendeeDetails?id=${attendeeId}`;
+    console.log('URL à encoder dans le QR code:', sfUrl);
 
-    const qrBuffer = await QRCode.toBuffer(url, {
+    const qrBuffer = await QRCode.toBuffer(sfUrl, {
       errorCorrectionLevel: "H",
       width: 300,
       color: { dark: "#0d9dda", light: "#ffffff" },
