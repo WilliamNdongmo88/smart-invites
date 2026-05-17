@@ -52,28 +52,46 @@ function signRefreshToken(payload) {
 const getMe = async (req, res, next) => {
   try {
     const user = await getUserByFk(req.user.id);
-    if(!user) return res.json({message: "Utilisateur non trouvé"})
+
+    if (!user) {
+      return res.json({ message: "Utilisateur non trouvé" });
+    }
+
     return res.json({
-      id: user.id, 
-      name: user.name, 
-      email: user.email, 
-      role: user.role, 
-      phone: user.phone, 
-      bio: user.bio, 
+      id: user.id,
+      manager_id: user.manager_id,
+      name: user.name,
+      email: user.email,
+      account_type: user.account_type,
+      accept_terms: user.accept_terms,
+      role: user.role,
+      phone: user.phone,
+      bio: user.bio,
+      plan: user.plan,
+      is_blocked: user.is_blocked,
       avatar_url: user.avatar_url,
+
+      // Notifications
       email_notifications: user.email_notifications,
       attendance_notifications: user.attendance_notifications,
       thank_notifications: user.thank_notifications,
       event_reminders: user.event_reminders,
       marketing_emails: user.marketing_emails,
+
+      // Sécurité / Auth
+      is_active: user.is_active,
+
+      // Dates
       created_at: user.created_at,
+      updated_at: user.updated_at,
       last_login_at: user.last_login_at
     });
+
   } catch (error) {
-    console.error('GET ME ERROR:', error.message);
+    console.error("GET ME ERROR:", error.message);
     next(error);
   }
-}
+};
 
 const getUserInfo = async (req, res, next) => {
   try {
@@ -270,7 +288,7 @@ const addUsersLinkedToManager = async (req, res, next) => {
     const { managerId, name, email, acceptTerms } = req.body;
     const manager = await getUserById(managerId);
     console.log('manager plan:', manager.plan);
-    if(manager.plan != 'Entreprise') return res.status(400).json({ error: 'Vous devez souscrire au plan entreprise avant.' });
+    if(manager.plan != 'entreprise') return res.status(400).json({ error: "Vous devez souscrire au plan entreprise avant d'ajouter un utilisateur." });
     if (!email) return res.status(400).json({ error: 'Email requis' });
 
     const existing = await getUserByEmail(email);
@@ -336,8 +354,8 @@ const updateProfile = async (req, res, next) => {
             email_notifications, attendance_notifications,
             thank_notifications, event_reminders,
             marketing_emails } = req.body;
-        const existing = await getUserByEmail(email);
-        if(existing) return res.status(409).json({ error: 'Cet utilisateur existe déjà.' });
+        // const existing = await getUserByEmail(email);
+        // if(existing) return res.status(409).json({ error: 'Cet utilisateur existe déjà.' });
         const user = await getUserByFk(req.params.userId);
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
         const updatedUser = {

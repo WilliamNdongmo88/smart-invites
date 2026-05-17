@@ -21,6 +21,7 @@ const initInvitationModel = async () => {
 };
 
 async function createInvitation(guestId, token, qrCodeUrl) {
+    console.log({ guestId, token, qrCodeUrl });
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
 

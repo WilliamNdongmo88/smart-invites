@@ -645,6 +645,12 @@ async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
                           <p>
                             Nous vous informons que l'invité <strong>${guest.full_name}</strong> ${reponse} votre invitation.
                           </p>
+
+                          <p>
+                            <span class="info-icon">ℹ️</span>
+                            N'oubliez pas de mettre à jour les informations de cet invité avec son numéro de table.
+                          </p>
+                          
                           <p>
                             Vous pouvez consulter les détails dans votre espace organisateur.  
                           </p>

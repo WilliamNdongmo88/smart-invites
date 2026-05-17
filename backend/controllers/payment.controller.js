@@ -38,10 +38,8 @@ const addProofPaymentFile = async (req, res, next) => {
             code: data.code,
             planName: userData.selectedPlan.name,
         }
-        // console.log('### datas:', datas);
 
         const newPayment = await createPaymentService(datas);
-        //console.log('newPayment:', newPayment);
         const existingSchedule = await getEventScheduleByEventId(newPayment.id);
         if (existingSchedule) {
             console.log(`Schedule déjà existant pour payment ${newPayment.id}`);
@@ -65,7 +63,6 @@ const addProofPaymentFile = async (req, res, next) => {
 
 const createPaymentService = async (data) => {
     try {
-        // console.log('data :: ', data);
         const payment = await createPaymentProof(data.organizerId, data.planName, data.fileUrl, data.fileType, data.code);
         return payment;
     } catch (error) {
@@ -75,15 +72,12 @@ const createPaymentService = async (data) => {
 
 async function updatePaymentService(paymentFile, userData, payment) {
     try {
-        //console.log('paymentFile: ', paymentFile);
         const user = await getUserById(userData.userId);
         if (!user) return res.status(409).json({ error: "Organizer not found with ID: " + userData.userId });
 
         // 2. Suppression ancien PDF
         const path = `proof_user_${user.id}_${payment.code}.${payment.file_type}`;
-        console.log('[path]:', path);
         const resDel = await deleteInvitationFiles(path, true);
-        // console.log('resDel:', resDel);
 
         // 3. Upload nouveau PDF
         if(!resDel.success) return res.status(500).json({error: "Erreur lors de la suppression du fichier"});
@@ -96,7 +90,6 @@ async function updatePaymentService(paymentFile, userData, payment) {
             fileType: fileType,
             code: file.code
         }
-        // console.log('## data:', data);
         await updatePaymentProof(payment.id, data.organizerId, userData.selectedPlan.name, data.fileUrl, data.fileType, data.code);
         await sendPaymentProofToAdminAboutChangePlan(user, userData.selectedPlan.name, paymentFile.buffer);
         return dataReturn = {
@@ -110,7 +103,7 @@ async function updatePaymentService(paymentFile, userData, payment) {
 
 async function changeUserPlan(req, res, next) {
     try {
-        const {plan} = req.body;
+        const plan = req.body.plan.toLowerCase();
         const user = await getUserById(req.params.userId);
         if (!user) return res.status(409).json({ error: "Organizer not found with ID: " + userData.userId });
         const payment = await getPaymentProof(user.id);
@@ -119,7 +112,6 @@ async function changeUserPlan(req, res, next) {
         if(plan == 'gratuit'){
             // Suppression du fichier dans fire-base
             const path = `proof_user_${user.id}_${payment.code}.${payment.file_type}`;
-            console.log('[path]:', path);
             const resDel = await deleteInvitationFiles(path, true);
             if(resDel) await deletePayment(payment.id);
         }
@@ -186,7 +178,6 @@ async function loadChangeUserPlan(paymentId, scheduleId) {
         const userUpdated = await updateUserPlan(payment.organizer_id, 'gratuit');
         // Suppression du fichier dans fire-base
             const path = `proof_user_${payment.organizer_id}_${payment.code}.${payment.file_type}`;
-            console.log('[path]:', path);
             const resDel = await deleteInvitationFiles(path, true);
             if(resDel) await deletePayment(payment.id);
             await deleteEventSchedule(scheduleId);

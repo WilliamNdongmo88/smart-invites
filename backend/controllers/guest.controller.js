@@ -108,8 +108,10 @@ const addGuestFromLink = async (req, res, next) => {
             dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName, token} = req.body;
         
         const user = await getUserByEvtId(req.body.eventId);
-        console.log('user:', user);
-        if(user.plan == 'gratuit' && user.total_guests <= 50 ){
+        // console.log('user:', user);
+        // console.log('user plan:', user.plan);
+        // console.log('Total guests:', user.total_guests);
+        if(user.plan == 'gratuit' && user.total_guests <= 49 ){
             const link = await getLinkByToken(token);
             console.log('link :: ', link);
 
