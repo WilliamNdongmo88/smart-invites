@@ -1,20 +1,29 @@
-# Étape 1 : image de base
-FROM node:20-alpine
+FROM node:20
 
-# Étape 2 : création du répertoire de travail
 WORKDIR /usr/src/app
 
-# Étape 3 : copier les fichiers de config
 COPY package*.json ./
 
-# Étape 4 : installer les dépendances
 RUN npm install --production
 
-# Étape 5 : copier le reste du code
+# Installation Chromium + dépendances
+RUN apt-get update && apt-get install -y \
+    chromium \
+    fonts-liberation \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libnss3 \
+    libxss1 \
+    xdg-utils \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 
-# Étape 6 : exposer le port
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV CHROME_BIN=/usr/bin/chromium
+
 EXPOSE 3000
 
-# Étape 7 : lancer le serveur
 CMD ["node", "backend/server.js"]

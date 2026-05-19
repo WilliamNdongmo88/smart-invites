@@ -21,83 +21,101 @@ const { getLinkByToken, updateLink } = require('../models/links');
 const { v4: uuidv4 } = require('uuid');
 const { getEventInvitNote } = require('../models/event_invitation_notes');
 const { getAllUsers } = require('./feedback.controller');
+const { whatsappInvitationToGuest, sendFileQRCodeWhatsapp } = require('../services/whatsapp.service');
 
 const addGuest = async (req, res, next) => {
     try {
-        let guestDatas = req.body;
-        const user = await getUserByEvtId(req.body[0].eventId);
-        console.log('User:', user);
-        if(guestDatas.length > user.max_guests) return res.status(402).json({
-            error: "PAYMENT_REQUIRED",
-            message: "Veuillez changer de plan pour ajouter plus d'invités"
-          });
-        if(user.plan == 'gratuit' && user.total_guests < user.max_guests ){
-            if (!Array.isArray(req.body) || req.body.length === 0) {
-                return res.status(400).json({ error: "La liste ne doit pas être vide" });
-            }
-            console.log('guestDatas :: ', guestDatas);
-            let returnDatas = [];
-            for (const guest of guestDatas) {
-                const { eventId, fullName, email, phoneNumber, rsvpStatus, 
-                    guesthasPlusOneAutoriseByAdmin} = guest;
-                //console.log('guest :: ', guest);
-                const event = await getEventById(eventId);
-                //console.log('event :: ', event);
-                if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
-                const user = await getUserByEventId(event.id);
 
-                //Permettre aux organisateurs d'event de créer des invités avec leur email(user.email);
-                const result = await getGuestEmailRelatedToEvent(email, event.id);
-                if (result && user.email != result.email) {
-                    return res.status(409).json({
-                        error: `L'invité ${email} existe déjà`
-                    });
-                }
-                const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
-                                                rsvpStatus, guesthasPlusOneAutoriseByAdmin);
-                returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
-                                rsvpStatus, guesthasPlusOneAutoriseByAdmin});
-            }
-            return res.status(201).json(returnDatas);
-        }else if(user.plan == 'professionnel'){
-            if (!Array.isArray(req.body) || req.body.length === 0) {
-                return res.status(400).json({ error: "La liste ne doit pas être vide" });
-            }
-            let guestDatas = req.body;
-            console.log('guestDatas :: ', guestDatas);
-            let returnDatas = [];
-            for (const guest of guestDatas) {
-                const { eventId, fullName, email, phoneNumber, rsvpStatus, 
-                    guesthasPlusOneAutoriseByAdmin} = guest;
-                //console.log('guest :: ', guest);
-                const event = await getEventById(eventId);
-                //console.log('event :: ', event);
-                if(!event) return res.status(401).json({error: `Evénement avec l'id ${event.id} non trouvé!`});
-                const user = await getUserByEventId(event.id);
-
-                //Permettre aux organisateurs d'event de créer des invités avec leur email(user.email);
-                const result = await getGuestEmailRelatedToEvent(email, event.id);
-                if (result && user.email != result.email) {
-                    return res.status(409).json({
-                        error: `L'invité ${email} existe déjà`
-                    });
-                }
-                const guestId = await createGuest(eventId, fullName, email, phoneNumber, 
-                                                rsvpStatus, guesthasPlusOneAutoriseByAdmin);
-                returnDatas.push({id: guestId, eventId, fullName, email, phoneNumber, 
-                                rsvpStatus, guesthasPlusOneAutoriseByAdmin});
-            }
-            return res.status(201).json(returnDatas);
-        }else{
-          return res.status(402).json({
-            error: "PAYMENT_REQUIRED",
-            message: "Veuillez changer de plan pour ajouter plus d'invités"
-          });
+        if (!Array.isArray(req.body) || req.body.length === 0) {
+            return res.status(400).json({
+                error: "La liste ne doit pas être vide"
+            });
         }
+
+        const guestDatas = req.body;
+
+        const user = await getUserByEvtId(req.body[0].eventId);
+
+        // Nombre actuel d'invités
+        const existingGuestsCount = Number(user.total_guests || 0);
+
+        // Nombre après ajout
+        const totalGuests = existingGuestsCount + guestDatas.length;
+
+        console.log('existingGuestsCount:', existingGuestsCount);
+        console.log('newGuests:', guestDatas.length);
+        console.log('totalGuests:', totalGuests);
+        console.log('max_guests:', user.max_guests);
+
+        // Vérification limite
+        if (user.plan === 'gratuit' && totalGuests > Number(user.max_guests)
+        ) {
+            return res.status(403).json({
+                error: "PLAN_LIMIT_REACHED",
+                message: `Votre plan est limité à ${user.max_guests} invités`
+            });
+        }
+
+        let returnDatas = [];
+
+        for (const guest of guestDatas) {
+
+            const {
+                eventId,
+                fullName,
+                email,
+                phoneNumber,
+                rsvpStatus,
+                guesthasPlusOneAutoriseByAdmin
+            } = guest;
+
+            const event = await getEventById(eventId);
+
+            if (!event) {
+                return res.status(404).json({
+                    error: `Evénement avec l'id ${eventId} non trouvé`
+                });
+            }
+
+            const eventUser = await getUserByEventId(event.id);
+
+            const result = await getGuestEmailRelatedToEvent(email, event.id);
+
+            if (result && eventUser.email !== result.email) {
+                return res.status(409).json({
+                    error: `L'invité ${email} existe déjà`
+                });
+            }
+
+            const guestId = await createGuest(
+                eventId,
+                fullName,
+                email,
+                phoneNumber,
+                rsvpStatus,
+                guesthasPlusOneAutoriseByAdmin
+            );
+
+            returnDatas.push({
+                id: guestId,
+                eventId,
+                fullName,
+                email,
+                phoneNumber,
+                rsvpStatus,
+                guesthasPlusOneAutoriseByAdmin
+            });
+        }
+
+        return res.status(201).json(returnDatas);
+
     } catch (error) {
-        console.error('CREATE GUEST ERROR:', error.message);
-        //next(error);
-        return res.status(500).json({message: 'Le fichier des invités est vide ou invalide'} );
+
+        console.error('CREATE GUEST ERROR:', error);
+
+        return res.status(500).json({
+            message: 'Le fichier des invités est vide ou invalide'
+        });
     }
 };
 
@@ -111,7 +129,7 @@ const addGuestFromLink = async (req, res, next) => {
         // console.log('user:', user);
         // console.log('user plan:', user.plan);
         // console.log('Total guests:', user.total_guests);
-        if(user.plan == 'gratuit' && user.total_guests <= 49 ){
+        if(user.plan == 'gratuit' && user.total_guests <= 50 ){
             const link = await getLinkByToken(token);
             console.log('link :: ', link);
 
@@ -166,8 +184,10 @@ const addGuestFromLink = async (req, res, next) => {
                 if(!card.has_invitation_model_card){
                     buffer = await generateGuestPdf(guest, card, plusOneName);
                     await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
+                    await whatsappInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
                 }else{
                     await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
+                    await whatsappInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
                 }
                 await createNotification(
                     event[0].eventId,
@@ -203,7 +223,7 @@ const addGuestFromLink = async (req, res, next) => {
             const updated = await updateLink(link.id, link.used_count, link.type, link.limit_count, link.date_limit_link);
             console.log('updated :: ', updated);
             return res.status(201).json({success: "Invité ajouter avec succès"});
-        }else if(user.plan == 'professionnel'){
+        }else if(user.plan == 'professionnel' || user.plan == 'entreprise'){
             const link = await getLinkByToken(token);
             console.log('link :: ', link);
 
@@ -258,8 +278,10 @@ const addGuestFromLink = async (req, res, next) => {
                 if(!card.has_invitation_model_card){
                     buffer = await generateGuestPdf(guest, card, plusOneName);
                     await sendInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
+                    await whatsappInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
                 }else{
                     await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
+                    await whatsappInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
                 }
                 await createNotification(
                     event[0].eventId,
@@ -429,8 +451,10 @@ const updateGuest = async (req, res, next) => {
                     if(!card.has_invitation_model_card){
                         buffer = await generateGuestPdf(invite, card);
                         await sendInvitationToGuest(invite, invitation[0].qr_code_url, buffer);
+                        await whatsappInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
                     }else{
                         await sendInvitationToGuest(guest, invitation[0].qr_code_url, null);
+                        await whatsappInvitationToGuest(guest, invitation[0].qr_code_url, buffer);
                     }
                     const organizer = await getUserById(event[0].organizerId);
                     await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
@@ -492,7 +516,9 @@ const updateGuest = async (req, res, next) => {
                         buffer = await generateGuestPdf(guest, card, plusOneName);
                         await uploadPdfToFirebase(guest, buffer);
                         await sendInvitationToGuest(guest, guest.qrCodeUrl, buffer);
+                        await whatsappInvitationToGuest(guest, guest.qrCodeUrl, buffer);
                     }else{
+                        await whatsappInvitationToGuest(guest, guest.qrCodeUrl, buffer);
                         await sendInvitationToGuest(guest, guest.qrCodeUrl, null);
                     }
                     isValid = true;
@@ -608,6 +634,8 @@ const sendFileQRCode = async (req, res, next) => {
         const event = await getGuestAndInvitationRelatedById(req.params.guestId);
         const guest = event;
         await sendFileQRCodeMail(guest, guest.qrCodeUrl);
+        const bool = await sendFileQRCodeWhatsapp(guest, guest.qrCodeUrl);
+        if(bool){}
         return res.status(200).json({success: "Fichier Qr-Code envoyé avec success!"})
     } catch (error) {
         next(error)

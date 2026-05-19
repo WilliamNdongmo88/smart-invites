@@ -13,6 +13,7 @@ const { generatePresentGuestsPdf, generateDualGuestListPdf, uploadPdfToFirebase 
 const schedule = require('node-schedule');
 const { getGuestByInvitationId } = require('../models/invitations');
 const { sendPdfByEmail } = require('../services/notification.service');
+const { sendPdfByWhatsapp } = require('../services/whatsapp.service');
 const { sendScheduledThankMessage } = require('./checkin.controller');
 const { getEventScheduleByEventId, createEventSchedule, updateEventSchedule, deleteEventSchedule } = require('../models/event_schedules');
 const { creatEventInvitNote, getEventInvitNote, updateEventInvitNote } = require("../models/event_invitation_notes");
@@ -583,6 +584,7 @@ const getAllEvents = async (req, res, next) => {
         for (const elt of results) {
             const data = {
                 name: elt.name,
+                phone: elt.phone,
                 plusOneName: elt.plusOneName,
                 rsvpStatus: elt.rsvpStatus,
                 updatedAt: elt.updatedAt.toISOString().split('T')[0],
@@ -593,6 +595,7 @@ const getAllEvents = async (req, res, next) => {
         const pdfBuffer = await generateDualGuestListPdf(guestPresentList, guestConfirmedList, data);
         //console.log("pdfBuffer:: ", pdfBuffer);
         await sendPdfByEmail(data, pdfBuffer);
+        await sendPdfByWhatsapp(data, pdfBuffer);
     } catch (error) {
         console.log('[sendScheduledReport] error:', error);
     }

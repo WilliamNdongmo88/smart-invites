@@ -94,6 +94,7 @@ async function getGuestByEventIdAndConfirmedRsvp(eventId) {
         SELECT
             g.id AS guestId,
             g.full_name AS name,
+            g.phone_number AS phone,
             g.plus_one_name AS plusOneName,
             g.rsvp_status AS rsvpStatus,
             g.updated_at AS updatedAt,

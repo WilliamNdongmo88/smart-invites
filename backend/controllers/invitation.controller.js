@@ -8,6 +8,7 @@ const { generateGuestQr, getLogoUrlFromFirebase, generateAttendeeQr } = require(
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {deleteGuestFiles} = require('../services/invitation.service');
 const {sendGuestEmail} = require('../services/notification.service');
+const {sendGuestWhatsapp} = require('../services/whatsapp.service');
 const { update_guest } = require('../models/guests');
 const { bucket } = require('../config/firebaseConfig');
 const { getEventById } = require('../models/events');
@@ -40,6 +41,7 @@ const genererSeveralInvitations = async (req, res, next) => {
         }
         try {
             await sendGuestEmail(guest, guest_event_related[0], token);
+            await sendGuestWhatsapp(guest, guest_event_related[0], token);
         } catch (error) {
             console.error("SEND EMAIL ERROR:", error.message);
             next(error);
@@ -56,15 +58,16 @@ const genererSeveralInvitations = async (req, res, next) => {
 
 const genererInvitation = async (req, res, next) => {
   try {
-    const guest = await getGuestById(req.params.guestId);
+    const guestId = Number(req.params.guestId);
+    const guest = await getGuestById(guestId);
     if (!guest) return res.status(404).json({ error: "Invité introuvable" });
-    const guest_event_related = await getGuestAndEventRelatedById(req.params.guestId);
+    const guest_event_related = await getGuestAndEventRelatedById(guestId);
     //console.log('guest_event_related:', guest_event_related[0].event_title);
     if (!guest_event_related[0].event_title) return res.status(404).json({ error: "Donnée introuvable" });
-    const invitations = await getGuestInvitationById(req.params.guestId);
+    const invitations = await getGuestInvitationById(guestId);
     if (invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
     
-    let token =req.params.guestId +':'+ uuidv4();
+    let token =guestId +':'+ uuidv4();
     const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
     const event = await getEventByGuestId(guest.id);
     const card = await getEventInvitNote(event[0].eventId);
@@ -79,11 +82,12 @@ const genererInvitation = async (req, res, next) => {
     }
     try {
         await sendGuestEmail(guest, guest_event_related[0], token);
+        await sendGuestWhatsapp(guest, guest_event_related[0], token);
     } catch (error) {
         console.error("SEND EMAIL ERROR:", error.message);
         next(error);
     }
-    await createInvitation(req.params.guestId, token, qrUrl);
+    await createInvitation(guestId, token, qrUrl);
 
     return res.json({ message: "QR code et PDF générés", qrUrl, pdfUrl });
   } catch (err) {
