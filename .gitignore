@@ -3,10 +3,5 @@ dist/
 .env
 .env.test
 backend/config/serviceAccountKey.json
-<<<<<<< HEAD
-.wwebjs_cache/
-.wwebjs_auth/
-=======
 .wwebjs_auth/
 .wwebjs_cache/
->>>>>>> rewritecode
