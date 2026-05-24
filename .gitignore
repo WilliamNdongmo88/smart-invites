@@ -3,4 +3,5 @@ dist/
 .env
 .env.test
 backend/config/serviceAccountKey.json
-.wwebjs_auth
+.wwebjs_auth/
+.wwebjs_cache/
