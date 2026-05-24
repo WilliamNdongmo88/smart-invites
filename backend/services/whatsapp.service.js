@@ -18,7 +18,7 @@ const client = new Client({
 
     puppeteer: {
 
-        headless: process.env.HEADLESS === 'true',
+        headless: process.env.NODE_ENV === 'production' ? true : false,
 
         executablePath: process.env.NODE_ENV === 'production'
             ? '/usr/bin/chromium'

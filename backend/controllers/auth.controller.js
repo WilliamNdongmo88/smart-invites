@@ -66,6 +66,7 @@ const getMe = async (req, res, next) => {
       accept_terms: user.accept_terms,
       role: user.role,
       phone: user.phone,
+      notification_mode: user.notification_mode,
       bio: user.bio,
       plan: user.plan,
       is_blocked: user.is_blocked,
@@ -350,10 +351,11 @@ const updateUserStatus = async (req, res, next) => {
 const updateProfile = async (req, res, next) => {
     try {
       console.log('-----> Update Profile Request Body:', req.body);
-        const { name, email, phone, bio, avatar_url,
-            email_notifications, attendance_notifications,
-            thank_notifications, event_reminders,
-            marketing_emails } = req.body;
+        const { name, email, phone, notificationMode, bio, avatar_url,
+                email_notifications, attendance_notifications,
+                thank_notifications, event_reminders,
+                marketing_emails 
+        } = req.body;
         // const existing = await getUserByEmail(email);
         // if(existing) return res.status(409).json({ error: 'Cet utilisateur existe déjà.' });
         const user = await getUserByFk(req.params.userId);
@@ -362,6 +364,7 @@ const updateProfile = async (req, res, next) => {
             name: name || user.name,
             email: email || user.email,
             phone: phone || user.phone,
+            notification_mode: notificationMode || user.notification_mode,
             bio: bio || user.bio,
             avatar_url: avatar_url || user.avatar_url,
             email_notifications: email_notifications !== undefined ? email_notifications : user.email_notifications,
