@@ -195,13 +195,14 @@ async function clearRefreshToken(userId) {
 
 async function updateUser(userId, updatedUser) {
     const [result] = await pool.query(`
-      UPDATE USERS SET name=?, email=?, phone=?, bio=?, avatar_url=?, 
+      UPDATE USERS SET name=?, email=?, phone=?, notification_mode=?, bio=?, avatar_url=?, 
       email_notifications=?, attendance_notifications=?, thank_notifications=?, event_reminders=?, marketing_emails=?
       WHERE id=?
   `, [  
       updatedUser.name,
       updatedUser.email,
       updatedUser.phone,
+      updatedUser.notification_mode,
       updatedUser.bio,  
       updatedUser.avatar_url,
       updatedUser.email_notifications,  
