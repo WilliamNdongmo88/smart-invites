@@ -228,7 +228,7 @@ const getAllEvents = async (req, res, next) => {
     try {
         const organizerEvent = await getEventsByOrganizerId(req.params.organizerId);
         if(organizerEvent.length == 0) return res.status(404).json({ error: 'Aucun Evénement trouvé' });
-        console.log('organizerEvent:', organizerEvent);
+        //console.log('organizerEvent:', organizerEvent);
         return res.status(200).json({ events: organizerEvent });
     } catch (error) {
         console.error('GET EVENT BY OrganizerID ERROR:', error.message);
@@ -563,7 +563,7 @@ const getAllEvents = async (req, res, next) => {
                 break
             }
         }
-        console.log('Event data:', data);
+        //console.log('Event data:', data);
         for (const data of checkins) {
             if(data.event_id==eventId){
                 const timer1 = data.checkin_time.toISOString().split('T')[1]
@@ -585,6 +585,7 @@ const getAllEvents = async (req, res, next) => {
             const data = {
                 name: elt.name,
                 phone: elt.phone,
+                notificationMode: elt.notificationMode,
                 plusOneName: elt.plusOneName,
                 rsvpStatus: elt.rsvpStatus,
                 updatedAt: elt.updatedAt.toISOString().split('T')[0],
@@ -594,8 +595,8 @@ const getAllEvents = async (req, res, next) => {
         //console.log("guestConfirmedList:: ", guestConfirmedList);
         const pdfBuffer = await generateDualGuestListPdf(guestPresentList, guestConfirmedList, data);
         //console.log("pdfBuffer:: ", pdfBuffer);
-        await sendPdfByEmail(data, pdfBuffer);
-        await sendPdfByWhatsapp(data, pdfBuffer);
+        if(data.notificationMode === 'email') await sendPdfByEmail(data, pdfBuffer);
+        if(data.notificationMode === 'whatsapp') await sendPdfByWhatsapp(data, pdfBuffer);
     } catch (error) {
         console.log('[sendScheduledReport] error:', error);
     }

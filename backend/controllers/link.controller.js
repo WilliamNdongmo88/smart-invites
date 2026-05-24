@@ -50,15 +50,15 @@ const getLinks = async (req, res, next) => {
 const getUserRole = async (req, res, next) => {
     try {
       let msg = '';
-        // console.log('[getUserRole] token:', req.params.token);
         const user = await getUserRoleByToken(req.params.token);
+        if(user==null) return;// Null parce que le token n'est pas lié à la table LINKS, il est lié à une table INVITATIONS.
         console.log('[getUserRole] result:', user);
         if(process.env.NODE_ENV !== 'test') {
           if(!user.organizerEmail) {
             return res.status(401).json({ error: 'Utilisateur non trouvé' });
           }
           const maintenanceMode = await getMaintenanceById(1);
-          console.log('maintenanceMode ::', maintenanceMode);
+          //console.log('maintenanceMode ::', maintenanceMode);
           if (user.organizerRole == 'user' && maintenanceMode && maintenanceMode.status === 'enabled') {
             console.log('Service en maintenance pour l\'utilisateur.');
             msg = 'Le service est en maintenance.';

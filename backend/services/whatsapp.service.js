@@ -1,6 +1,8 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const axios = require('axios');
+const { handleRsvp } = require('./whatsapp-rsvp.service');
+const { getGuestInvitationById, updateInvitationByChatId } = require('../models/invitations');
 
 let isReady = false;
 
@@ -53,8 +55,7 @@ client.on('ready', () => {
 });
 
 client.on('loading_screen', (percent, message) => {
-
-    console.log('Chargement :', percent, message);
+    console.log('⏳ Chargement :', percent, message);
 });
 
 client.on('disconnected', async (reason) => {
@@ -84,8 +85,19 @@ client.on('auth_failure', (msg) => {
     isReady = false;
 });
 
+/**
+ * RSVP listener
+ */
+client.on( 'message', (message) => handleRsvp(client, message) );
+
+/**
+ * Initialisation
+ */
 client.initialize();
 
+/**
+ * Contenu des fonctions d'envoi WhatsApp
+ */
 const sendMessage = async (numero, message) => {
 
     if (!isReady) {
@@ -108,16 +120,12 @@ const sendMessage = async (numero, message) => {
     }
 };
 
-const sendGuestWhatsapp = async (
-    guest,
-    event,
-    token
-) => {
-
+//sendGuestEmail
+const sendGuestWhatsapp = async ( guest, event, token ) => {
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
-
+    //console.log('sendGuestWhatsapp::guest', guest);
     try {
 
         /**
@@ -148,6 +156,7 @@ const sendGuestWhatsapp = async (
         }
 
         const chatId = numberId._serialized;
+        console.log('#chatId:', chatId);
 
         /**
          * Lien RSVP
@@ -257,29 +266,27 @@ const sendGuestWhatsapp = async (
         /**
          * Message WhatsApp
          */
-        const whatsappMessage = `
-            💌 *Vous êtes invité ${article}${eventType}*
+        const whatsappMessage = `💌 *Vous êtes invité ${article}${eventType}*\n
+        Bonjour *${guest.full_name}* 👋
 
-            Bonjour *${guest.full_name}*,
+        ${sentence} le *${formattedDate}* ✨
 
-            ${sentence} le *${formattedDate}* ✨
+        📍 Votre présence compte énormément pour nous ❤️
 
-            📍 Votre présence compte énormément pour nous ❤️
+                ━━━━━━━━━━━━━━━
 
-            Merci de confirmer votre présence en cliquant sur le lien ci-dessous :
+        👉 Répondez simplement à ce message avec :
 
-            ✅ *Confirmer ma présence (RSVP)*  
-            ${rsvpLink}
+        ✅ *OUI* : si vous serez présent(e)
+        ❌ *NON* : si vous ne pourrez pas venir
+        ❓ *PEUT-ÊTRE* : si vous n’êtes pas encore sûr(e)
 
-            Si le lien ne fonctionne pas, copiez-le simplement dans votre navigateur.
+                ━━━━━━━━━━━━━━━
 
-            À très bientôt 💖
+        À très bientôt 💖\n*${concerned}*
 
-            *${concerned}*
-
-            ━━━━━━━━━━━━━━━
-            Smart Invite
-        `;
+                _ smart-invite.com _
+        `
 
         /**
          * Envoi WhatsApp
@@ -292,6 +299,10 @@ const sendGuestWhatsapp = async (
         console.log(
             `✅ Invitation WhatsApp envoyée à ${guest.full_name}`
         );
+        //console.log("---Récuperation invitation pour guestId---");
+        const invitation = await getGuestInvitationById(guest.id);
+        //console.log('invitation:', invitation);
+        await updateInvitationByChatId(invitation[0].id, chatId, false);
 
         return true;
 
@@ -309,6 +320,7 @@ const sendGuestWhatsapp = async (
 /**
  * Envoi PDF par WhatsApp
  */
+//sendPdfByEmail
 const sendPdfByWhatsapp = async (data, pdfBuffer) => {
 
     if (!isReady) {
@@ -338,21 +350,22 @@ const sendPdfByWhatsapp = async (data, pdfBuffer) => {
     /**
      * Message WhatsApp
      */
-    const caption = `
-        📩 *Liste récapitulative des invités*
+    const caption = `📩 *Liste récapitulative des invités*
 
-        Bonjour ${user.name || ''},
+    Bonjour ${user.name || ''},
 
-        Veuillez trouver ci-joint le récapitulatif des invités pour l'événement :
+    Veuillez trouver ci-joint le récapitulatif des invités pour l'événement :
 
-        🎉 *${event.title}*
+    🎉 *${event.title}*
 
-        Cordialement,
-        Smart Invite
+    Cordialement,
+    Smart Invite
+
+             ━━━━━━━━━━━━━━━
+            _ smart-invite.com _
     `;
 
     try {
-
         /**
          * Conversion Buffer -> Base64
          */
@@ -361,22 +374,12 @@ const sendPdfByWhatsapp = async (data, pdfBuffer) => {
         /**
          * Création média PDF
          */
-        const media = new MessageMedia(
-            'application/pdf',
-            base64Pdf,
-            'recapitulatif_invites.pdf'
-        );
+        const media = new MessageMedia( 'application/pdf', base64Pdf, 'recapitulatif_invites.pdf');
 
         /**
          * Envoi PDF
          */
-        await client.sendMessage(
-            chatId,
-            media,
-            {
-                caption
-            }
-        );
+        await client.sendMessage( chatId, media, { caption } );
 
         /**
          * Notification interne
@@ -401,6 +404,7 @@ const sendPdfByWhatsapp = async (data, pdfBuffer) => {
     }
 };
 
+//sendFileQRCodeMail
 const sendFileQRCodeWhatsapp = async (data, qrCodeUrl) => {
 
     if (!isReady) {
@@ -539,18 +543,15 @@ const sendFileQRCodeWhatsapp = async (data, qrCodeUrl) => {
     }
 };
 
+//formatFullName
 function formatFullName(full_name) {
   if (!full_name) return '';
   
   return full_name.trim().replace(/\s+/g, '_');
 }
 
-const whatsappInvitationToGuest = async (
-    data,
-    qrCodeUrl,
-    pdfBuffer
-) => {
-
+//sendInvitationToGuest
+const whatsappInvitationToGuest = async ( data, qrCodeUrl, pdfBuffer ) => {
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
@@ -597,25 +598,17 @@ const whatsappInvitationToGuest = async (
         let pdfBase64 = null;
 
         if (pdfBuffer != null) {
-
             pdfBase64 = pdfBuffer.toString('base64');
-
         } else {
-
-            const eventInvNote =
-                await getEventInvitNote(event.eventId);
-
+            const eventInvNote = await getEventInvitNote(event.eventId);
             const pdfUrl = await getPdfUrlFromFirebase(
                 `event_${event.eventId}_default_carte_${eventInvNote.code}.pdf`
             );
-
             const pdfResponse = await axios.get(pdfUrl, {
                 responseType: 'arraybuffer'
             });
 
-            pdfBase64 = Buffer
-                .from(pdfResponse.data)
-                .toString('base64');
+            pdfBase64 = Buffer.from(pdfResponse.data).toString('base64');
         }
 
         /**
@@ -632,7 +625,7 @@ const whatsappInvitationToGuest = async (
             case 'wedding':
 
                 concerned =
-                    `${event.event_name_concerned1} et ${event.event_name_concerned2}`;
+                    `${event.event_name_concerned1} 💖 ${event.event_name_concerned2}`;
 
                 article = 'au ';
 
@@ -643,7 +636,7 @@ const whatsappInvitationToGuest = async (
                     `Nous sommes ravis que vous ayez accepté notre invitation.`;
 
                 signature =
-                    `Les futurs mariés ${event.event_name_concerned1} 💍 ${event.event_name_concerned2}`;
+                    `Les futurs mariés\n\n ${event.event_name_concerned1} 💍 ${event.event_name_concerned2}`;
 
                 break;
 
@@ -661,7 +654,7 @@ const whatsappInvitationToGuest = async (
                     `Nous sommes ravis que vous ayez accepté notre invitation.`;
 
                 signature =
-                    `Les futurs mariés ${event.event_name_concerned1} 💍 ${event.event_name_concerned2}`;
+                    `*Les futurs mariés\n\n ${event.event_name_concerned1} 💍 ${event.event_name_concerned2}*`;
 
                 break;
 
@@ -719,27 +712,23 @@ const whatsappInvitationToGuest = async (
         /**
          * Message WhatsApp
          */
-        const caption = `
-            🎉 *Merci d'avoir confirmé votre présence !*
+        const caption = `🎉 *Merci d'avoir confirmé votre présence !*\n
+        Bonjour *${guest.full_name}*,
 
-            Bonjour *${guest.full_name}*,
+        💖 ${sentence}
 
-            💖 ${sentence}
+        Votre présence compte énormément pour nous ❤️
 
-            Votre présence compte énormément pour nous ❤️
+        📎Vous trouverez ci-joint :
 
-            📎 Vous trouverez ci-joint :
+        ✅ votre invitation officielle  
+        ✅ votre QR-code d’accès
 
-            ✅ votre invitation officielle  
-            ✅ votre QR-code d’accès
+        🎟️ *Merci de présenter votre QR-code à l’entrée de la soirée du banquet afin de faciliter votre accueil.*
 
-            Merci de les présenter le jour de l’événement.
+        ✨ À très bientôt \n*${concerned}*
 
-            📅 ${article}${eventType}
-
-            À très bientôt ✨
-
-            *${signature}*
+            _ smart-invite.com _
         `;
 
         /**
@@ -803,13 +792,8 @@ const whatsappInvitationToGuest = async (
     }
 };
 
-const sendWhatsappToAdmin = async (
-    name,
-    email,
-    phone,
-    subject,
-    message
-) => {
+//sendMailToAdmin
+const sendWhatsappToAdmin = async ( name, email, phone, subject, message ) => {
 
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
@@ -832,15 +816,10 @@ const sendWhatsappToAdmin = async (
         /**
          * Vérifier numéro WhatsApp admin
          */
-        const numberId =
-            await client.getNumberId(adminPhone);
-
+        const numberId = await client.getNumberId(adminPhone);
         if (!numberId) {
-            throw new Error(
-                'Numéro WhatsApp admin invalide'
-            );
+            throw new Error( 'Numéro WhatsApp admin invalide' );
         }
-
         const chatId = numberId._serialized;
 
         /**
@@ -878,21 +857,20 @@ const sendWhatsappToAdmin = async (
         /**
          * Message WhatsApp
          */
-        const whatsappMessage = `
-            📩 *Nouveau message de contact*
+        const whatsappMessage = `📩 *Nouveau message de contact*
 
-            👤 *Nom :*${name}
+        👤 *Nom :*${name}
 
-            📧 *Email :*${email}
+        📧 *Email :* email}
 
-            📱 *Téléphone :*${phone || 'Non renseigné'}
+        📱 *Téléphone :*${phone || 'Non renseigné'}
 
-            📝 *Sujet :*${subj}
+        📝 *Sujet :*${subj}
 
-            💬 *Message :*${message}
+        💬 *Message :*${message}
 
-            ━━━━━━━━━━━━━━━
-            Smart Invite
+        ━━━━━━━━━━━━━━━
+        _ smart-invite.com _
         `;
 
         /**
@@ -920,11 +898,8 @@ const sendWhatsappToAdmin = async (
     }
 };
 
-const whatsappPaymentProofToAdminAboutChangePlan = async (
-    user,
-    planName,
-    fileBuffer
-) => {
+//sendPaymentProofToAdminAboutChangePlan
+const whatsappPaymentProofToAdminAboutChangePlan = async ( user, planName, fileBuffer ) => {
 
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
@@ -982,43 +957,35 @@ const whatsappPaymentProofToAdminAboutChangePlan = async (
         /**
          * Message WhatsApp
          */
-        const caption = `
-            ✨ *Nouvelle demande de changement de plan*
+        const caption = `✨ *Nouvelle demande de changement de plan*
 
-            👤 *Utilisateur :*
-            ${user.name}
+        👤 *Utilisateur :*
+        ${user.name}
 
-            📧 *Email :*
-            ${user.email}
+        📧 *Email :*
+        ${user.email}
 
-            📦 *Plan actuel :*
-            ${user.plan}
+        📦 *Plan actuel :*
+        ${user.plan}
 
-            🚀 *Nouveau plan demandé :*
-            ${planName}
+        🚀 *Nouveau plan demandé :*
+        ${planName}
 
-            📎 Une preuve de paiement est jointe à ce message.
+        📎 Une preuve de paiement est jointe à ce message.
 
-            Merci de vérifier et valider la demande.
+        Merci de vérifier et valider la demande.
 
-            🔗 Accès administration :
-            ${adminLink}
+        🔗 Accès administration :
+        ${adminLink}
 
-            ━━━━━━━━━━━━━━━
-            Smart Invite
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        _ smart-invite.com _
         `;
 
         /**
          * Envoi WhatsApp
          */
-        await client.sendMessage(
-            chatId,
-            media,
-            {
-                caption
-            }
-        );
-
+        await client.sendMessage(chatId, media, { caption } );
         console.log(
             `✅ Preuve paiement WhatsApp envoyée à Admin`
         );
@@ -1036,10 +1003,8 @@ const whatsappPaymentProofToAdminAboutChangePlan = async (
     }
 };
 
-const whatsappNotificationToUserAboutChangePlan = async (
-    user,
-    plan
-) => {
+//sendNotificationToUserAboutChangePlan
+const whatsappNotificationToUserAboutChangePlan = async ( user, plan ) => {
 
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
@@ -1092,22 +1057,21 @@ const whatsappNotificationToUserAboutChangePlan = async (
          */
         if (plan === 'professionnel') {
 
-            whatsappMessage = `
-                ✨ *Votre plan Pro a été activé*
+            whatsappMessage = `✨ *Votre plan Pro a été activé*
 
-                Bonjour *${user.name}*,
+            Bonjour *${user.name}*,
 
-                Nous vous informons que votre plan a été mis à jour avec succès ✅
+            Nous vous informons que votre plan a été mis à jour avec succès ✅
 
-                📦 *Nouveau plan :*
-                ${user.plan || 'Professionnel'}
+            📦 *Nouveau plan :*
+            ${user.plan || 'Professionnel'}
 
-                🚀 Vous avez désormais accès aux fonctionnalités avancées de Smart Invite.
+            🚀 Vous avez désormais accès aux fonctionnalités avancées de Smart Invite.
 
-                Merci de faire confiance à *Smart Invite* ❤️
+            Merci de faire confiance à *Smart Invite* ❤️
 
                 ━━━━━━━━━━━━━━━
-                Smart Invite
+                _ smart-invite.com _
             `;
         }
 
@@ -1185,13 +1149,812 @@ const whatsappNotificationToUserAboutChangePlan = async (
     }
 };
 
+//sendReminderMail
+const sendReminderWhatsapp = async ( guest, event ) => {
+
+    if (!isReady) {
+        throw new Error('WhatsApp non prêt');
+    }
+
+    try {
+
+        /**
+         * Vérification numéro
+         */
+        if (!guest.phone_number) {
+
+            throw new Error(
+                'Numéro WhatsApp invité introuvable'
+            );
+        }
+
+        /**
+         * Validation format numéro
+         */
+        const rawNumber =
+            guest.phone_number.trim();
+
+        const phoneRegex =
+            /^\+[1-9][0-9]{7,14}$/;
+
+        if (!phoneRegex.test(rawNumber)) {
+
+            throw new Error(
+                'Format numéro invalide'
+            );
+        }
+
+        /**
+         * Nettoyage numéro
+         */
+        const numero =
+            rawNumber.replace('+', '');
+
+        /**
+         * Vérification WhatsApp
+         */
+        const numberId =
+            await client.getNumberId(numero);
+
+        if (!numberId) {
+
+            throw new Error(
+                'Numéro WhatsApp invalide'
+            );
+        }
+
+        const chatId =
+            numberId._serialized ||
+            `${numero}@c.us`;
+
+        /**
+         * RSVP LINK
+         */
+        const rsvpLink =
+            `${process.env.API_URL}/invitations/${event.invitationToken}`;
+
+        /**
+         * Variables événement
+         */
+        let article = '';
+        let concerned = '';
+        let eventType = '';
+        let signature = '';
+
+        switch (event.type) {
+
+            case 'wedding':
+
+                concerned =
+                    `${event.event_name_concerned1} et ${event.event_name_concerned2}`;
+
+                article = 'au ';
+
+                eventType =
+                    `Mariage de ${concerned}`;
+
+                signature =
+                    `Les futurs mariés ${event.event_name_concerned1} 💍 ${event.event_name_concerned2}`;
+
+                break;
+
+            case 'engagement':
+
+                concerned =
+                    `${event.event_name_concerned1} et ${event.event_name_concerned2}`;
+
+                article = 'aux ';
+
+                eventType =
+                    `Fiançailles de ${concerned}`;
+
+                signature =
+                    `Les futurs mariés ${event.event_name_concerned1} 💍 ${event.event_name_concerned2}`;
+
+                break;
+
+            case 'anniversary':
+
+                concerned =
+                    `${event.event_name_concerned1} et ${event.event_name_concerned2}`;
+
+                article = "à l'";
+
+                eventType =
+                    `Anniversaire de mariage de ${concerned}`;
+
+                signature = concerned;
+
+                break;
+
+            case 'birthday':
+
+                concerned =
+                    event.event_name_concerned1;
+
+                article = "à l'";
+
+                eventType =
+                    `Anniversaire de ${concerned}`;
+
+                signature = concerned;
+
+                break;
+
+            default:
+
+                concerned =
+                    event.event_name_concerned1;
+
+                article = "à l'";
+
+                eventType = 'événement';
+
+                signature = concerned;
+
+                break;
+        }
+
+        /**
+         * Date formatée
+         */
+        const formattedDate =
+            new Date(event.eventDate)
+                .toLocaleDateString(
+                    'fr-FR',
+                    {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    }
+                );
+
+        /**
+         * Message WhatsApp
+         */
+        const whatsappMessage = `🔔 *Rappel de confirmation*
+
+        Bonjour *${guest.full_name}*,
+
+        Nous espérons que vous allez bien 😊
+
+        Vous aviez été invité(e) ${article}
+        *${eventType}* prévu le
+        *${formattedDate}*
+        📍 ${event.eventLocation}
+
+        Nous n’avons pas encore reçu votre réponse.
+
+        Merci de confirmer votre présence en cliquant sur le lien ci-dessous :
+
+        📩 *Répondre à l'invitation*
+        ${rsvpLink}
+
+        Si le lien ne fonctionne pas, copiez-le simplement dans votre navigateur.
+
+        ━━━━━━━━━━━━━━━
+
+        👉 A défaut, Répondez simplement à ce message whatsapp par :
+
+        ✅ *OUI* : si vous serez présent(e)
+        ❌ *NON* : si vous ne pourrez pas venir
+        ❓ *PEUT-ÊTRE* : si vous n’êtes pas encore sûr(e)
+
+        ━━━━━━━━━━━━━━━
+
+        Merci d’avance pour votre retour 🙏
+
+        Au plaisir de vous compter parmi nous ❤️
+
+        *${signature}*
+
+        ━━━━━━━━━━━━━━━
+        _ smart-invite.com _
+        `.trim();
+
+        /**
+         * Envoi WhatsApp
+         */
+        await client.sendMessage(
+            chatId,
+            whatsappMessage
+        );
+
+        console.log(
+            `✅ WhatsApp(Rappel) envoyé à ${guest.full_name}`
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            '❌ Erreur WhatsApp rappel :',
+            error.message
+        );
+
+        throw error;
+    }
+};
+
+//sendGuestResponseToOrganizer
+const whatsappGuestResponseToOrganizer = async ( organizer, guest, rsvpStatus ) => {
+
+    if (!isReady) {
+        throw new Error('WhatsApp non prêt');
+    }
+
+    try {
+
+        /**
+         * Vérification numéro organisateur
+         */
+        if (!organizer.phone) {
+            throw new Error(
+                'Numéro WhatsApp organisateur introuvable'
+            );
+        }
+
+        /**
+         * Nettoyage numéro
+         */
+        const numero =
+            organizer.phone.replace(/\D/g, '');
+
+        /**
+         * Vérifier numéro WhatsApp
+         */
+        const numberId =
+            await client.getNumberId(numero);
+
+        if (!numberId) {
+            throw new Error(
+                'Numéro WhatsApp organisateur invalide'
+            );
+        }
+
+        const chatId = numberId._serialized;
+
+        /**
+         * Etat RSVP
+         */
+        let subject = '';
+        let responseText = '';
+        let emoji = '';
+
+        switch (rsvpStatus) {
+
+            case 'confirmed':
+
+                subject = '✅ Réponse invité';
+
+                responseText =
+                    `vient d'accepter votre invitation`;
+
+                emoji = '🎉';
+
+                break;
+
+            case 'declined':
+
+                subject = '❌ Réponse invité';
+
+                responseText =
+                    `a décliné votre invitation`;
+
+                emoji = '😔';
+
+                break;
+
+            default:
+
+                subject = 'ℹ️ Réponse invité';
+
+                responseText =
+                    `a répondu à votre invitation`;
+
+                emoji = '📩';
+
+                break;
+        }
+
+        /**
+         * Message WhatsApp
+         */
+        const whatsappMessage = `
+        ${subject}
+
+        Bonjour *${organizer.name}* 👋
+
+        L'invité *${guest.full_name}* ${responseText} ${emoji}
+
+        📌 Pensez à mettre à jour ses informations et son numéro de table dans votre espace organisateur.
+
+        ━━━━━━━━━━━━━━━
+        _ smart-invite.com _
+        `;
+
+        /**
+         * Envoi WhatsApp
+         */
+        await client.sendMessage(
+            chatId,
+            whatsappMessage
+        );
+
+        console.log(
+            `✅ Notification WhatsApp RSVP envoyée à ${organizer.name}`
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            '❌ Erreur WhatsApp RSVP organisateur :',
+            error.message
+        );
+
+        throw error;
+    }
+};
+
+//sendGuestPresenceToOrganizer
+const whatsappGuestPresenceToOrganizer = async ( organizer, guest ) => {
+
+    if (!isReady) {
+        throw new Error('WhatsApp non prêt');
+    }
+
+    try {
+
+        /**
+         * Vérification numéro organisateur
+         */
+        if (!organizer.phone) {
+            throw new Error(
+                'Numéro WhatsApp organisateur introuvable'
+            );
+        }
+
+        /**
+         * Nettoyage numéro
+         */
+        const numero =
+            organizer.phone.replace(/\D/g, '');
+
+        /**
+         * Vérification numéro WhatsApp
+         */
+        const numberId =
+            await client.getNumberId(numero);
+
+        if (!numberId) {
+            throw new Error(
+                'Numéro WhatsApp organisateur invalide'
+            );
+        }
+
+        const chatId = numberId._serialized;
+
+        /**
+         * Heure d'arrivée
+         */
+        const arrivalTime =
+            new Date().toLocaleTimeString(
+                'fr-FR',
+                {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }
+            );
+
+        /**
+         * Message WhatsApp
+         */
+        const whatsappMessage = `
+        ✅ *Arrivée d'un invité*
+
+        Bonjour *${organizer.name}* 👋
+
+        📍 L'invité *${guest.full_name}* vient d'arriver à votre événement.
+
+        🕒 Heure d'arrivée : *${arrivalTime}*
+
+        ━━━━━━━━━━━━━━━
+        _ smart-invite.com _
+        `;
+
+        /**
+         * Envoi WhatsApp
+         */
+        await client.sendMessage(
+            chatId,
+            whatsappMessage
+        );
+
+        console.log(
+            `✅ Notification présence envoyée à ${organizer.name}`
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            '❌ Erreur WhatsApp présence organisateur :',
+            error.message
+        );
+
+        throw error;
+    }
+};
+
+//sendMailToAdminFromPortfolio
+async function sendWhatsappToAdminFromPortfolio( name, email, message, subject) {
+  try {
+    const whatsappMessage = `
+    📩 *Nouveau message depuis le Portfolio*
+
+    ━━━━━━━━━━━━━━━
+
+    👤 *Nom :* ${name}
+    📧 *Email :* ${email}
+    📝 *Sujet :* ${subject}
+
+    💬 *Message :*
+    ${message}
+
+    ━━━━━━━━━━━━━━━
+
+    🌐 Will Portfolio
+    `.trim();
+
+    await client.messages.create({
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+      to: `whatsapp:${process.env.ADMIN_WHATSAPP_NUMBER}`,
+      body: whatsappMessage
+    });
+
+    console.log(
+      `✅ Message WhatsApp(Contact Us) envoyé à Admin Portfolio`
+    );
+
+  } catch (error) {
+    console.error(
+      '❌ Erreur envoi WhatsApp Admin Portfolio:',
+      error.message
+    );
+
+    throw error;
+  }
+}
+
+//manualSendThankYouMailToPresentGuests
+async function manualSendThankYouWhatsappToPresentGuests( eventId, thankMessage, guest ) {
+  try {
+    const whatsappMessage = `
+    💌 *Message de remerciement*
+
+    Bonjour *${guest.full_name}* 👋
+
+    Merci sincèrement pour votre présence à notre événement ❤️
+
+    ━━━━━━━━━━━━━━━
+
+    ${thankMessage}
+
+    ━━━━━━━━━━━━━━━
+
+    Votre présence a grandement contribué à rendre ce moment spécial et mémorable ✨
+
+    À très bientôt 🙏
+
+    *L’équipe SmartInvite*
+
+        ━━━━━━━━━━━━━━━
+        _ smart-invite.com _
+    `.trim();
+
+    await client.messages.create({
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+      to: `whatsapp:${guest.phone_number}`,
+      body: whatsappMessage,
+    });
+
+    console.log(
+      `✅ Message WhatsApp de remerciement envoyé à ${guest.phone_number}`
+    );
+
+    return true;
+
+  } catch (error) {
+    console.error(
+      "❌ Erreur envoi WhatsApp de remerciement:",
+      error.response?.body || error.message
+    );
+
+    return false;
+  }
+}
+
+//notifyOrganizerAboutSendThankYouMailToPresentGuests
+async function notifyOrganizerAboutSendThankYouWhatsappToPresentGuests( organizer ) {
+  try {
+    const whatsappMessage = `
+    ✅ *Rapport d'envoi du message automatique*
+
+    Bonjour *${organizer.name}* 👋
+
+    Le message de remerciement automatique a bien été envoyé à tous les invités présents 🎉
+
+    ━━━━━━━━━━━━━━━
+
+    Merci d’utiliser *SmartInvite* pour l’organisation de vos événements ❤️
+
+    ━━━━━━━━━━━━━━━
+    _ smart-invite.com _
+    `.trim();
+
+    await client.messages.create({
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+      to: `whatsapp:${organizer.phone_number}`,
+      body: whatsappMessage,
+    });
+
+    console.log(
+      `✅ WhatsApp(Report of thank-message) envoyé à ${organizer.phone_number}`
+    );
+
+    return true;
+
+  } catch (error) {
+    console.error(
+      "❌ Erreur envoi WhatsApp rapport organisateur:",
+      error.response?.body || error.message
+    );
+
+    return false;
+  }
+}
+
+async function whatsappNotifications(schedules, organizer) {
+  try {
+    const schedule_bd = await getEventScheduleByEventId(
+      schedules.event_id
+    );
+
+    console.log('schedule_bd: ', schedule_bd);
+
+    if (!schedule_bd.is_checkin_executed) {
+
+      console.log(
+        'is_checkin_executed: ',
+        schedule_bd.is_checkin_executed
+      );
+
+      const scheduleId = schedule_bd.id;
+
+      const updatedSchedule = await updateEventSchedule(
+        scheduleId,
+        schedule_bd.event_id,
+        schedules.scheduled_for,
+        true,
+        true
+      );
+
+      console.log('updatedSchedule : ', updatedSchedule);
+
+      await createNotification(
+        schedules.event_id,
+        `Rapport d'envoi du message automatique`,
+        `Le message de remerciement automatique a bien été envoyé a tous les invités présents.`,
+        'info',
+        false
+      );
+
+      await notifyOrganizerAboutSendThankYouWhatsappToPresentGuests(
+        organizer
+      );
+
+    } else {
+
+      console.log('.### Notification WhatsApp déjà envoyée...');
+
+    }
+
+  } catch (error) {
+
+    throw new Error(
+      "whatsappNotifications error : " + error.message
+    );
+
+  }
+}
+
+//sendThankYouMailToPresentGuests
+async function sendThankYouWhatsappToPresentGuests( event, schedules, organizer, guest ) {
+  try {
+
+    let sentences = '';
+    let sentences_2 = '';
+    let sentences_3 = '';
+    let concerned = '';
+    let eventType = '';
+
+    switch (event.type) {
+
+      case 'wedding':
+        eventType = 'mariage';
+        sentences =
+          `Nous tenons à vous remercier chaleureusement pour votre présence à notre ${eventType}`;
+        sentences_2 =
+          "Nous espérons vous revoir très bientôt lors de nos prochaines rencontres.";
+        sentences_3 =
+          "Avec nos sincères remerciements,";
+        concerned =
+          `Le couple ${event.event_name_concerned1} et ${event.event_name_concerned2}`;
+        break;
+
+      case 'engagement':
+        eventType = 'fiançailles';
+        sentences =
+          `Nous tenons à vous remercier chaleureusement pour votre présence à nos ${eventType}`;
+        sentences_2 =
+          "Nous espérons vous revoir très bientôt lors de nos prochaines rencontres.";
+        sentences_3 =
+          "Avec nos sincères remerciements,";
+        concerned =
+          `Les futurs mariés ${event.event_name_concerned1} et ${event.event_name_concerned2}`;
+        break;
+
+      case 'anniversary':
+        eventType = 'anniversaire de mariage';
+        sentences =
+          `Nous tenons à vous remercier chaleureusement pour votre présence à notre ${eventType}`;
+        sentences_2 =
+          "Nous espérons vous revoir très bientôt lors de nos prochaines rencontres.";
+        sentences_3 =
+          "Avec nos sincères remerciements,";
+        concerned =
+          `Le couple ${event.event_name_concerned1} et ${event.event_name_concerned2}`;
+        break;
+
+      case 'birthday':
+        eventType = 'anniversaire';
+        sentences =
+          `Je tiens à vous remercier chaleureusement pour votre présence à mon ${eventType}`;
+        sentences_2 =
+          "J'espère vous revoir très bientôt lors de nos prochaines rencontres.";
+        sentences_3 =
+          "Avec mes sincères remerciements,";
+        concerned = event.event_name_concerned1;
+        break;
+    }
+
+    const whatsappMessage = `
+    💌 *Message de remerciement*
+
+    Bonjour *${guest.full_name}* 👋
+
+    ${sentences}
+
+    ✨ Votre participation a contribué à rendre cet événement mémorable.
+
+    ${sentences_2}
+
+    ${sentences_3}
+
+    *${concerned}*
+
+    ━━━━━━━━━━━━━━━
+    ❤️ Merci pour votre présence
+
+    ━━━━━━━━━━━━━━━
+    _ smart-invite.com _
+    `.trim();
+
+    await client.messages.create({
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+      to: `whatsapp:${guest.phone_number}`,
+      body: whatsappMessage,
+    });
+
+    await whatsappNotifications(schedules, organizer);
+
+    console.log(
+      `✅ WhatsApp(Remerciement) envoyé à ${guest.phone_number}`
+    );
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "❌ Erreur envoi WhatsApp de remerciement:",
+      error.response?.body || error.message
+    );
+
+    return false;
+  }
+}
+
+//sendPdfToGuestMail
+async function sendWhatsappPdfToGuest(data) {
+  const guest = data.guest;
+  const pdfBuffer = data.buffer;
+
+  try {
+
+    if (!guest?.phone_number) {
+      throw new Error("Numéro WhatsApp de l'invité manquant");
+    }
+
+    if (!pdfBuffer) {
+      throw new Error("Buffer PDF manquant");
+    }
+
+    // Upload PDF temporaire/public requis pour WhatsApp
+    const pdfUrl = await uploadPdfAndGetPublicUrl(
+      pdfBuffer,
+      `${formatFullName(guest.full_name)}-invitation.pdf`
+    );
+
+    const whatsappMessage = `
+    📩 *Votre invitation officielle*
+
+    Bonjour *${guest.full_name}* 👋
+
+    Votre invitation officielle est prête ✨
+
+    📄 Téléchargez votre invitation PDF ici :
+    ${pdfUrl}
+
+    Nous serons ravis de vous compter parmi nous ❤️
+
+    ━━━━━━━━━━━━━━━
+    _ SmartInvite _
+    `.trim();
+
+    await client.messages.create({
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+      to: `whatsapp:${guest.phone_number}`,
+      body: whatsappMessage,
+    });
+
+    console.log(
+      `✅ Invitation PDF WhatsApp envoyée à ${guest.phone_number}`
+    );
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "[sendWhatsappPdfToGuest] WHATSAPP ERROR:",
+      error.response?.body || error.message
+    );
+
+    throw error;
+  }
+}
+
 module.exports = {
+    client, getIsReady: () => isReady,
     sendMessage,
     sendGuestWhatsapp,
     sendPdfByWhatsapp,
+    sendReminderWhatsapp,
     sendFileQRCodeWhatsapp,
     whatsappInvitationToGuest,
     sendWhatsappToAdmin,
+    sendWhatsappPdfToGuest,
+    whatsappGuestResponseToOrganizer,
+    whatsappGuestPresenceToOrganizer,
     whatsappPaymentProofToAdminAboutChangePlan,
-    whatsappNotificationToUserAboutChangePlan
+    whatsappNotificationToUserAboutChangePlan,
+    sendWhatsappToAdminFromPortfolio,
+    manualSendThankYouWhatsappToPresentGuests,
+    notifyOrganizerAboutSendThankYouWhatsappToPresentGuests,
+    sendThankYouWhatsappToPresentGuests
 };

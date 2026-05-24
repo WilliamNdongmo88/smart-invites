@@ -6,9 +6,11 @@ const initInvitationModel = async () => {
     CREATE TABLE IF NOT EXISTS INVITATIONS (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         guest_id INT UNSIGNED UNIQUE,
+        chat_id VARCHAR(50),
         token VARCHAR(255) NOT NULL UNIQUE,
         qr_code_url TEXT,
         status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+        is_invitation_sent BOOLEAN NOT NULL DEFAULT false,
         expires_at TIMESTAMP,
         used_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -20,15 +22,73 @@ const initInvitationModel = async () => {
   console.log('✅ Table INVITATIONS prête !');
 };
 
-async function createInvitation(guestId, token, qrCodeUrl) {
-    console.log({ guestId, token, qrCodeUrl });
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + 1);
+async function createInvitation( guestId, token, qrCodeUrl = null ) {
 
-    const [result] = await pool.execute(`INSERT INTO INVITATIONS (guest_id, token, qr_code_url, expires_at) 
-        VALUES(?,?,?,?)`, [guestId, token, qrCodeUrl, expiresAt]);
+    const [result] = await pool.execute(
+        `
+        INSERT INTO INVITATIONS (
+            guest_id,
+            token,
+            qr_code_url
+        )
+        VALUES (?, ?, ?)
+        `,
+        [ guestId, token, qrCodeUrl ]
+    );
+
     return result.insertId;
-};
+}
+
+// async function updateInvitationQrCode( guestId, qrCodeUrl ) {
+
+//     const [rows] = await pool.query(
+//         `
+//         UPDATE INVITATIONS
+//         SET qr_code_url = ?
+//         WHERE guest_id = ?
+//         `,
+//         [ qrCodeUrl, guestId ]
+//     );
+
+//     return rows[0];
+// }
+async function updateInvitationQrCode(invitationId, qrCodeUrl) {
+
+    await pool.execute(
+        `
+        UPDATE INVITATIONS
+        SET qr_code_url = ?
+        WHERE id = ?
+        `,
+        [qrCodeUrl, invitationId]
+    );
+
+    const [rows] = await pool.execute(
+        `
+        SELECT *
+        FROM INVITATIONS
+        WHERE id = ?
+        `,
+        [invitationId]
+    );
+
+    return rows[0];
+}
+
+async function updateInvitationByChatId( invitationId, chatId, isInvitationSent = false ) {
+    console.log('updateInvitationByChatId::invitationId, chatId', {invitationId, chatId});
+    const [result] = await pool.query(
+        `
+        UPDATE INVITATIONS
+        SET chat_id = ?, is_invitation_sent = ?
+
+        WHERE id = ?
+        `,
+        [ chatId, isInvitationSent, invitationId ]
+    );
+
+    return result.affectedRows > 0;
+}
 
 async function getInvitationById(invitationId) {
     const result = await pool.query(`SELECT * FROM INVITATIONS WHERE id=?`, [invitationId]);
@@ -62,6 +122,20 @@ async function getGuestInvitationByToken(token) {
     return result[0];
 };
 
+const getInvitationByChatId = async (chatId) => {
+
+    const query = `
+        SELECT *
+        FROM INVITATIONS
+        WHERE chat_id = ?
+        LIMIT 1
+    `;
+
+    const [rows] = await pool.execute(query, [chatId]);
+
+    return rows[0];
+};
+
 async function updateInvitationById(invitationId, status, usedAt) {
     //console.log('variable:', {invitationId, status, usedAt});
     const [result] = await pool.query(`UPDATE INVITATIONS SET status=?, used_at=?, updated_at=? WHERE id=?`,
@@ -74,8 +148,10 @@ async function deleteGuestInvitation(guestId) {
     await pool.query(`DELETE FROM INVITATIONS WHERE guest_id=?`, [guestId]);
 };
 
-module.exports = {initInvitationModel, getInvitationById, 
-    createInvitation, getGuestByInvitationId,
+module.exports = {
+    initInvitationModel, getInvitationById, 
+    createInvitation, getGuestByInvitationId, 
+    updateInvitationByChatId, getInvitationByChatId,
     getGuestInvitationById, getGuestInvitationByToken, 
-    updateInvitationById, deleteGuestInvitation
+    updateInvitationById, updateInvitationQrCode, deleteGuestInvitation
 };

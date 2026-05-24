@@ -74,7 +74,12 @@ const addCheckIn = async (req, res, next) => {
                 const guest = await getGuestById(guestId);
                 const event = await getEventByGuestId(guestId);
                 const organizer = await getUserById(event[0].organizerId);
-                await sendGuestPresenceToOrganizer(organizer, guest);
+                if(organizer.notification_mode === 'email') {
+                    await sendGuestPresenceToOrganizer(organizer, guest);
+                }
+                if(organizer.notification_mode === 'whatsapp') {
+                    await whatsappGuestPresenceToOrganizer(organizer, guest);
+                }
                 await createNotification(
                     event[0].eventId,
                     `Arrivé Invité ${guest.full_name}`,
@@ -160,7 +165,11 @@ async function sendScheduledThankMessage(event, schedules, organizer, guest) {
         }
         // Envoi des mails en parallèle contrôlée (plus rapide)
         await Promise.all(
-            guests.map(g => sendThankYouMailToPresentGuests(event, schedules, organizer, g))
+            guests.map(g => {
+                if(g.notification_mode === 'email') return sendThankYouMailToPresentGuests(event, schedules, organizer, g);
+                if(g.notification_mode === 'whatsapp') return sendThankYouWhatsappToPresentGuests(event, schedules, organizer, g);
+                return Promise.resolve();
+            })
         );
     } catch (error) {
         console.error("Erreur lors de l'envoi du mail:", error);
@@ -173,7 +182,11 @@ async function sendManualThankMessage(req, res, next) {
         const {eventId, guests, message} = req.body.datas;
         // Envoi des mails en parallèle contrôlée (plus rapide)
         await Promise.all(
-            guests.map(g => manualSendThankYouMailToPresentGuests(eventId, message, g)),
+            guests.map(g => {
+                if(g.notification_mode === 'email') return manualSendThankYouMailToPresentGuests(eventId, message, g);
+                if(g.notification_mode === 'whatsapp') return manualSendThankYouWhatsappToPresentGuests(eventId, message, g);
+                return Promise.resolve();
+            }),
               await createNotification(
                 eventId,
                 `Message de remerciement envoyé`,

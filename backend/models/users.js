@@ -15,6 +15,7 @@ const initUserModel = async () => {
       accept_terms BOOLEAN,
       role VARCHAR(50) DEFAULT 'user',
       phone VARCHAR(20),
+      notification_mode VARCHAR(20) NOT NULL DEFAULT 'email',
       bio TEXT,
       plan VARCHAR(50) NOT NULL DEFAULT 'gratuit',
       is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
@@ -60,12 +61,12 @@ async function createDefaultAdmin() {
     }
 }
 
-async function createUser({ managerId=null, name, email, accountType, password, acceptTerms, role = 'user', plan='gratuit', isActive = false, avatar_url = null }) {
+async function createUser({ managerId=null, name, email, accountType, password, acceptTerms, role = 'user', plan='gratuit', isActive = false, avatar_url = null, notificationMode = 'email' }) {
   // console.log('### Creating user with data:', { name, email, accountType, password, acceptTerms, role, isActive, avatar_url });
   const hashed = await bcrypt.hash(password, 10);
   const [result] = await pool.query(
-    `INSERT INTO USERS (manager_id, name, email, account_type, password, accept_terms, role, plan, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [managerId || null , name, email, accountType, hashed, acceptTerms, role, plan, isActive, avatar_url]
+    `INSERT INTO USERS (manager_id, name, email, notification_mode, account_type, password, accept_terms, role, plan, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [managerId || null , name, email, notificationMode, accountType, hashed, acceptTerms, role, plan, isActive, avatar_url]
   );
   return result.insertId;
 }

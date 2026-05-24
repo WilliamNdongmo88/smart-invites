@@ -14,7 +14,7 @@ const addProofPaymentFile = async (req, res, next) => {
         console.log('### paymentFile:', paymentFile);
         const fileType = String(paymentFile.mimetype).split('/')[1];
         const userData = JSON.parse(req.body.userData);
-        console.log('### userData:', userData);
+        //console.log('### userData:', userData);
         
         const payment = await getPaymentProof(userData.userId);
         if (payment) {
@@ -92,6 +92,7 @@ async function updatePaymentService(paymentFile, userData, payment) {
         }
         await updatePaymentProof(payment.id, data.organizerId, userData.selectedPlan.name, data.fileUrl, data.fileType, data.code);
         await sendPaymentProofToAdminAboutChangePlan(user, userData.selectedPlan.name, paymentFile.buffer);
+
         return dataReturn = {
             message: 'Preuve de payment mis à jour et fichier uploadé avec succès',
             fileUrl: data.url

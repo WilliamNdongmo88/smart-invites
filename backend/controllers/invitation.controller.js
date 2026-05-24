@@ -3,7 +3,9 @@ const axios = require('axios');
 const { getGuestById, updateRsvpStatusGuest, getGuestAndEventRelatedById, getEventByGuestId} = require("../models/guests");
 const {createInvitation, getGuestInvitationById, 
     getGuestInvitationByToken, deleteGuestInvitation,
-    getUserRoleByToken} = require('../models/invitations');
+    getUserRoleByToken,
+    updateInvitationQrCode} = require('../models/invitations');
+const { createNotification } = require('../models/notification');
 const { generateGuestQr, getLogoUrlFromFirebase, generateAttendeeQr } = require("../services/qrCodeService");
 const { generateGuestPdf, uploadPdfToFirebase } = require("../services/pdfService");
 const {deleteGuestFiles} = require('../services/invitation.service');
@@ -15,85 +17,308 @@ const { getEventById } = require('../models/events');
 const { getEventInvitNote } = require('../models/event_invitation_notes');
 
 const genererSeveralInvitations = async (req, res, next) => {
-  try {
-    if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
-    let guestsIdList = req.body;
-    let returnDatas = [];
-    for (const guestId of guestsIdList) {
-        const guest = await getGuestById(guestId);
-        if (!guest) return res.status(404).json({ error: `Invité ${guestId} introuvable` });
-        const guest_event_related = await getGuestAndEventRelatedById(guestId);
-        if (!guest_event_related[0].event_title) return res.status(404).json({ error: "Donnée introuvable" });
-        const invitations = await getGuestInvitationById(guestId);
-        if (invitations[0]) return res.status(409).json({ error: `Invitation déjà invoyé a l'invité ${guestId}` });
-        let token = guestId +':'+ uuidv4();
-        const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
-        const event = await getEventByGuestId(guest.id);
-        const card = await getEventInvitNote(event[0].eventId);
 
-        let pdfUrl = '';
-        if(card.pdf_url == null){
-            const buffer = await generateGuestPdf(guest_event_related[0], card);
-            data = await uploadPdfToFirebase(guest, buffer, null);
-            pdfUrl = data.url;
-        }else{
-            pdfUrl = card.pdf_url;
-        }
-        try {
-            await sendGuestEmail(guest, guest_event_related[0], token);
-            await sendGuestWhatsapp(guest, guest_event_related[0], token);
-        } catch (error) {
-            console.error("SEND EMAIL ERROR:", error.message);
-            next(error);
-        }
-        await createInvitation(guestId, token, qrUrl);
-        returnDatas.push({message: "QR code et PDF générés", id: guestId, qrUrl, pdfUrl});
-    }
-    return res.json(returnDatas);
-  } catch (err) {
-    console.error("Erreur génération :", err.message);
-    next(err)
-  }
-};
-
-const genererInvitation = async (req, res, next) => {
-  try {
-    const guestId = Number(req.params.guestId);
-    const guest = await getGuestById(guestId);
-    if (!guest) return res.status(404).json({ error: "Invité introuvable" });
-    const guest_event_related = await getGuestAndEventRelatedById(guestId);
-    //console.log('guest_event_related:', guest_event_related[0].event_title);
-    if (!guest_event_related[0].event_title) return res.status(404).json({ error: "Donnée introuvable" });
-    const invitations = await getGuestInvitationById(guestId);
-    if (invitations[0]) return res.status(409).json({ error: "Invitation déjà invoyé a cet invité" });
-    
-    let token =guestId +':'+ uuidv4();
-    const qrUrl = await generateGuestQr(guest.id, token, "wedding-ring.webp");
-    const event = await getEventByGuestId(guest.id);
-    const card = await getEventInvitNote(event[0].eventId);
-    // console.log("card: ", card);
-    let pdfUrl = '';
-    if(card.pdf_url == null){
-        const buffer = await generateGuestPdf(guest_event_related[0], card);
-        data = await uploadPdfToFirebase(guest, buffer, null);
-        pdfUrl = data.url;
-    }else{
-        pdfUrl = card.pdf_url;
-    }
     try {
-        await sendGuestEmail(guest, guest_event_related[0], token);
-        await sendGuestWhatsapp(guest, guest_event_related[0], token);
+
+        const guestsIdList = req.body;
+        if (!Array.isArray(guestsIdList) || guestsIdList.length === 0) {
+            return res.status(400).json({
+                error: "Liste vide"
+            });
+        }
+
+        const results = [];
+        for (const guestId of guestsIdList) {
+            try {
+                /**
+                 * =========================
+                 * 1. VALIDATIONS
+                 * =========================
+                 */
+                const guest = await getGuestById(guestId);
+                if (!guest) {
+                    results.push({ guestId, success: false, error: `Invité ${guestId} introuvable` });
+                    continue;
+                }
+
+                const guestEvent = await getGuestAndEventRelatedById(guestId);
+                if (!guestEvent?.[0]?.event_title) {
+                    results.push({ guestId, success: false, error: "Données événement introuvables" });
+                    continue;
+                }
+
+                const existingInvitation = await getGuestInvitationById(guestId);
+                if (existingInvitation?.[0]) {
+                    results.push({ guestId, success: false, error: "Invitation déjà générée" });
+                    continue;
+                }
+
+                /**
+                 * =========================
+                 * 2. TOKEN
+                 * =========================
+                 */
+                const token = `${guestId}:${uuidv4()}`;
+
+                /**
+                 * =========================
+                 * 3. CREATE INVITATION
+                 * =========================
+                 */
+                const invitationId = await createInvitation( guestId, token, null);
+                if (!invitationId) {
+                    throw new Error( "Erreur création invitation" );
+                }
+
+                /**
+                 * =========================
+                 * 4. QR CODE
+                 * =========================
+                 */
+                const qrUrl = await generateGuestQr( guest.id, token, "wedding-ring.webp" );
+                await updateInvitationQrCode( invitationId, qrUrl );
+
+                /**
+                 * =========================
+                 * 5. PDF
+                 * =========================
+                 */
+                const event = await getEventByGuestId(guest.id);
+                const card = await getEventInvitNote( event[0].eventId );
+
+                let pdfUrl = card?.pdf_url || null;
+                let pdfBuffer = null;
+
+                if (!pdfUrl) {
+                    pdfBuffer = await generateGuestPdf( guestEvent[0], card );
+                    const uploaded = await uploadPdfToFirebase( guest, pdfBuffer, null);
+                    pdfUrl = uploaded?.url || null;
+                }
+
+                /**
+                 * =========================
+                 * 6. NOTIFICATIONS
+                 * =========================
+                 */
+                if (guest.notification_mode === 'email') {
+                    await sendGuestEmail( guest, guestEvent[0], token);
+                }
+
+                if (guest.notification_mode === 'whatsapp') {
+                    await sendGuestWhatsapp( guest, guestEvent[0], token);
+                }
+
+                /**
+                 * =========================
+                 * 7. SUCCESS
+                 * =========================
+                 */
+                results.push({ guestId, success: true, message: "Invitation générée", qrUrl, pdfUrl});
+            } catch (error) {
+                console.error(`GENERATE INVITATION ERROR [${guestId}] :`,error.message);
+                results.push({ guestId, success: false, error: error.message });
+            }
+        }
+        return res.status(200).json(results);
     } catch (error) {
-        console.error("SEND EMAIL ERROR:", error.message);
+        console.error( "GENERATE SEVERAL INVITATIONS ERROR:", error.message);
         next(error);
     }
-    await createInvitation(guestId, token, qrUrl);
+};
 
-    return res.json({ message: "QR code et PDF générés", qrUrl, pdfUrl });
-  } catch (err) {
-    console.error("Erreur génération :", err.message);
-    next(err)
-  }
+const genererInvitation = async ( req, res, next ) => {
+    let invitationId = null;
+    try {
+        /**
+         * =====================================================
+         * 1. VALIDATION
+         * =====================================================
+         */
+        const guestId = Number(req.params.guestId);
+        if (!guestId || isNaN(guestId)) {
+            return res.status(400).json({
+                error: 'ID invité invalide'
+            });
+        }
+
+        /**
+         * =====================================================
+         * 2. RECUPERATION INVITE
+         * =====================================================
+         */
+        const guest = await getGuestById(guestId);
+
+        if (!guest) {
+            return res.status(404).json({
+                error: 'Invité introuvable'
+            });
+        }
+
+        /**
+         * =====================================================
+         * 3. VERIFICATION INVITATION EXISTANTE
+         * =====================================================
+         */
+        const invitations = await getGuestInvitationById( guestId );
+        if (invitations[0]) {
+            return res.status(409).json({ error: 'Invitation déjà envoyée à cet invité' });
+        }
+
+        /**
+         * =====================================================
+         * 4. RECUPERATION DONNEES EVENT
+         * =====================================================
+         */
+        const guestEvent = await getGuestAndEventRelatedById( guestId );
+        if ( !guestEvent || !guestEvent[0] ) {
+            return res.status(404).json({
+                error: 'Données événement introuvables'
+            });
+        }
+        const eventData = guestEvent[0];
+        if (!eventData.event_title) {
+            return res.status(404).json({
+                error: 'Titre événement introuvable'
+            });
+        }
+
+        /**
+         * =====================================================
+         * 5. RECUPERATION EVENT + CARD
+         * =====================================================
+         */
+        const event = await getEventByGuestId( guest.id );
+        if (!event[0]) {
+            return res.status(404).json({
+                error: 'Evénement introuvable'
+            });
+        }
+        const card = await getEventInvitNote( event[0].eventId );
+
+        /**
+         * =====================================================
+         * 6. CREATION TOKEN
+         * =====================================================
+         */
+        const token = `${guestId}:${uuidv4()}`;
+
+        /**
+         * =====================================================
+         * 7. CREATION INVITATION EN BASE
+         * =====================================================
+         */
+        console.log("---Création invitation pour guestId---");
+        invitationId = await createInvitation( guestId, token, null );
+        if (!invitationId) {
+            throw new Error(
+                'Erreur création invitation'
+            );
+        }
+
+        /**
+         * =====================================================
+         * 8. GENERATION QR CODE
+         * =====================================================
+         */
+        let qrUrl = null;
+        try {
+            qrUrl = await generateGuestQr( guest.id, token, 'wedding-ring.webp' );
+            if (!qrUrl) {
+                throw new Error( 'QR Code non généré' );
+            }
+        } catch (error) {
+            console.error('QR ERROR:', error.message);
+            await deleteInvitation( invitationId );
+            throw error;
+        }
+
+        /**
+         * =====================================================
+         * 9. UPDATE QR CODE URL
+         * =====================================================
+         */
+        const invitationUpdated = await updateInvitationQrCode( invitationId, qrUrl );
+        // console.log("###invitationUpdated:", invitationUpdated);
+        /**
+         * =====================================================
+         * 10. GENERATION PDF
+         * =====================================================
+         */
+        let pdfBuffer = null;
+        let pdfUrl = null;
+        try {
+            if (card.pdf_url) {
+                pdfUrl = card.pdf_url;
+            } else {
+                pdfBuffer = await generateGuestPdf( eventData, card );
+                const uploadedFile = await uploadPdfToFirebase( guest, pdfBuffer, null );
+                pdfUrl = uploadedFile?.url || null;
+            }
+        } catch (error) {
+            console.error( 'PDF ERROR:', error.message );
+        }
+
+        /**
+         * =====================================================
+         * 11. ENVOI EMAIL / WHATSAPP
+         * =====================================================
+         */
+        try {
+            switch (guest.notification_mode) {
+                case 'email':
+                    await sendGuestEmail( guest, eventData, token );
+                    break;
+                case 'whatsapp':
+                    await sendGuestWhatsapp( guest, eventData, token );
+                    break;
+                case 'both':
+                    await sendGuestEmail( guest, eventData, token );
+                    await sendGuestWhatsapp( guest, eventData, token );
+                    break;
+                default:
+                    console.log('Aucun mode notification défini');
+                    break;
+            }
+
+        } catch (error) {
+            console.error('NOTIFICATION ERROR:', error.message );
+        }
+
+        /**
+         * =====================================================
+         * 12. NOTIFICATION ORGANISATEUR
+         * =====================================================
+         */
+        try {
+
+            await createNotification(
+                event[0].eventId,
+                'Invitation envoyée',
+                `L'invitation a été envoyée à ${guest.full_name}.`,
+                'info',
+                false
+            );
+
+        } catch (error) {
+
+            console.error(
+                'NOTIFICATION DB ERROR:',
+                error.message
+            );
+        }
+
+        /**
+         * =====================================================
+         * 13. SUCCESS RESPONSE
+         * =====================================================
+         */
+        return res.status(201).json({success:'Invitation générée avec succès', invitationId, qrUrl, pdfUrl });
+    } catch (err) {
+        console.error(
+            'ERREUR GENERATION INVITATION :', err.message
+        );
+        return next(err);
+    }
 };
 
 const generateAttendeeQrCode = async (req, res, next) => {
@@ -227,15 +452,16 @@ const deleteInvitation = async (req, res, next) => {
         const invitation = await getGuestInvitationById(req.params.guestId);
         if(!invitation[0]) return res.status(404).json({error: "Invitation non trouvé!"});
         const guest = await getGuestById(req.params.guestId);
-        // console.log('guest before delete invitation:', guest);
+        //console.log('guest before delete invitation:', guest);
         if(guest.has_plus_one){
-            console.log("guest: ", guest);
+            //console.log("guest: ", guest);
             guest.has_plus_one = false;
             guest.plus_one_name = null;
             guest.plus_one_name_diet_restr = null;
             guest.guest_has_plus_one_autorise_by_admin = false;
             guest.rsvp_status = 'pending';
-            await update_guest(guest.id, guest.event_id, guest.full_name, null, guest.email, guest.phone_number, guest.rsvp_status, 
+            await update_guest(guest.id, guest.event_id, guest.full_name, null, guest.email, 
+                guest.phone_number, guest.notification_mode, guest.rsvp_status, 
                 guest.has_plus_one, guest.guest_has_plus_one_autorise_by_admin, guest.plus_one_name, guest.notes, guest.dietary_restrictions, 
                 guest.plus_one_name_diet_restr, guest.updated_at);
         }else if(guest.rsvp_status == 'confirmed' || guest.rsvp_status == 'declined'){
@@ -243,9 +469,10 @@ const deleteInvitation = async (req, res, next) => {
             guest.plus_one_name = null;
             guest.plus_one_name_diet_restr = null;
             guest.rsvp_status = 'pending';
-            await update_guest(guest.id, guest.event_id, guest.full_name, guest.table_number, guest.email, guest.phone_number, guest.rsvp_status, 
-                guest.has_plus_one, guest.guest_has_plus_one_autorise_by_admin, guest.plus_one_name, guest.notes, guest.dietary_restrictions, 
-                guest.plus_one_name_diet_restr, guest.updated_at);
+            await update_guest(guest.id, guest.event_id, guest.full_name, guest.table_number, guest.email, 
+                guest.phone_number, guest.notification_mode, guest.rsvp_status, guest.has_plus_one, 
+                guest.guest_has_plus_one_autorise_by_admin, guest.plus_one_name, guest.notes, 
+                guest.dietary_restrictions, guest.plus_one_name_diet_restr, guest.updated_at);
         }
         await deleteGuestInvitation(req.params.guestId);
         await deleteGuestFiles(req.params.guestId, invitation[0].token);

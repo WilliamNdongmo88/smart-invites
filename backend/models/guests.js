@@ -1,5 +1,6 @@
 require('dotenv').config();
 const pool = require('../config/bd');
+const { notifications } = require('../services/notification.service');
 
 const initGuestModel = async () => {
   await pool.query(`
@@ -15,6 +16,7 @@ const initGuestModel = async () => {
         dietary_restrictions VARCHAR(255),
         plus_one_name_diet_restr VARCHAR(255),
         guest_has_plus_one_autorise_by_admin BOOLEAN NOT NULL DEFAULT false,
+        notification_mode VARCHAR(50) NOT NULL DEFAULT 'email',
         notes TEXT,
         table_number VARCHAR(50),
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -26,22 +28,67 @@ const initGuestModel = async () => {
   console.log('✅ Table GUESTS prête !');
 };
 
-async function createGuest(eventId, fullName, email, phoneNumber, 
-            rsvpStatus, guesthasPlusOneAutoriseByAdmin) {
-    const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
-        rsvp_status, guest_has_plus_one_autorise_by_admin) VALUES(?,?,?,?,?,?)`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, guesthasPlusOneAutoriseByAdmin]);
-    //console.log("[createGuest] result :: ", result.insertId);
+// async function createGuest(eventId, fullName, email, phoneNumber, 
+//             rsvpStatus, guesthasPlusOneAutoriseByAdmin) {
+//     const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
+//         rsvp_status, guest_has_plus_one_autorise_by_admin) VALUES(?,?,?,?,?,?)`, 
+//         [eventId, fullName, email, phoneNumber, rsvpStatus, guesthasPlusOneAutoriseByAdmin]);
+//     //console.log("[createGuest] result :: ", result.insertId);
+//     return result.insertId;
+// }
+async function createGuest( 
+    connection, eventId, fullName, email,
+    phoneNumber, rsvpStatus, guesthasPlusOneAutoriseByAdmin, notificationMode
+) {
+    const [result] = await connection.query(
+        `
+        INSERT INTO GUESTS (
+            event_id,
+            full_name,
+            email,
+            phone_number,
+            rsvp_status,
+            guest_has_plus_one_autorise_by_admin,
+            notification_mode
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+        [ 
+            eventId, fullName, email, phoneNumber, rsvpStatus, 
+            guesthasPlusOneAutoriseByAdmin, notificationMode
+        ]
+    );
+
     return result.insertId;
 }
 
-async function createGuestFromLink(eventId, fullName, email, phoneNumber, rsvpStatus, 
-    guestHasPlusOneAutoriseByAdmin, dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName) {
-    const [result] = await pool.execute(`INSERT INTO GUESTS (event_id, full_name, email, phone_number, 
-        rsvp_status, guest_has_plus_one_autorise_by_admin, dietary_restrictions, plus_one_name_diet_restr, 
-        has_plus_one, plus_one_name) VALUES(?,?,?,?,?,?,?,?,?,?)`, 
-        [eventId, fullName, email, phoneNumber, rsvpStatus, guestHasPlusOneAutoriseByAdmin, 
-        dietaryRestrictions, plusOneNameDietRestr, hasPlusOne, plusOneName]);
+async function createGuestFromLink(
+    eventId,fullName,email,phoneNumber,rsvpStatus,guestHasPlusOneAutoriseByAdmin,
+    dietaryRestrictions,plusOneNameDietRestr,hasPlusOne,plusOneName
+) {
+
+    const [result] = await pool.execute(
+        `
+        INSERT INTO GUESTS (
+            event_id,
+            full_name,
+            email,
+            phone_number,
+            rsvp_status,
+            guest_has_plus_one_autorise_by_admin,
+            dietary_restrictions,
+            plus_one_name_diet_restr,
+            has_plus_one,
+            plus_one_name
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+            eventId,fullName,email,phoneNumber,rsvpStatus,guestHasPlusOneAutoriseByAdmin,
+            dietaryRestrictions,plusOneNameDietRestr,hasPlusOne,plusOneName
+        ]
+    );
+
     return result.insertId;
 }
 
@@ -98,6 +145,7 @@ async function getGuestByEventIdAndConfirmedRsvp(eventId) {
             g.plus_one_name AS plusOneName,
             g.rsvp_status AS rsvpStatus,
             g.updated_at AS updatedAt,
+            g.notification_mode AS notificationMode,
             e.id AS eventId
         FROM GUESTS g
         LEFT JOIN EVENTS e ON e.id=g.event_id
@@ -113,7 +161,8 @@ async function getAllPresentGuest(guestId) {
             g.id,
             g.full_name,
             g.email,
-            g.rsvp_status
+            g.rsvp_status,
+            g.notification_mode
         FROM GUESTS g
         WHERE id=? AND g.rsvp_status=?
     `, [guestId, 'present']);
@@ -265,6 +314,7 @@ async function getGuestAndInvitationRelatedById(guestId) {
             g.plus_one_name_diet_restr,
             g.notes,
             g.updated_at AS response_date,
+            g.notification_mode,
 
             e.id AS eventId,
             e.title AS eventTitle,
@@ -298,12 +348,15 @@ async function getGuestAndInvitationRelatedById(guestId) {
     return rows[0] || null;
 }
 
-async function update_guest(guestId, eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus, hasPlusOne, 
-    guesthasPlusOneAutoriseByAdmin, plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate) {
-    await pool.query(`UPDATE GUESTS SET event_id=?, full_name=?, table_number=?, email=?, phone_number=?, 
-        rsvp_status=?, has_plus_one=?,guest_has_plus_one_autorise_by_admin=?, plus_one_name=?, 
-        notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? WHERE id=?`, 
-        [eventId, fullName, tableNumber, email, phoneNumber, rsvpStatus, hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, notes, 
+async function update_guest(guestId, eventId, fullName, tableNumber, email, phoneNumber, 
+    notificationMode, rsvpStatus, hasPlusOne, guesthasPlusOneAutoriseByAdmin, 
+    plusOneName, notes, dietaryRestrictions, plusOneNameDietRestr, updateDate) {
+    await pool.query(`UPDATE GUESTS 
+                      SET event_id=?, full_name=?, table_number=?, email=?, phone_number=?, notification_mode=?, 
+                          rsvp_status=?, has_plus_one=?,guest_has_plus_one_autorise_by_admin=?, plus_one_name=?, 
+                          notes=?, dietary_restrictions=?, plus_one_name_diet_restr=?, updated_at=? 
+                      WHERE id=?`, 
+        [eventId, fullName, tableNumber, email, phoneNumber, notificationMode, rsvpStatus, hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, notes, 
             dietaryRestrictions, plusOneNameDietRestr, updateDate, guestId]
     );
 }

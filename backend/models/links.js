@@ -62,7 +62,6 @@ async function getUserRoleByToken(token) {
     `,
     [token]
   );
-
   return rows.length ? rows[0] : null;
 }
 
@@ -86,12 +85,41 @@ async function updateLink(linkId, usedCount, type, usedLimitCount, dateLimitLink
   return result.insertId;
 }
 
+async function updateLinkUsedCount(linkId, action = 'increment') {
+
+    let query = '';
+    if (action === 'increment') {
+        query = `
+            UPDATE LINKS
+            SET used_count = used_count + 1
+            WHERE id = ?
+            AND used_count < limit_count
+        `;
+    } else if (action === 'decrement') {
+        query = `
+            UPDATE LINKS
+            SET used_count = used_count - 1
+            WHERE id = ?
+            AND used_count > 0
+        `;
+    } else {
+        throw new Error('Action invalide');
+    }
+    const [result] = await pool.query(
+        query,
+        [linkId]
+    );
+
+    return result.affectedRows > 0;
+}
+
 async function deleteLink(linkId) {
     await pool.query(`DELETE FROM LINKS WHERE id=?`, [linkId]);
 }
 
-module.exports = {initLinkModel, createLink, 
-  getAllLinks, getLinkById,
-  getLinkByToken, updateLink, 
+module.exports = {
+  initLinkModel, createLink, 
+  getAllLinks, getLinkById, getLinkByToken,
+  updateLink, updateLinkUsedCount,
   deleteLink, getUserRoleByToken
 }

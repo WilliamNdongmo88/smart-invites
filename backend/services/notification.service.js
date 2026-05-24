@@ -149,7 +149,7 @@ async function sendGuestEmail(guest, event, token) {
 };
 
 async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
-  console.log('data:', data);
+  //console.log('data:', data);
   // console.log('qrCodeUrl:', qrCodeUrl);
   // console.log('pdfBuffer:', pdfBuffer);
   const guest = data;
@@ -1335,6 +1335,7 @@ async function sendMailToAdmin(name, email, phone, subject, message) {
   console.log(`✅ Email(Contact Us) envoyé à Admin SmartInvite`);
 };
 
+//Uniquement via mail
 async function sendNewsLetterToUsers() {
   console.log("Envoie de la news letter")
   const brevo = new Brevo.TransactionalEmailsApi();
@@ -1390,6 +1391,7 @@ async function sendNewsLetterToUsers() {
   console.log(`✅ Email(New letter) envoyé à aux users`);
 };
 
+//Uniquement via mail
 async function sendNewsUpdatesToUsers(user) {
   try {
     console.log("📨 Envoi de la newsletter à:", user.email);

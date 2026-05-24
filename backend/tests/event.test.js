@@ -82,7 +82,7 @@ describe("Events API", () => {
                 eventDatas: eventDatas,
                 eventInvitationNote: eventInvitationNote
             }
-            console.log("## data:", data);
+            //console.log("## data:", data);
             const res = await request(app)
             .post("/api/event/create-event")
             .send(data)

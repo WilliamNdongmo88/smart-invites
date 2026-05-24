@@ -503,7 +503,7 @@ const loginWithGoogle = async (req, res, next) => {
     // console.log('GOOGLE PAYLOAD:', payload);
 
     const { email, name, sub: googleId, picture } = payload;
-    console.log('Extracted Google user info:', { email, name, googleId, picture });
+    //console.log('Extracted Google user info:', { email, name, googleId, picture });
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
@@ -564,7 +564,7 @@ const signupWithGoogle = async (req, res, next) => {
     console.log('[signupWithGoogle] PAYLOAD:', payload);
 
     const { email, name, sub: googleId, picture } = payload;
-    console.log('Extracted Google user info:', { email, name, googleId, picture });
+    //console.log('Extracted Google user info:', { email, name, googleId, picture });
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
