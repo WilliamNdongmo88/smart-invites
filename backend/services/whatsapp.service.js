@@ -125,7 +125,6 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
-    //console.log('sendGuestWhatsapp::guest', guest);
     try {
 
         /**
