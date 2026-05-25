@@ -687,7 +687,7 @@ const checkCode = async (req, res, next) => {
 
     if (process.env.NODE_ENV === "test") {
       await updateUserActiveAccount(email, true);
-      return res.status(200).json({ message: "Compte activé (test)" });
+      return res.status(200).json({ message: "Compte activé 'test'" });
     }
 
     const user = await checkUserByCode(email, code, isActive);
