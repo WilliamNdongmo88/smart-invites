@@ -7,29 +7,202 @@ async function sendEmailCode(user, code, isActive=false) {
   const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
+  const resetPasswordLink =
+  `${process.env.API_URL}/forgot-password?code=${code}&email=${encodeURIComponent(user.email)}`;
+
+  const activationLink =
+  `${process.env.API_URL}/activate-account?code=${code}&email=${encodeURIComponent(user.email)}`;
+  console.log("#ActivationLink: ", activationLink);
+
   const resetPassMessage = `
-      <div style="font-family:Arial,sans-serif">
-        <h2>Bonjour ${user.name || ''},</h2>
-        <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
-        <p>Voici votre code de vérification :</p>
-        <h1 style="letter-spacing:4px">${code}</h1>
-        <p>Ce code est valable pendant 10 minutes.</p>
-        <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail.</p>
-        <br/>
-        <p>L’équipe <strong>Smart Invite</strong></p>
-      </div>
-    `
+    <div style="
+        margin:0;
+        padding:0;
+        background:#f4f6f8;
+        font-family:Arial,sans-serif;
+    ">
+      <table width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0;">
+        <tr>
+          <td align="center">
+
+            <table width="600" cellpadding="0" cellspacing="0"
+              style="
+                background:#ffffff;
+                border-radius:10px;
+                padding:35px;
+                box-shadow:0 2px 10px rgba(0,0,0,0.06);
+              ">
+
+              <tr>
+                <td>
+
+                  <h2 style="color:#1f2937;margin-top:0;">
+                    🔐 Réinitialisation du mot de passe
+                  </h2>
+
+                  <p style="font-size:15px;color:#374151;">
+                    Bonjour <strong>${user.name || ''}</strong>,
+                  </p>
+
+                  <p style="font-size:15px;color:#374151;line-height:1.6;">
+                    Vous avez demandé à réinitialiser votre mot de passe.
+                  </p>
+
+                  <p style="font-size:15px;color:#374151;">
+                    Voici votre code de vérification :
+                  </p>
+
+                  <div style="
+                    text-align:center;
+                    margin:25px 0;
+                  ">
+                    <span style="
+                      display:inline-block;
+                      background:#f3f4f6;
+                      padding:15px 25px;
+                      border-radius:8px;
+                      font-size:32px;
+                      font-weight:bold;
+                      letter-spacing:6px;
+                      color:#111827;
+                    ">
+                      ${code}
+                    </span>
+                  </div>
+
+                  <p style="font-size:14px;color:#6b7280;">
+                    Ce code est valable pendant <strong>10 minutes</strong>.
+                  </p>
+
+                  <div style="text-align:center;margin:30px 0;">
+                    <a href="${resetPasswordLink}"
+                      style="
+                        background:#2563eb;
+                        color:#ffffff;
+                        padding:14px 24px;
+                        border-radius:6px;
+                        text-decoration:none;
+                        font-weight:bold;
+                        display:inline-block;
+                      ">
+                      Réinitialiser mon mot de passe
+                    </a>
+                  </div>
+
+                  <p style="font-size:14px;color:#6b7280;line-height:1.6;">
+                    Si vous n'êtes pas à l'origine de cette demande,
+                    ignorez simplement cet e-mail.
+                  </p>
+
+                  <br/>
+
+                  <p style="font-size:14px;color:#374151;">
+                    L’équipe <strong>Smart Invite</strong>
+                  </p>
+
+                </td>
+              </tr>
+
+            </table>
+
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
   const activeAccountMessage = `
-      <div style="font-family:Arial,sans-serif">
-        <h2>Bonjour ${user.name || ''},</h2>
-        <p>Voici votre code d'activation :</p>
-        <h1 style="letter-spacing:4px">${code}</h1>
-        <p>Ce code est valable pendant 10 minutes.</p>
-        <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail.</p>
-        <br/>
-        <p>L’équipe <strong>Smart Invite</strong></p>
-      </div>
-    `
+    <div style="
+        margin:0;
+        padding:0;
+        background:#f4f6f8;
+        font-family:Arial,sans-serif;
+    ">
+      <table width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0;">
+        <tr>
+          <td align="center">
+
+            <table width="600" cellpadding="0" cellspacing="0"
+              style="
+                background:#ffffff;
+                border-radius:10px;
+                padding:35px;
+                box-shadow:0 2px 10px rgba(0,0,0,0.06);
+              ">
+
+              <tr>
+                <td>
+
+                  <h2 style="color:#1f2937;margin-top:0;">
+                    ✅ Activation du compte
+                  </h2>
+
+                  <p style="font-size:15px;color:#374151;">
+                    Bonjour <strong>${user.name || ''}</strong>,
+                  </p>
+
+                  <p style="font-size:15px;color:#374151;">
+                    Voici votre code d'activation :
+                  </p>
+
+                  <div style="
+                    text-align:center;
+                    margin:25px 0;
+                  ">
+                    <span style="
+                      display:inline-block;
+                      background:#f3f4f6;
+                      padding:15px 25px;
+                      border-radius:8px;
+                      font-size:32px;
+                      font-weight:bold;
+                      letter-spacing:6px;
+                      color:#111827;
+                    ">
+                      ${code}
+                    </span>
+                  </div>
+
+                  <p style="font-size:14px;color:#6b7280;">
+                    Ce code est valable pendant <strong>10 minutes</strong>.
+                  </p>
+
+                  <div style="text-align:center;margin:30px 0;">
+                    <a href="${activationLink}"
+                      style="
+                        background:#16a34a;
+                        color:#ffffff;
+                        padding:14px 24px;
+                        border-radius:6px;
+                        text-decoration:none;
+                        font-weight:bold;
+                        display:inline-block;
+                      ">
+                      Activer mon compte
+                    </a>
+                  </div>
+
+                  <p style="font-size:14px;color:#6b7280;line-height:1.6;">
+                    Si vous n'êtes pas à l'origine de cette demande,
+                    ignorez simplement cet e-mail.
+                  </p>
+
+                  <br/>
+
+                  <p style="font-size:14px;color:#374151;">
+                    L’équipe <strong>Smart Invite</strong>
+                  </p>
+
+                </td>
+              </tr>
+
+            </table>
+
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
 
   const sendSmtpEmail = {
     to: [{ email: user.email, name: user.name }],
