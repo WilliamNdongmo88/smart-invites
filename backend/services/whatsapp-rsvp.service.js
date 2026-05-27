@@ -32,9 +32,9 @@ const handleRsvp = async (client, message) => {
         const invitation = await getInvitationByChatId(chatId);
         console.log('Invitation trouvée :', invitation);
         if (!invitation) {
-            await message.reply(
-                `❌ Aucune invitation trouvée.`
-            );
+            // await message.reply(
+            //     `❌ Aucune invitation trouvée.`
+            // );
             return;
         }
         console.log('Invitation trouvée :', invitation);

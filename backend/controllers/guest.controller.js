@@ -1,7 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 const pool = require('../config/bd');
 
-const { getEventById, getGuestEmailRelatedToEvent, getUserByEventId, getUserByEvtId} = require('../models/events');
+const { getEventById, getGuestEmailRelatedToEvent,getUserByEventId, 
+        getGuestPhoneRelatedToEvent,getUserByEvtId} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById, createInvitation, updateInvitationQrCode } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
@@ -72,8 +73,7 @@ const addGuest = async (req, res, next) => {
         // =========================
         // 4. LIMIT CHECK
         // =========================
-        const existingGuestsCount =
-            Number(user.total_guests || 0);
+        const existingGuestsCount = Number(user.total_guests || 0);
         const totalGuests = existingGuestsCount + guestDatas.length;
         if (
             user.plan === 'gratuit' &&
@@ -105,22 +105,29 @@ const addGuest = async (req, res, next) => {
                 guesthasPlusOneAutoriseByAdmin,
                 notificationMode
             } = guest;
-            if (!fullName || !email) {
-                throw new Error(
-                    'Nom et email obligatoires'
-                );
+            const isEmailModeInvalid = notificationMode === 'email' && (!fullName || !email);
+            const isWhatsappModeInvalid = notificationMode === 'whatsapp' && (!fullName || !phoneNumber);
+            if (isEmailModeInvalid) {
+                throw new Error('Nom et email obligatoires');
+            }
+            if (isWhatsappModeInvalid) {
+                throw new Error('Nom et Numéro Whatsapp obligatoires');
             }
 
             // Vérification doublon
-            const existingGuest =
-                await getGuestEmailRelatedToEvent(
-                    email,
-                    eventId
-                );
-            if ( existingGuest && existingGuest.email !== user.email ) {
-                throw new Error(
-                    `L'invité ${email} existe déjà`
-                );
+            if(email){
+                const existingGuest = await getGuestEmailRelatedToEvent(email, eventId);
+                if ( existingGuest ) { //existingGuest.email !== user.email
+                    throw new Error( `L'invité ${email} existe déjà` );
+                }
+            }
+            if(phoneNumber){
+                const phone = await removeCountryCode(phoneNumber);
+                //const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
+                console.log('[phoneNumber] existingGuest:', existingGuest);
+                if ( existingGuest ) { //existingGuest.email !== user.email
+                    throw new Error( `L'invité ${phoneNumber} existe déjà` );
+                }
             }
 
             // =========================
@@ -171,16 +178,10 @@ const addGuest = async (req, res, next) => {
         // =========================
         // 10. RESPONSE
         // =========================
-        return res.status(201).json({
-            success: true,
-            guests: createdGuests
-        });
+        return res.status(201).json({success: true,guests: createdGuests});
 
     } catch (error) {
-        console.error(
-            'CREATE GUEST ERROR:',
-            error.message
-        );
+        console.error('CREATE GUEST ERROR:',error.message);
 
         // =========================
         // ROLLBACK
@@ -220,10 +221,13 @@ const addGuestFromLink = async (req, res, next) => {
         1. VALIDATION
         =========================================
         */
-        if (!eventId || !fullName || !email || !token) {
-            return res.status(400).json({
-                error: 'Champs obligatoires manquants.'
-            });
+        const isEmailModeInvalid = notificationMode === 'email' && (!eventId || !fullName || !email || !token);
+        const isWhatsappModeInvalid = notificationMode === 'whatsapp' && (!eventId || !fullName || !phoneNumber || !token);
+        if (isEmailModeInvalid) {
+            return res.status(400).json({error: 'Nom et Email obligatoires.'});
+        }
+        if (isWhatsappModeInvalid) {
+            return res.status(400).json({error: 'Nom et Numéro obligatoires.'});
         }
 
         /*
@@ -292,11 +296,20 @@ const addGuestFromLink = async (req, res, next) => {
         EXISTING GUEST
         =========================================
         */
-        const existingGuest = await getGuestEmailRelatedToEvent(email, event.id);
-        if (existingGuest) {
-            return res.status(409).json({
-                error: `L'invité ${email} existe déjà`
-            });
+        // Vérification doublon
+        if(email){
+            const existingGuest = await getGuestEmailRelatedToEvent(email, eventId);
+            if ( existingGuest ) {
+                return res.status(409).json({error: `L'invité ${email} existe déjà`});
+            }
+        }
+        if(phoneNumber){
+            const phone = await removeCountryCode(phoneNumber);
+            //const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
+            console.log('[phoneNumber] existingGuest:', existingGuest);
+            if ( existingGuest ) {
+                return res.status(409).json({error: `L'invité ${phoneNumber} existe déjà`});
+            }
         }
 
         /*
@@ -490,6 +503,22 @@ const addGuestFromLink = async (req, res, next) => {
 
         return next(error);
     }
+};
+
+const removeCountryCode = (phone) => {
+  const countryCodes = [
+    "+237", "237",
+    "+225", "225",
+    "+230", "230"
+  ];
+
+  for (const code of countryCodes) {
+    if (phone.startsWith(code)) {
+      return phone.replace(code, "");
+    }
+  }
+
+  return phone;
 };
 
 // Cette méthode a été implémenter pour envoyer le pdf aux invités qui
