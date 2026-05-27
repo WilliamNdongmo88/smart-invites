@@ -1533,6 +1533,7 @@ async function sendNewsUpdatesToUsers(user) {
 }
 
 async function sendPaymentProofToAdminAboutChangePlan(user, planName, fileBuffer) {
+  console.log({user, planName, fileBuffer})
   try {
     const logo = await getLogoUrlFromFirebase('logo.png');
 

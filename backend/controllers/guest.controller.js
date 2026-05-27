@@ -123,8 +123,7 @@ const addGuest = async (req, res, next) => {
             }
             if(phoneNumber){
                 const phone = await removeCountryCode(phoneNumber);
-                //const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
-                console.log('[phoneNumber] existingGuest:', existingGuest);
+                const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
                 if ( existingGuest ) { //existingGuest.email !== user.email
                     throw new Error( `L'invité ${phoneNumber} existe déjà` );
                 }
@@ -305,8 +304,7 @@ const addGuestFromLink = async (req, res, next) => {
         }
         if(phoneNumber){
             const phone = await removeCountryCode(phoneNumber);
-            //const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
-            console.log('[phoneNumber] existingGuest:', existingGuest);
+            const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
             if ( existingGuest ) {
                 return res.status(409).json({error: `L'invité ${phoneNumber} existe déjà`});
             }
