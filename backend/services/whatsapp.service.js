@@ -161,8 +161,7 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
         /**
          * Lien RSVP
          */
-        const rsvpLink =
-            `${process.env.API_URL}/invitations/${token}`;
+        const rsvpLink = `${process.env.API_URL}/invitations/${token}`;
 
         /**
          * Variables événement
@@ -291,18 +290,25 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
         /**
          * Envoi WhatsApp
          */
-        await client.sendMessage(
-            chatId,
-            whatsappMessage
-        );
+        await client.sendMessage( chatId, whatsappMessage );
 
         console.log(
             `✅ Invitation WhatsApp envoyée à ${guest.full_name}`
         );
-        //console.log("---Récuperation invitation pour guestId---");
-        const invitation = await getGuestInvitationById(guest.id);
-        //console.log('invitation:', invitation);
-        await updateInvitationByChatId(invitation[0].id, chatId, false);
+        try {
+            // MAJ INVITATION AVEC CHAT ID POUR SUIVI RSVP
+            const invitation = await getGuestInvitationById(guest.id);
+            //console.log('invitation:', invitation);
+            await updateInvitationByChatId(invitation[0].id, chatId, false);
+        } catch (error) {
+            console.error( '[getGuestInvitationById/updateInvitationByChatId] Error:', error );
+            sentQrMedia.delete(true);
+            await new Promise(resolve =>
+                setTimeout(resolve, 2000)
+            );
+            sentPdfMedia.delete(true);
+            throw error;
+        }
 
         return true;
 
@@ -752,13 +758,7 @@ const whatsappInvitationToGuest = async ( data, qrCodeUrl, pdfBuffer ) => {
         /**
          * Envoi QR Code
          */
-        await client.sendMessage(
-            chatId,
-            qrMedia,
-            {
-                caption
-            }
-        );
+        const sentQrMedia = await client.sendMessage( chatId, qrMedia, { caption } );
 
         /**
          * Petit délai anti-spam
@@ -770,24 +770,29 @@ const whatsappInvitationToGuest = async ( data, qrCodeUrl, pdfBuffer ) => {
         /**
          * Envoi PDF
          */
-        await client.sendMessage(
-            chatId,
-            pdfMedia
-        );
+        const sentPdfMedia = await client.sendMessage( chatId, pdfMedia );
 
-        console.log(
-            `✅ Invitation WhatsApp envoyée à ${numero}`
-        );
+        try {
+            // MAJ INVITATION AVEC CHAT ID POUR SUIVI RSVP
+            const invitation = await getGuestInvitationById(guest.guest_id);
+            //console.log('### Invitation:', invitation);
+            await updateInvitationByChatId(invitation[0].id, chatId, true);
+        } catch (error) {
+            console.error( '[getGuestInvitationById/updateInvitationByChatId] Error:', error );
+            sentQrMedia.delete(true);
+            await new Promise(resolve =>
+                setTimeout(resolve, 2000)
+            );
+            sentPdfMedia.delete(true);
+            throw error;
+        }
+
+        console.log( `✅ Invitation WhatsApp envoyée à ${numero}` );
 
         return true;
 
     } catch (error) {
-
-        console.error(
-            'Erreur WhatsApp invitation :',
-            error
-        );
-
+        console.error( '.#Whatsapp Error:', error );
         throw error;
     }
 };
@@ -1461,8 +1466,7 @@ const whatsappGuestResponseToOrganizer = async ( organizer, guest, rsvpStatus ) 
         /**
          * Message WhatsApp
          */
-        const whatsappMessage = `
-        ${subject}
+        const whatsappMessage = `${subject}
 
         Bonjour *${organizer.name}* 👋
 
@@ -1470,8 +1474,8 @@ const whatsappGuestResponseToOrganizer = async ( organizer, guest, rsvpStatus ) 
 
         📌 Pensez à mettre à jour ses informations et son numéro de table dans votre espace organisateur.
 
-        ━━━━━━━━━━━━━━━
-        _ smart-invite.com _
+            ━━━━━━━━━━━━━━━
+            _ smart-invite.com _
         `;
 
         /**

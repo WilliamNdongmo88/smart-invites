@@ -23,7 +23,7 @@ const { createNotification } = require('../models/notification');
 const { getLinkByToken, updateLink, updateLinkUsedCount } = require('../models/links');
 const { getEventInvitNote } = require('../models/event_invitation_notes');
 const { getAllUsers } = require('./feedback.controller');
-const { whatsappInvitationToGuest, sendFileQRCodeWhatsapp, sendReminderWhatsapp } = require('../services/whatsapp.service');
+const { whatsappInvitationToGuest, sendFileQRCodeWhatsapp, sendReminderWhatsapp, whatsappGuestResponseToOrganizer } = require('../services/whatsapp.service');
 
 const addGuest = async (req, res, next) => {
     let connection;
@@ -40,6 +40,7 @@ const addGuest = async (req, res, next) => {
         }
         const guestDatas = req.body;
         const eventId = guestDatas[0].eventId;
+        console.log('###eventId:', eventId);
 
         if (!eventId) {
             return res.status(400).json({
@@ -164,10 +165,7 @@ const addGuest = async (req, res, next) => {
                 false
             );
         } catch (notifError) {
-            console.error(
-                'NOTIFICATION ERROR:',
-                notifError.message
-            );
+            console.error('#1#NOTIFICATION ERROR:',notifError.message);
         }
 
         // =========================
@@ -257,6 +255,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const link = await getLinkByToken(token);
+        //console.log('###Link found:', link);
         if (!link) {
             return res.status(404).json({
                 error: "Lien d'invitation introuvable"
@@ -281,7 +280,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const event = await getEventById(eventId);
-        console.log('###Event:', event);
+        //console.log('###Event:', event);
         if (!event) {
             return res.status(404).json({
                 error: "Evénement introuvable"
@@ -316,11 +315,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const invitationToken = `${guestId}:${uuidv4()}`;
-        const invitationId = await createInvitation(
-            guestId,
-            invitationToken,
-            null
-        );
+        const invitationId = await createInvitation( guestId, invitationToken, null );
 
         if (!invitationId) {
             throw new Error(
@@ -356,11 +351,7 @@ const addGuestFromLink = async (req, res, next) => {
         try {
             qrUrl = await generateGuestQr( guestId, invitationToken, "wedding-ring.webp" );
             if (!card.has_invitation_model_card) {
-                pdfBuffer = await generateGuestPdf(
-                    guestEventRelated[0],
-                    card,
-                    plusOneName
-                );
+                pdfBuffer = await generateGuestPdf( guestEventRelated[0], card, plusOneName );
             }
         } catch (error) {
             console.error('QR/PDF ERROR:', error.message);
@@ -368,14 +359,11 @@ const addGuestFromLink = async (req, res, next) => {
 
         /*
         =========================================
-        UPDATE QR URL
+        UPDATE INVITATION WHIT QR URL
         =========================================
         */
         if (qrUrl) {
-            await updateInvitationQrCode(
-                guestId,
-                qrUrl
-            );
+            await updateInvitationQrCode( guestId, qrUrl );
         }
 
         /*
@@ -403,15 +391,14 @@ const addGuestFromLink = async (req, res, next) => {
         if(notificationMode==='whatsapp'){
             try {
                 await whatsappInvitationToGuest( guest, qrUrl, pdfBuffer );
-
+                const organizer = await getUserById(event.organizer_id);
+                await whatsappGuestResponseToOrganizer(organizer, guest, rsvpStatus);
             } catch (error) {
                 console.error( 'WHATSAPP ERROR:', error.message );
                 try {
                     await deleteGuestAfterError(guestId);
                     await updateLinkUsedCount(link.id, 'decrement');
-                    console.log(
-                        `DELETE: Guest ${guestId} supprimé après erreur WhatsApp`
-                    );
+                    console.log(`DELETE: Guest ${guestId} supprimé après erreur WhatsApp`);
                 } catch (rollbackError) {
                     console.error(
                         'ROLLBACK ERROR:',
@@ -430,11 +417,21 @@ const addGuestFromLink = async (req, res, next) => {
        if(notificationMode==='email'){
             try {
                 await sendInvitationToGuest( guest, qrUrl, pdfBuffer );
+                const organizer = await getUserById(event.organizer_id);
+                await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
             } catch (error) {
-                console.error(
-                    'EMAIL ERROR:',
-                    error.message
-                );
+                console.error('EMAIL ERROR:',error.message);
+                try {
+                    await deleteGuestAfterError(guestId);
+                    await updateLinkUsedCount(link.id, 'decrement');
+                    console.log(`DELETE: Guest ${guestId} supprimé après erreur Email`);
+                } catch (rollbackError) {
+                    console.error(
+                        'ROLLBACK ERROR:',
+                        rollbackError.message
+                    );
+                }
+                throw new Error(error.message);
             }
        }
 
@@ -446,19 +443,19 @@ const addGuestFromLink = async (req, res, next) => {
         */
         try {
             await createNotification(
-                event[0].eventId,
+                event.id,
                 `Invitation envoyée`,
                 `L'invitation QR Code a été envoyée à ${fullName}.`,
                 'info',
                 false
             );
 
-            const organizer = await getUserById( event[0].organizerId);
+            const organizer = await getUserById( event.organizer_id);
             if(organizer.notification_mode === 'email') await sendGuestResponseToOrganizer( organizer, guestEventRelated[0], rsvpStatus );
             if(organizer.notification_mode === 'whatsapp') await whatsappGuestResponseToOrganizer( organizer, guestEventRelated[0], rsvpStatus );
             if (hasPlusOne) {
                 await createNotification(
-                    event[0].eventId,
+                    event.id,
                     `Réponse invité`,
                     `${fullName} viendra accompagné de ${plusOneName}.`,
                     'info',
@@ -467,7 +464,7 @@ const addGuestFromLink = async (req, res, next) => {
 
             } else {
                 await createNotification(
-                    event[0].eventId,
+                    event.id,
                     `Réponse invité`,
                     `${fullName} a confirmé sa présence.`,
                     'info',
@@ -475,10 +472,7 @@ const addGuestFromLink = async (req, res, next) => {
                 );
             }
         } catch (error) {
-            console.error(
-                'NOTIFICATION ERROR:',
-                error.message
-            );
+            console.error('#2#NOTIFICATION ERROR:',error.message);
         }
 
         /*
@@ -492,10 +486,7 @@ const addGuestFromLink = async (req, res, next) => {
 
     } catch (error) {
 
-        console.error(
-            'AddGuestFromLink ERROR:',
-            error.message
-        );
+        console.error('AddGuestFromLink ERROR:',error.message);
 
         return next(error);
     }
@@ -708,6 +699,7 @@ const updateGuest = async (req, res, next) => {
                     await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.webp");
                     console.log('[plusOneName] plusOneName: ', plusOneName);
                     const event = await getEventByGuestId(guest.guest_id);
+                    console.log('###event :', event);
                     const card = await getEventInvitNote(event[0].eventId);
                     let buffer = null;
                     if(!card.has_invitation_model_card){

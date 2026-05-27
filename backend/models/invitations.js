@@ -39,44 +39,43 @@ async function createInvitation( guestId, token, qrCodeUrl = null ) {
     return result.insertId;
 }
 
-// async function updateInvitationQrCode( guestId, qrCodeUrl ) {
+async function updateInvitationQrCode( guestId, qrCodeUrl ) {
 
-//     const [rows] = await pool.query(
-//         `
-//         UPDATE INVITATIONS
-//         SET qr_code_url = ?
-//         WHERE guest_id = ?
-//         `,
-//         [ qrCodeUrl, guestId ]
-//     );
-
-//     return rows[0];
-// }
-async function updateInvitationQrCode(invitationId, qrCodeUrl) {
-
-    await pool.execute(
+    const [rows] = await pool.query(
         `
         UPDATE INVITATIONS
         SET qr_code_url = ?
-        WHERE id = ?
+        WHERE guest_id = ?
         `,
-        [qrCodeUrl, invitationId]
-    );
-
-    const [rows] = await pool.execute(
-        `
-        SELECT *
-        FROM INVITATIONS
-        WHERE id = ?
-        `,
-        [invitationId]
+        [ qrCodeUrl, guestId ]
     );
 
     return rows[0];
 }
+// async function updateInvitationQrCode(invitationId, qrCodeUrl) {
+//     console.log('[updateInvitationQrCode] variable:', {invitationId, qrCodeUrl});
+//     await pool.execute(
+//         `
+//         UPDATE INVITATIONS
+//         SET qr_code_url = ?
+//         WHERE id = ?
+//         `,
+//         [qrCodeUrl, invitationId]
+//     );
+
+//     const [rows] = await pool.execute(
+//         `
+//         SELECT *
+//         FROM INVITATIONS
+//         WHERE id = ?
+//         `,
+//         [invitationId]
+//     );
+
+//     return rows[0];
+// }
 
 async function updateInvitationByChatId( invitationId, chatId, isInvitationSent = false ) {
-    console.log('updateInvitationByChatId::invitationId, chatId', {invitationId, chatId});
     const [result] = await pool.query(
         `
         UPDATE INVITATIONS

@@ -10,7 +10,7 @@ const { generateGuestPdf } = require('./pdfService');
 
 async function processGuestInvitationResponse( guest, invitation, rsvpStatus ) {
    // Import localement pour éviter les dépendances circulaires
-   const { whatsappInvitationToGuest } = require('./whatsapp.service');
+   const { whatsappInvitationToGuest, whatsappGuestResponseToOrganizer } = require('./whatsapp.service');
    const updateDate = new Date();
    const event = await getEventByGuestId(guest.id);
    const invite = await getGuestAndInvitationRelatedById(guest.id);
