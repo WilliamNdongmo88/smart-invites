@@ -1,5 +1,5 @@
 const { processGuestInvitationResponse } = require("./guest-response.service");
-const { getGuestById } = require("../models/guests");
+const { getGuestById, updateRsvpStatusGuest } = require("../models/guests");
 const { getInvitationByChatId, updateInvitationByChatId } = require("../models/invitations");
 
 const handleRsvp = async (client, message) => {
@@ -30,10 +30,11 @@ const handleRsvp = async (client, message) => {
          * Retrouver invitation
          */
         const invitation = await getInvitationByChatId(chatId);
+        console.log('Invitation trouvée :', invitation);
         if (!invitation) {
-            await message.reply(
-                `❌ Aucune invitation trouvée.`
-            );
+            // await message.reply(
+            //     `❌ Aucune invitation trouvée.`
+            // );
             return;
         }
         console.log('Invitation trouvée :', invitation);
@@ -108,6 +109,7 @@ const handleRsvp = async (client, message) => {
                     const guest = await getGuestById(invitation.guest_id);
                     await processGuestInvitationResponse(guest, invitation, 'confirmed');
                     await updateInvitationByChatId(invitation.id, chatId, true);
+                    await updateRsvpStatusGuest(guest.id, 'confirmed');
                 }else{
                     await message.reply(`✅ Votre invitation a déjà été envoyée.`);
                 }

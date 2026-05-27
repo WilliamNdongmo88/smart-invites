@@ -17,6 +17,7 @@ const initNotificationModel = async () => {
 };
 
 async function createNotification(eventId, title, message, type, isRead) {
+  //console.log("[createNotification] eventId", eventId)
     const [result] = await pool.query(`
         INSERT INTO NOTIFICATIONS (event_id, title, message, type, is_read)
         VALUES(?,?,?,?,?)

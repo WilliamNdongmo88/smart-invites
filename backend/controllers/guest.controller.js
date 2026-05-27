@@ -1,7 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 const pool = require('../config/bd');
 
-const { getEventById, getGuestEmailRelatedToEvent, getUserByEventId, getUserByEvtId} = require('../models/events');
+const { getEventById, getGuestEmailRelatedToEvent,getUserByEventId, 
+        getGuestPhoneRelatedToEvent,getUserByEvtId} = require('../models/events');
 const { deleteGuestFiles } = require('../services/invitation.service');
 const { getGuestInvitationById, createInvitation, updateInvitationQrCode } = require('../models/invitations');
 const { sendInvitationToGuest, sendReminderMail,
@@ -23,7 +24,7 @@ const { createNotification } = require('../models/notification');
 const { getLinkByToken, updateLink, updateLinkUsedCount } = require('../models/links');
 const { getEventInvitNote } = require('../models/event_invitation_notes');
 const { getAllUsers } = require('./feedback.controller');
-const { whatsappInvitationToGuest, sendFileQRCodeWhatsapp, sendReminderWhatsapp } = require('../services/whatsapp.service');
+const { whatsappInvitationToGuest, sendFileQRCodeWhatsapp, sendReminderWhatsapp, whatsappGuestResponseToOrganizer } = require('../services/whatsapp.service');
 
 const addGuest = async (req, res, next) => {
     let connection;
@@ -40,6 +41,7 @@ const addGuest = async (req, res, next) => {
         }
         const guestDatas = req.body;
         const eventId = guestDatas[0].eventId;
+        console.log('###eventId:', eventId);
 
         if (!eventId) {
             return res.status(400).json({
@@ -71,8 +73,7 @@ const addGuest = async (req, res, next) => {
         // =========================
         // 4. LIMIT CHECK
         // =========================
-        const existingGuestsCount =
-            Number(user.total_guests || 0);
+        const existingGuestsCount = Number(user.total_guests || 0);
         const totalGuests = existingGuestsCount + guestDatas.length;
         if (
             user.plan === 'gratuit' &&
@@ -104,22 +105,29 @@ const addGuest = async (req, res, next) => {
                 guesthasPlusOneAutoriseByAdmin,
                 notificationMode
             } = guest;
-            if (!fullName || !email) {
-                throw new Error(
-                    'Nom et email obligatoires'
-                );
+            const isEmailModeInvalid = notificationMode === 'email' && (!fullName || !email);
+            const isWhatsappModeInvalid = notificationMode === 'whatsapp' && (!fullName || !phoneNumber);
+            if (isEmailModeInvalid) {
+                throw new Error('Nom et email obligatoires');
+            }
+            if (isWhatsappModeInvalid) {
+                throw new Error('Nom et Numéro Whatsapp obligatoires');
             }
 
             // Vérification doublon
-            const existingGuest =
-                await getGuestEmailRelatedToEvent(
-                    email,
-                    eventId
-                );
-            if ( existingGuest && existingGuest.email !== user.email ) {
-                throw new Error(
-                    `L'invité ${email} existe déjà`
-                );
+            if(email){
+                const existingGuest = await getGuestEmailRelatedToEvent(email, eventId);
+                if ( existingGuest ) { //existingGuest.email !== user.email
+                    throw new Error( `L'invité ${email} existe déjà` );
+                }
+            }
+            if(phoneNumber){
+                const phone = await removeCountryCode(phoneNumber);
+                //const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
+                console.log('[phoneNumber] existingGuest:', existingGuest);
+                if ( existingGuest ) { //existingGuest.email !== user.email
+                    throw new Error( `L'invité ${phoneNumber} existe déjà` );
+                }
             }
 
             // =========================
@@ -164,25 +172,16 @@ const addGuest = async (req, res, next) => {
                 false
             );
         } catch (notifError) {
-            console.error(
-                'NOTIFICATION ERROR:',
-                notifError.message
-            );
+            console.error('#1#NOTIFICATION ERROR:',notifError.message);
         }
 
         // =========================
         // 10. RESPONSE
         // =========================
-        return res.status(201).json({
-            success: true,
-            guests: createdGuests
-        });
+        return res.status(201).json({success: true,guests: createdGuests});
 
     } catch (error) {
-        console.error(
-            'CREATE GUEST ERROR:',
-            error.message
-        );
+        console.error('CREATE GUEST ERROR:',error.message);
 
         // =========================
         // ROLLBACK
@@ -222,10 +221,13 @@ const addGuestFromLink = async (req, res, next) => {
         1. VALIDATION
         =========================================
         */
-        if (!eventId || !fullName || !email || !token) {
-            return res.status(400).json({
-                error: 'Champs obligatoires manquants.'
-            });
+        const isEmailModeInvalid = notificationMode === 'email' && (!eventId || !fullName || !email || !token);
+        const isWhatsappModeInvalid = notificationMode === 'whatsapp' && (!eventId || !fullName || !phoneNumber || !token);
+        if (isEmailModeInvalid) {
+            return res.status(400).json({error: 'Nom et Email obligatoires.'});
+        }
+        if (isWhatsappModeInvalid) {
+            return res.status(400).json({error: 'Nom et Numéro obligatoires.'});
         }
 
         /*
@@ -257,6 +259,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const link = await getLinkByToken(token);
+        //console.log('###Link found:', link);
         if (!link) {
             return res.status(404).json({
                 error: "Lien d'invitation introuvable"
@@ -281,7 +284,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const event = await getEventById(eventId);
-        console.log('###Event:', event);
+        //console.log('###Event:', event);
         if (!event) {
             return res.status(404).json({
                 error: "Evénement introuvable"
@@ -293,11 +296,20 @@ const addGuestFromLink = async (req, res, next) => {
         EXISTING GUEST
         =========================================
         */
-        const existingGuest = await getGuestEmailRelatedToEvent(email, event.id);
-        if (existingGuest) {
-            return res.status(409).json({
-                error: `L'invité ${email} existe déjà`
-            });
+        // Vérification doublon
+        if(email){
+            const existingGuest = await getGuestEmailRelatedToEvent(email, eventId);
+            if ( existingGuest ) {
+                return res.status(409).json({error: `L'invité ${email} existe déjà`});
+            }
+        }
+        if(phoneNumber){
+            const phone = await removeCountryCode(phoneNumber);
+            //const existingGuest = await getGuestPhoneRelatedToEvent(phone, eventId);
+            console.log('[phoneNumber] existingGuest:', existingGuest);
+            if ( existingGuest ) {
+                return res.status(409).json({error: `L'invité ${phoneNumber} existe déjà`});
+            }
         }
 
         /*
@@ -316,11 +328,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const invitationToken = `${guestId}:${uuidv4()}`;
-        const invitationId = await createInvitation(
-            guestId,
-            invitationToken,
-            null
-        );
+        const invitationId = await createInvitation( guestId, invitationToken, null );
 
         if (!invitationId) {
             throw new Error(
@@ -356,11 +364,7 @@ const addGuestFromLink = async (req, res, next) => {
         try {
             qrUrl = await generateGuestQr( guestId, invitationToken, "wedding-ring.webp" );
             if (!card.has_invitation_model_card) {
-                pdfBuffer = await generateGuestPdf(
-                    guestEventRelated[0],
-                    card,
-                    plusOneName
-                );
+                pdfBuffer = await generateGuestPdf( guestEventRelated[0], card, plusOneName );
             }
         } catch (error) {
             console.error('QR/PDF ERROR:', error.message);
@@ -368,14 +372,11 @@ const addGuestFromLink = async (req, res, next) => {
 
         /*
         =========================================
-        UPDATE QR URL
+        UPDATE INVITATION WHIT QR URL
         =========================================
         */
         if (qrUrl) {
-            await updateInvitationQrCode(
-                guestId,
-                qrUrl
-            );
+            await updateInvitationQrCode( guestId, qrUrl );
         }
 
         /*
@@ -403,15 +404,14 @@ const addGuestFromLink = async (req, res, next) => {
         if(notificationMode==='whatsapp'){
             try {
                 await whatsappInvitationToGuest( guest, qrUrl, pdfBuffer );
-
+                const organizer = await getUserById(event.organizer_id);
+                await whatsappGuestResponseToOrganizer(organizer, guest, rsvpStatus);
             } catch (error) {
                 console.error( 'WHATSAPP ERROR:', error.message );
                 try {
                     await deleteGuestAfterError(guestId);
                     await updateLinkUsedCount(link.id, 'decrement');
-                    console.log(
-                        `DELETE: Guest ${guestId} supprimé après erreur WhatsApp`
-                    );
+                    console.log(`DELETE: Guest ${guestId} supprimé après erreur WhatsApp`);
                 } catch (rollbackError) {
                     console.error(
                         'ROLLBACK ERROR:',
@@ -430,11 +430,21 @@ const addGuestFromLink = async (req, res, next) => {
        if(notificationMode==='email'){
             try {
                 await sendInvitationToGuest( guest, qrUrl, pdfBuffer );
+                const organizer = await getUserById(event.organizer_id);
+                await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
             } catch (error) {
-                console.error(
-                    'EMAIL ERROR:',
-                    error.message
-                );
+                console.error('EMAIL ERROR:',error.message);
+                try {
+                    await deleteGuestAfterError(guestId);
+                    await updateLinkUsedCount(link.id, 'decrement');
+                    console.log(`DELETE: Guest ${guestId} supprimé après erreur Email`);
+                } catch (rollbackError) {
+                    console.error(
+                        'ROLLBACK ERROR:',
+                        rollbackError.message
+                    );
+                }
+                throw new Error(error.message);
             }
        }
 
@@ -446,19 +456,19 @@ const addGuestFromLink = async (req, res, next) => {
         */
         try {
             await createNotification(
-                event[0].eventId,
+                event.id,
                 `Invitation envoyée`,
                 `L'invitation QR Code a été envoyée à ${fullName}.`,
                 'info',
                 false
             );
 
-            const organizer = await getUserById( event[0].organizerId);
+            const organizer = await getUserById( event.organizer_id);
             if(organizer.notification_mode === 'email') await sendGuestResponseToOrganizer( organizer, guestEventRelated[0], rsvpStatus );
             if(organizer.notification_mode === 'whatsapp') await whatsappGuestResponseToOrganizer( organizer, guestEventRelated[0], rsvpStatus );
             if (hasPlusOne) {
                 await createNotification(
-                    event[0].eventId,
+                    event.id,
                     `Réponse invité`,
                     `${fullName} viendra accompagné de ${plusOneName}.`,
                     'info',
@@ -467,7 +477,7 @@ const addGuestFromLink = async (req, res, next) => {
 
             } else {
                 await createNotification(
-                    event[0].eventId,
+                    event.id,
                     `Réponse invité`,
                     `${fullName} a confirmé sa présence.`,
                     'info',
@@ -475,10 +485,7 @@ const addGuestFromLink = async (req, res, next) => {
                 );
             }
         } catch (error) {
-            console.error(
-                'NOTIFICATION ERROR:',
-                error.message
-            );
+            console.error('#2#NOTIFICATION ERROR:',error.message);
         }
 
         /*
@@ -492,13 +499,26 @@ const addGuestFromLink = async (req, res, next) => {
 
     } catch (error) {
 
-        console.error(
-            'AddGuestFromLink ERROR:',
-            error.message
-        );
+        console.error('AddGuestFromLink ERROR:',error.message);
 
         return next(error);
     }
+};
+
+const removeCountryCode = (phone) => {
+  const countryCodes = [
+    "+237", "237",
+    "+225", "225",
+    "+230", "230"
+  ];
+
+  for (const code of countryCodes) {
+    if (phone.startsWith(code)) {
+      return phone.replace(code, "");
+    }
+  }
+
+  return phone;
 };
 
 // Cette méthode a été implémenter pour envoyer le pdf aux invités qui
@@ -708,6 +728,7 @@ const updateGuest = async (req, res, next) => {
                     await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.webp");
                     console.log('[plusOneName] plusOneName: ', plusOneName);
                     const event = await getEventByGuestId(guest.guest_id);
+                    console.log('###event :', event);
                     const card = await getEventInvitNote(event[0].eventId);
                     let buffer = null;
                     if(!card.has_invitation_model_card){

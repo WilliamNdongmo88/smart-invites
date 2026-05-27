@@ -143,6 +143,7 @@ async function getGuestEmailRelatedToEvent(email, eventId) {
         g.id AS guestId,
         g.full_name,
         g.email,
+        g.phone_number,
         u.id AS organizerId,
         u.role
         FROM EVENTS e
@@ -150,6 +151,31 @@ async function getGuestEmailRelatedToEvent(email, eventId) {
         LEFT JOIN USERS u ON u.id = e.organizer_id
         WHERE g.email = ? AND e.id = ?
         ORDER BY e.id`, [email, eventId]);
+    return event[0];
+}
+
+async function getGuestPhoneRelatedToEvent(phone, eventId) {
+    const [event] = await pool.query(`
+        SELECT 
+        e.id AS eventId,
+        e.title,
+        e.type,
+        e.budget,
+        e.has_plus_one,
+        e.foot_restriction,
+        e.event_name_concerned1,
+        e.event_name_concerned2,
+        g.id AS guestId,
+        g.full_name,
+        g.email,
+        g.phone_number,
+        u.id AS organizerId,
+        u.role
+        FROM EVENTS e
+        LEFT JOIN GUESTS g ON g.event_id = e.id
+        LEFT JOIN USERS u ON u.id = e.organizer_id
+        WHERE g.phone_number = ? AND e.id = ?
+        ORDER BY e.id`, [phone, eventId]);
     return event[0];
 }
 
@@ -340,6 +366,7 @@ module.exports = {
     initEventsModel, createEvent, getEvents, updateEvent,updateEventStatus,
     getEventById, getEventsByOrganizerId,deleteEvents,
     getEventWithTotalGuestById, getEventWithTotalGuest,
-    getGuestEmailRelatedToEvent, getEventAndInvitationById,
+    getGuestEmailRelatedToEvent, getGuestPhoneRelatedToEvent,
+    getEventAndInvitationById,
     getUserByEventId,getUserByEvtId
 };

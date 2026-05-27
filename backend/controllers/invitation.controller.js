@@ -76,7 +76,7 @@ const genererSeveralInvitations = async (req, res, next) => {
                  * =========================
                  */
                 const qrUrl = await generateGuestQr( guest.id, token, "wedding-ring.webp" );
-                await updateInvitationQrCode( invitationId, qrUrl );
+                await updateInvitationQrCode( guest.id, qrUrl );
 
                 /**
                  * =========================
@@ -188,6 +188,7 @@ const genererInvitation = async ( req, res, next ) => {
          * =====================================================
          */
         const event = await getEventByGuestId( guest.id );
+        console.log("#EVENT :0: ", event);
         if (!event[0]) {
             return res.status(404).json({
                 error: 'Evénement introuvable'
@@ -207,7 +208,7 @@ const genererInvitation = async ( req, res, next ) => {
          * 7. CREATION INVITATION EN BASE
          * =====================================================
          */
-        console.log("---Création invitation pour guestId---");
+        //console.log("---Création invitation pour guestId---");
         invitationId = await createInvitation( guestId, token, null );
         if (!invitationId) {
             throw new Error(
@@ -237,7 +238,7 @@ const genererInvitation = async ( req, res, next ) => {
          * 9. UPDATE QR CODE URL
          * =====================================================
          */
-        const invitationUpdated = await updateInvitationQrCode( invitationId, qrUrl );
+        const invitationUpdated = await updateInvitationQrCode( guest.id, qrUrl );
         // console.log("###invitationUpdated:", invitationUpdated);
         /**
          * =====================================================
@@ -281,7 +282,7 @@ const genererInvitation = async ( req, res, next ) => {
             }
 
         } catch (error) {
-            console.error('NOTIFICATION ERROR:', error.message );
+            console.error('#3#NOTIFICATION ERROR:', error.message );
         }
 
         /**
