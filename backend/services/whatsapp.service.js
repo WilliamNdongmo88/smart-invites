@@ -47,18 +47,18 @@ client.on('qr', (qr) => {
 });
 
 client.on('authenticated', () => {
-    //console.log('WhatsApp authentifié ✅');
+    console.log('WhatsApp authentifié ✅');
 });
 
 client.on('ready', () => {
 
-    //console.log('WhatsApp connecté ✅');
+    console.log('WhatsApp connecté ✅');
 
     isReady = true;
 });
 
 client.on('loading_screen', (percent, message) => {
-    //console.log('⏳ Chargement :', percent, message);
+    console.log('⏳ Chargement :', percent, message);
 });
 
 client.on('disconnected', async (reason) => {
