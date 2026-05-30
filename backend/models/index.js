@@ -12,6 +12,7 @@ const { initNotificationModel } = require('./notification');
 const { initPaymentModel } = require('./payment');
 const { initUserNewsModel } = require('./usernews');
 const {initUserModel} = require('./users');
+const {initWhatsappTrackingModel} = require('./whatsapp-tracking');
 
 
 const initModels = async () => {
@@ -29,6 +30,7 @@ const initModels = async () => {
   await initFeedbacksModel();
   await initMaintenanceModel();
   await initPaymentModel();
+  await initWhatsappTrackingModel();
 };
 
 module.exports = {

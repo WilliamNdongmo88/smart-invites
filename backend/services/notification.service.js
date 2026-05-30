@@ -1653,6 +1653,7 @@ async function sendPaymentProofToAdminAboutChangePlan(user, planName, fileBuffer
 }
 
 async function sendNotificationToUserAboutChangePlan(user, plan) {
+  console.log("Données:", {user, plan});
   try {
     const logo = await getLogoUrlFromFirebase('logo.png');
 
@@ -1666,6 +1667,73 @@ async function sendNotificationToUserAboutChangePlan(user, plan) {
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
     let htmlContent = '';
+
+    if(plan == 'entreprise') htmlContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Nouveautés SmartInvite</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f5f6f8; font-family: Arial, Helvetica, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8; padding:20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background-color: #D4AF37; padding:20px; text-align:center;">
+                    <img src="${logo}" alt="SmartInvite Logo" 
+                    style="width:100px; height:80px; margin:auto; display:block; border-radius:10px"/>
+                    <p style="margin:5px 0 0; color:#ffffff;">Simplifiez l’organisation de vos événements</p>
+                  </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding:30px; color:#1f2937; font-size:15px; line-height:1.6;">
+                      <h2 style="color:#1a3c8b;">Changement de plan confirmé</h2>
+
+                      <p>Bonjour <strong>${user.name}</strong>,</p>
+
+                      <p>
+                        Nous vous informons que votre plan a été mis à jour avec succès.
+                      </p>
+
+                      <p>
+                        <strong>Nouveau plan :</strong> ${user.plan || "Non spécifié"}
+                      </p>
+
+                      <p>
+                        Si vous n'êtes pas à l'origine de cette modification,
+                        veuillez contacter notre support immédiatement.
+                      </p>
+
+                      <p style="margin-top:30px;">
+                        Merci de faire confiance à <strong>SmartInvite</strong>.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color:#D4AF37; padding:15px; text-align:center; font-size:12px; color:#ffffff;">
+                      © ${new Date().getFullYear()} SmartInvite. Tous droits réservés.
+                      <a href="${process.env.API_URL}" style="color:#ffffff; text-decoration:none;">
+                        ${process.env.API_URL}
+                      </a>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
 
     if(plan == 'professionnel') htmlContent = `
       <!DOCTYPE html>
@@ -1822,13 +1890,29 @@ async function sendNotificationToUserAboutChangePlan(user, plan) {
       </html>
     `;
 
+    let subjectText = '';
+    switch (plan) {
+      case 'entreprise':
+        subjectText = "✅ Votre plan Business a été activé";
+        break;
+
+      case 'professionnel':
+        subjectText = "✨ Votre plan Pro a été activé";
+        break;
+
+      default:
+        subjectText = "❌ Annulation du pla Pro";
+        break;
+    }
+
     const sendSmtpEmail = {
       to: [{ email: user.email, name: user.name || "Utilisateur" }],// 'williamndongmo899@gmail.com'
       sender: {
         email: process.env.BREVO_SENDER_EMAIL,
         name: "Smart Invite",
       },
-      subject: plan == 'professionnel' ? "✨ Votre plan Pro a été activé" : "❌ Annulation du pla Pro",
+      subject: subjectText,
+      //subject: plan == 'professionnel' ? "✨ Votre plan Pro a été activé" : "❌ Annulation du pla Pro",
       htmlContent: htmlContent,
     };
 

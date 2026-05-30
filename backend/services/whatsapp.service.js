@@ -5,6 +5,7 @@ const { handleRsvp } = require('./whatsapp-rsvp.service');
 const { getGuestInvitationById, updateInvitationByChatId } = require('../models/invitations');
 const { getEventInvitNote } = require('../models/event_invitation_notes');
 const { getPdfUrlFromFirebase } = require('./qrCodeService');
+const { saveWhatsappTracking } = require( '../models/whatsapp-tracking' );
 
 let isReady = false;
 
@@ -127,7 +128,7 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
-    //console.log('sendGuestWhatsapp::guest', guest);
+    console.log('Event::event', event);
     try {
 
         /**
@@ -142,14 +143,12 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
         /**
          * Nettoyage numéro
          */
-        const numero =
-            guest.phone_number.replace(/\D/g, '');
+        const numero = guest.phone_number.replace(/\D/g, '');
 
         /**
          * Vérifier numéro WhatsApp
          */
-        const numberId =
-            await client.getNumberId(numero);
+        const numberId = await client.getNumberId(numero);
 
         if (!numberId) {
             throw new Error(
@@ -292,15 +291,16 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
         /**
          * Envoi WhatsApp
          */
-        await client.sendMessage( chatId, whatsappMessage );
+        //await client.sendMessage( chatId, whatsappMessage );
+        const sentMessage = await client.sendMessage( chatId, whatsappMessage );
 
-        console.log(
-            `✅ Invitation WhatsApp envoyée à ${guest.full_name}`
-        );
+        console.log(`✅ Invitation WhatsApp envoyée à ${guest.full_name}`);
         try {
             // MAJ INVITATION AVEC CHAT ID POUR SUIVI RSVP
             const invitation = await getGuestInvitationById(guest.id);
-            //console.log('invitation:', invitation);
+            await saveWhatsappTracking( sentMessage.id._serialized, event.eventId,
+                                        guest.id, invitation[0].id, chatId );
+            const customChatId = event.eventId+':'+chatId;
             await updateInvitationByChatId(invitation[0].id, chatId, false);
         } catch (error) {
             console.error( '[getGuestInvitationById/updateInvitationByChatId] Error:', error );

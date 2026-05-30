@@ -24,13 +24,10 @@ const create_Event = async (req, res, next) => {
     try {
         // console.log('req.body:', req.body);
         const user = await getUserById(req.body.eventDatas[0].organizerId);
-        // console.log('user:', user);
         if(user.plan == 'gratuit' && user.total_eventsCreated < 1){
-          console.log('### Plan Gratuit ###');
           const eventDatas = await createEventService(req.body);
           return res.status(201).json({ eventDatas });  
-        }else if(user.plan == 'professionnel'){
-          console.log('### Plan Pro ###');
+        }else if(user.plan == 'professionnel' || user.plan == 'entreprise'){
           const eventDatas = await createEventService(req.body);
           return res.status(201).json({ eventDatas });
         }else{
@@ -50,9 +47,9 @@ const createEventWithFile = async (req, res, next) => {
         const invitationFile = req.file;
         const eventDatas = JSON.parse(req.body.eventDatas);
         const user = await getUserById(eventDatas[0].organizerId);
-        console.log('### eventDatas:', eventDatas);
+        //console.log('### eventDatas:', eventDatas);
         if(user.plan == 'gratuit' && user.total_eventsCreated < 1){
-            console.log('### Plan Gratuit ###');
+            //console.log('### Plan Gratuit ###');
             const datas = {
                 eventDatas: eventDatas,
                 eventInvitationNote: null
@@ -61,14 +58,14 @@ const createEventWithFile = async (req, res, next) => {
                 return res.status(400).json({ message: 'Erreur : Aucun fichier reçu.' });
             }
 
-            console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
+            //console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
 
             const event = await createEventService(datas);
-            // console.log('### event created:', event);
+            // //console.log('### event created:', event);
 
             // Appelez la fonction pour uploader le fichier et attendez le résultat
             const data = await uploadPdfToFirebase(null, invitationFile.buffer, event[0]);
-            // console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
+            // //console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
             const pdfUrl = data.url;
             await creatEventInvitNote(event[0].id, null, null, null, null, null, null, 
                     null, null, null, null, 
@@ -78,8 +75,8 @@ const createEventWithFile = async (req, res, next) => {
                 message: 'Fichier uploadé avec succès sur Firebase !',
                 fileUrl: pdfUrl // Renvoyez l'URL publique au client
             });
-        }else if(user.plan == 'professionnel'){
-            console.log('### Plan Pro ###');
+        }else if(user.plan == 'professionnel' || user.plan == 'entreprise'){
+            //console.log('### Plan Pro ###');
             const datas = {
                 eventDatas: eventDatas,
                 eventInvitationNote: null
@@ -88,14 +85,14 @@ const createEventWithFile = async (req, res, next) => {
                 return res.status(400).json({ message: 'Erreur : Aucun fichier reçu.' });
             }
 
-            console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
+            //console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
 
             const event = await createEventService(datas);
-            // console.log('### event created:', event);
+            // //console.log('### event created:', event);
 
             // Appelez la fonction pour uploader le fichier et attendez le résultat
             const data = await uploadPdfToFirebase(null, invitationFile.buffer, event[0]);
-            // console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
+            // //console.log('Fichier uploadé avec succès sur Firebase. URL publique :', publicUrl);
             const pdfUrl = data.url;
             await creatEventInvitNote(event[0].id, null, null, null, null, null, null, 
                     null, null, null, null, 
@@ -119,7 +116,7 @@ const createEventWithFile = async (req, res, next) => {
 
 const createEventService = async (datas) => {
     try {
-        // console.log('datas :: ', typeof datas, ' :: ', datas);
+        // //console.log('datas :: ', typeof datas, ' :: ', datas);
         if (datas.length==0) throw new Error("Liste vide");
         let eventDatas = datas.eventDatas;
         let eventInvitationNote = datas.eventInvitationNote;
@@ -129,7 +126,7 @@ const createEventService = async (datas) => {
         if (!existing) return res.status(409).json({ error: "Organizer not found with ID: " + organizerId });
         let returnDatas = [];
         for (const event of eventDatas) {
-            console.log('Creating event for organizerId:', event.organizerId);
+            //console.log('Creating event for organizerId:', event.organizerId);
             const {
                 organizerId, title, description, eventDate, banquetTime, religiousLocation, 
                 religiousTime, type, budget, eventNameConcerned1, eventNameConcerned2, 
@@ -140,7 +137,7 @@ const createEventService = async (datas) => {
                                               eventNameConcerned1,eventNameConcerned2, 
                                               eventCivilLocation, eventLocation, maxGuests,hasPlusOne, 
                                               footRestriction, showWeddingReligiousLocation, status);
-            console.log('[create_Event] New event created with ID:', eventId);
+            //console.log('[create_Event] New event created with ID:', eventId);
             returnDatas.push({id: eventId, organizerId, title, description, eventDate, banquetTime, 
                 religiousLocation, religiousTime, type, budget, eventNameConcerned1,eventNameConcerned2, 
                 eventCivilLocation, eventLocation, maxGuests,hasPlusOne, footRestriction, 
@@ -158,10 +155,10 @@ const createEventService = async (datas) => {
 
             // Planification (Sensé s'exécuter le lendemain du jour de l'événement)
             try {
-                console.log('[create_Event] eventId :', eventId);
+                //console.log('[create_Event] eventId :', eventId);
                 const existingSchedule = await getEventScheduleByEventId(eventId);
                 if (existingSchedule) {
-                    console.log(`Schedule déjà existant pour event ${eventId}`);
+                    //console.log(`Schedule déjà existant pour event ${eventId}`);
                     return;
                 }
                 const scheduleId = await createEventSchedule(eventId, eventDate, false);
@@ -238,7 +235,7 @@ const getAllEvents = async (req, res, next) => {
 
    const updateEventBy_Id = async (req, res, next) => {
     try {
-        console.log('req.body: ', req.body);
+        //console.log('req.body: ', req.body);
         const updatedEvent = await updateEventService(req.params.eventId, req.body);
         
         return res.status(200).json({ eventDatas: updatedEvent });
@@ -250,11 +247,11 @@ const getAllEvents = async (req, res, next) => {
 
   const updateEventWithFile = async (req, res, next) => {
     try {
-        console.log('req.params.eventId:', req.params.eventId);
+        //console.log('req.params.eventId:', req.params.eventId);
         const eventId = req.params.eventId;
         const invitationFile = req.file;
-        // console.log('eventDatas:', JSON.parse(req.body.eventDatas));
-        // console.log('eventInvitationNote:', JSON.parse(req.body.eventInvitationNote));
+        // //console.log('eventDatas:', JSON.parse(req.body.eventDatas));
+        // //console.log('eventInvitationNote:', JSON.parse(req.body.eventInvitationNote));
         const eventDatas = JSON.parse(req.body.eventDatas);
         const eventInvitationNote = JSON.parse(req.body.eventInvitationNote);
 
@@ -270,21 +267,21 @@ const getAllEvents = async (req, res, next) => {
             eventDatas: eventDatas,
             eventInvitationNote: null,
         };
-        console.log('payload: ', payload);
+        //console.log('payload: ', payload);
 
         // 1. Mise à jour de l’événement
         const updatedEvent = await updateEventService(
             eventId,
             payload
         );
-        console.log('updatedEvent:', updatedEvent);
+        //console.log('updatedEvent:', updatedEvent);
 
         // 2. Suppression ancien PDF
         const eventInvNote = await getEventInvitNote(updatedEvent.id);
         const path = `event_${updatedEvent.id}_default_carte_${eventInvNote.code}.pdf`;
-        console.log('[path]:', path);
+        //console.log('[path]:', path);
         const resDel = await deleteInvitationFiles(path);
-        // console.log('resDel:', resDel);
+        // //console.log('resDel:', resDel);
 
         // 3. Upload nouveau PDF
         if(!resDel.success) return res.status(500).json({error: "Erreur lors de la suppression du fichier"});
@@ -293,7 +290,7 @@ const getAllEvents = async (req, res, next) => {
             invitationFile.buffer,
             updatedEvent
         );
-        console.log('pdfUrl:', data.url);
+        //console.log('pdfUrl:', data.url);
 
         const eventInvitNote = {
             eventId: eventId,
@@ -373,15 +370,15 @@ const getAllEvents = async (req, res, next) => {
     }
     
     const existingSchedule = await getEventScheduleByEventId(eventId);
-    console.log('### existing schedule:', existingSchedule);
+    //console.log('### existing schedule:', existingSchedule);
     const scheduleId = await updateEventSchedule(existingSchedule.id, eventId, eventDate, false, false);
-    console.log('### scheduleId:', scheduleId);
+    //console.log('### scheduleId:', scheduleId);
 
-    console.log(`Schedule mis à jour pour event ${eventId} → Exécution : ${eventDate}`);
-    console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
+    //console.log(`Schedule mis à jour pour event ${eventId} → Exécution : ${eventDate}`);
+    //console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
     const user = await getUserByEventId(eventId);
     if(user.attendance_notifications){
-        console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
+        //console.log("updateEventBy_Id env.NODE_ENV: ", process.env.NODE_ENV);
         if (process.env.NODE_ENV !== 'test') {
             planSchedule(scheduleId, eventId, eventDate);
         }
@@ -391,7 +388,7 @@ const getAllEvents = async (req, res, next) => {
   }
 
   async function updateEventInvitationNote(eventInvitationNote) {
-    console.log('[updateEventInvitationNote] eventInvitationNote: ', eventInvitationNote);
+    //console.log('[updateEventInvitationNote] eventInvitationNote: ', eventInvitationNote);
     try {
         let {eventId, invTitle, mainMessage, sousMainMessage, eventTheme, priorityColors, 
             qrInstructions, dressCodeMessage, thanksMessage1, closingMessage, titleColor, 
@@ -399,7 +396,7 @@ const getAllEvents = async (req, res, next) => {
         } = eventInvitationNote;
 
         const event = await getEventInvitNote(eventId);
-        // console.log('event: ', event);
+        // //console.log('event: ', event);
         if(!event) throw new Error("La table de note de cet event n'existe pas");
         
         if(eventId == null){ eventId = event.event_id};
@@ -465,8 +462,8 @@ const getAllEvents = async (req, res, next) => {
     try {
         const guestsList = req.body.filteredGuests;
         const event = req.body.event;
-        // console.log('guestsList:', guestsList);
-        // console.log('event:', event);
+        // //console.log('guestsList:', guestsList);
+        // //console.log('event:', event);
         if (!Array.isArray(guestsList) || guestsList.length === 0) {
             return res.status(400).json({ error: 'Le tableau d\'invités est requis' });
         }
@@ -475,7 +472,7 @@ const getAllEvents = async (req, res, next) => {
         res.setHeader("Content-Disposition", "attachment; filename=invites-present.pdf");
         res.send(pdfBuffer);
     } catch (error) {
-        console.log('[generatePresentGuests] error:', error.message);
+        console.error('[generatePresentGuests] error:', error.message);
         next(error);
     }
   }
@@ -505,21 +502,21 @@ const getAllEvents = async (req, res, next) => {
   // Planifier la tâche
   async function planSchedule(scheduleId, eventId, eventDate) {
     try {
-        console.log('[schedule 1] eventDate :', eventDate);
+        //console.log('[schedule 1] eventDate :', eventDate);
         if(eventDate==null || eventDate==undefined) throw new Error("La date est invalide");
         // Conversion finale selon ta logique métier
         const scheduleDate = formatDate(eventDate);
-        console.log('[schedule 1] scheduleDate (réelle pour scheduler):', scheduleDate);
+        //console.log('[schedule 1] scheduleDate (réelle pour scheduler):', scheduleDate);
 
         // 🔁 Sécurité : annuler s'il existe déjà
         await cancelSchedule(scheduleId);
 
         // Planification
         schedule.scheduleJob(String(scheduleId), scheduleDate, async () => {
-            console.log('🚀 === Job déclenché ===');
+            //console.log('🚀 === Job déclenché ===');
             await runScheduledTask(scheduleId, eventId, eventDate);
         });
-        console.log('✅ Schedule planifié pour l\'event ', scheduleId, ' date: ', scheduleDate);
+        //console.log('✅ Schedule planifié pour l\'event ', scheduleId, ' date: ', scheduleDate);
     } catch (error) {
         console.error("❌ Erreur planSchedule:", error);
     }
@@ -529,28 +526,28 @@ const getAllEvents = async (req, res, next) => {
     const job = schedule.scheduledJobs[String(scheduleId)];
 
     if (!job) {
-        console.log('[cancelSchedule] Aucun job trouvé pour l\`event ', scheduleId);
+        //console.log('[cancelSchedule] Aucun job trouvé pour l\`event ', scheduleId);
         return;
     }
 
     job.cancel();
     delete schedule.scheduledJobs[String(scheduleId)];
 
-    console.log('🛑 Schedule annulé:', scheduleId);
+    //console.log('🛑 Schedule annulé:', scheduleId);
   }
  
   async function runScheduledTask(scheduleId, eventId, scheduledFor) {
-    console.log('🚀 Scheduler exécuté pour event:', eventId);
+    //console.log('🚀 Scheduler exécuté pour event:', eventId);
 
     // Marquer comme exécuté
     await updateEventSchedule(scheduleId, eventId, scheduledFor, true, false);
     await sendScheduledReport(eventId);
 
-    console.log('✅ Scheduler terminé:', eventId);
+    //console.log('✅ Scheduler terminé:', eventId);
   }
 
   async function sendScheduledReport(eventId) {
-        console.log('=== Job déclenché =1=');
+        //console.log('=== Job déclenché =1=');
     try {
         let guestPresentList = [];
         let guestConfirmedList = [];
@@ -563,7 +560,7 @@ const getAllEvents = async (req, res, next) => {
                 break
             }
         }
-        console.log('Event data:', data);
+        //console.log('Event data:', data);
         for (const data of checkins) {
             if(data.event_id==eventId){
                 const timer1 = data.checkin_time.toISOString().split('T')[1]
@@ -579,7 +576,7 @@ const getAllEvents = async (req, res, next) => {
                 guestPresentList.push(obj);
             }
         }
-        console.log("guestPresentList:: ", guestPresentList);
+        //console.log("guestPresentList:: ", guestPresentList);
         const results = await getGuestByEventIdAndConfirmedRsvp(data.eventId);
         for (const elt of results) {
             const data = {
@@ -592,14 +589,14 @@ const getAllEvents = async (req, res, next) => {
             }
             guestConfirmedList.push(data);
         }
-        console.log("guestConfirmedList:: ", guestConfirmedList);
+        //console.log("guestConfirmedList:: ", guestConfirmedList);
         const pdfBuffer = await generateDualGuestListPdf(guestPresentList, guestConfirmedList, data);
-        console.log("pdfBuffer:: ", pdfBuffer);
-        console.log("### data:", data);
+        //console.log("pdfBuffer:: ", pdfBuffer);
+        //console.log("### data:", data);
         if(data.notification_mode === 'email') await sendPdfByEmail(data, pdfBuffer);
         if(data.notification_mode === 'whatsapp') await sendPdfByWhatsapp(data, pdfBuffer);
     } catch (error) {
-        console.log('[sendScheduledReport] error:', error);
+        console.error('[sendScheduledReport] error:', error);
     }
   }
 
