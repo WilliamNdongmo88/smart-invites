@@ -3,6 +3,8 @@ const qrcode = require('qrcode-terminal');
 const axios = require('axios');
 const { handleRsvp } = require('./whatsapp-rsvp.service');
 const { getGuestInvitationById, updateInvitationByChatId } = require('../models/invitations');
+const { getEventInvitNote } = require('../models/event_invitation_notes');
+const { getPdfUrlFromFirebase } = require('./qrCodeService');
 
 let isReady = false;
 
@@ -560,7 +562,7 @@ const whatsappInvitationToGuest = async ( data, qrCodeUrl, pdfBuffer ) => {
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
-
+    console.log('###  data:', data);
     const guest = data;
     const event = data;
 
@@ -1614,8 +1616,8 @@ async function sendWhatsappToAdminFromPortfolio( name, email, message, subject) 
     `.trim();
 
     await client.messages.create({
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-      to: `whatsapp:${process.env.ADMIN_WHATSAPP_NUMBER}`,
+      from: `whatsapp:${process.env.ADMIN_PHONE}`,
+      to: `whatsapp:${process.env.ADMIN_PHONE}`,
       body: whatsappMessage
     });
 
@@ -1636,34 +1638,27 @@ async function sendWhatsappToAdminFromPortfolio( name, email, message, subject) 
 //manualSendThankYouMailToPresentGuests
 async function manualSendThankYouWhatsappToPresentGuests( eventId, thankMessage, guest ) {
   try {
+    const msg = thankMessage;
     const whatsappMessage = `
     💌 *Message de remerciement*
 
     Bonjour *${guest.full_name}* 👋
 
-    Merci sincèrement pour votre présence à notre événement ❤️
+    ${msg}
 
     ━━━━━━━━━━━━━━━
-
-    ${thankMessage}
-
-    ━━━━━━━━━━━━━━━
-
-    Votre présence a grandement contribué à rendre ce moment spécial et mémorable ✨
-
-    À très bientôt 🙏
-
-    *L’équipe SmartInvite*
-
-        ━━━━━━━━━━━━━━━
-        _ smart-invite.com _
+    _ smart-invite.com _
     `.trim();
 
-    await client.messages.create({
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-      to: `whatsapp:${guest.phone_number}`,
-      body: whatsappMessage,
-    });
+    // Nettoyage du numéro
+    const phone = guest.phone_number.replace(/\D/g, "");
+
+    // Format whatsapp-web.js
+    const chatId = `${phone}@c.us`;
+
+    console.log("chatId:", chatId);
+
+    await client.sendMessage(chatId, whatsappMessage);
 
     console.log(
       `✅ Message WhatsApp de remerciement envoyé à ${guest.phone_number}`
@@ -1700,7 +1695,7 @@ async function notifyOrganizerAboutSendThankYouWhatsappToPresentGuests( organize
     `.trim();
 
     await client.messages.create({
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+      from: `whatsapp:${process.env.ADMIN_PHONE}`,
       to: `whatsapp:${organizer.phone_number}`,
       body: whatsappMessage,
     });
@@ -1857,16 +1852,18 @@ async function sendThankYouWhatsappToPresentGuests( event, schedules, organizer,
     _ smart-invite.com _
     `.trim();
 
-    await client.messages.create({
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-      to: `whatsapp:${guest.phone_number}`,
-      body: whatsappMessage,
-    });
+    // Nettoyage du numéro
+    const phone = guest.phone_number.replace(/\D/g, "");
 
-    await whatsappNotifications(schedules, organizer);
+    // Format whatsapp-web.js
+    const chatId = `${phone}@c.us`;
+
+    console.log("chatId:", chatId);
+
+    await client.sendMessage(chatId, whatsappMessage);
 
     console.log(
-      `✅ WhatsApp(Remerciement) envoyé à ${guest.phone_number}`
+      `✅ Message WhatsApp de remerciement envoyé à ${guest.phone_number}`
     );
 
     return true;
@@ -1920,7 +1917,7 @@ async function sendWhatsappPdfToGuest(data) {
     `.trim();
 
     await client.messages.create({
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+      from: `whatsapp:${process.env.ADMIN_PHONE}`,
       to: `whatsapp:${guest.phone_number}`,
       body: whatsappMessage,
     });

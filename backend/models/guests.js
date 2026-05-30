@@ -161,6 +161,7 @@ async function getAllPresentGuest(guestId) {
             g.id,
             g.full_name,
             g.email,
+            g.phone_number,
             g.rsvp_status,
             g.notification_mode
         FROM GUESTS g

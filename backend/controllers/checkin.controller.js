@@ -9,7 +9,11 @@ const { validateAndUseInvitation } = require("../services/invitation.service");
 const { sendGuestPresenceToOrganizer,sendThankYouMailToPresentGuests, manualSendThankYouMailToPresentGuests
       } = require("../services/notification.service");
 const schedule = require('node-schedule');
-const axios = require('axios')
+const axios = require('axios');
+const { sendThankYouWhatsappToPresentGuests, 
+        manualSendThankYouWhatsappToPresentGuests, 
+        whatsappGuestPresenceToOrganizer
+      } = require("../services/whatsapp.service");
 
 const viewPdfInvitation = async (req, res, next) => {
   try {
@@ -178,7 +182,7 @@ async function sendScheduledThankMessage(event, schedules, organizer, guest) {
 
 async function sendManualThankMessage(req, res, next) {
     try {
-        //console.log('Body:', req.body.datas);
+        console.log('Body:', req.body.datas);
         const {eventId, guests, message} = req.body.datas;
         // Envoi des mails en parallèle contrôlée (plus rapide)
         await Promise.all(

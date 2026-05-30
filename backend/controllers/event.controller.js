@@ -550,7 +550,7 @@ const getAllEvents = async (req, res, next) => {
   }
 
   async function sendScheduledReport(eventId) {
-        // console.log('=== Job déclenché =1=');
+        console.log('=== Job déclenché =1=');
     try {
         let guestPresentList = [];
         let guestConfirmedList = [];
@@ -563,7 +563,7 @@ const getAllEvents = async (req, res, next) => {
                 break
             }
         }
-        //console.log('Event data:', data);
+        console.log('Event data:', data);
         for (const data of checkins) {
             if(data.event_id==eventId){
                 const timer1 = data.checkin_time.toISOString().split('T')[1]
@@ -579,7 +579,7 @@ const getAllEvents = async (req, res, next) => {
                 guestPresentList.push(obj);
             }
         }
-        //console.log("guestPresentList:: ", guestPresentList);
+        console.log("guestPresentList:: ", guestPresentList);
         const results = await getGuestByEventIdAndConfirmedRsvp(data.eventId);
         for (const elt of results) {
             const data = {
@@ -592,17 +592,18 @@ const getAllEvents = async (req, res, next) => {
             }
             guestConfirmedList.push(data);
         }
-        //console.log("guestConfirmedList:: ", guestConfirmedList);
+        console.log("guestConfirmedList:: ", guestConfirmedList);
         const pdfBuffer = await generateDualGuestListPdf(guestPresentList, guestConfirmedList, data);
-        //console.log("pdfBuffer:: ", pdfBuffer);
-        if(data.notificationMode === 'email') await sendPdfByEmail(data, pdfBuffer);
-        if(data.notificationMode === 'whatsapp') await sendPdfByWhatsapp(data, pdfBuffer);
+        console.log("pdfBuffer:: ", pdfBuffer);
+        console.log("### data:", data);
+        if(data.notification_mode === 'email') await sendPdfByEmail(data, pdfBuffer);
+        if(data.notification_mode === 'whatsapp') await sendPdfByWhatsapp(data, pdfBuffer);
     } catch (error) {
         console.log('[sendScheduledReport] error:', error);
     }
   }
 
-function formatDate(iso) {
+  function formatDate(iso) {
     let d = new Date(iso);
 
     // Ajouter 1 jour en UTC
@@ -619,7 +620,7 @@ function formatDate(iso) {
     ));
 
     return utcDate;
-}
+  }
 
 module.exports = {
     create_Event,

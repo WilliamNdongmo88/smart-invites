@@ -65,6 +65,7 @@ async function getEventAndGuestInfoByGuestId(guestId) {
       g.email,
       g.table_number,
       g.phone_number,
+      g.notification_mode,
       g.rsvp_status,
       g.plus_one_name_diet_restr,
       g.has_plus_one,

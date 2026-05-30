@@ -22,6 +22,7 @@ const { apiLimiter, loginLimiter, registerLimiter, noRateLimit } = require('./mi
 const setupSwagger = require('./docs/swagger');
 const { createDefaultTableMaintenance } = require('./models/maintenance');
 const { getUserByEvtId } = require('./models/events');
+const { sendScheduledReport } = require('./controllers/event.controller');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,10 +93,10 @@ const startServer = async () => {
       await createDefaultAdmin();
       await createDefaultTableMaintenance();
     }
-    //await sendScheduledReport(3);
     if (process.env.NODE_ENV == 'development') {
       //await getAllConfirmedGuest();
-      await getUserByEvtId(2);
+      //await getUserByEvtId(2);
+      //await sendScheduledReport(1);
     }
 
     // 3 Démarrer le serveur
