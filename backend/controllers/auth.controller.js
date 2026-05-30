@@ -239,7 +239,6 @@ const register = async (req, res, next) => {
     const existing = await getUserByEmail(email);
     if (existing) return res.status(409).json({ error: 'Email déjà utilisé' });
 
-    if(accountType == 'business') //console.log('#### accountType: ', accountType);
     let userId = null;
     if(accountType == 'business'){
       role = 'manager';
