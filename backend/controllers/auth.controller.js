@@ -151,7 +151,7 @@ const getAllUsers = async (req, res, next) => {
       events: events,
       guests: guests
     };
-    console.log('datas:', datas);
+    //console.log('datas:', datas);
     return res.json(datas);
   } catch (error) {
     console.error("GET USERS ERROR:", error.message);
@@ -198,7 +198,7 @@ const getAllUsersLinkedToManager = async (req, res, next) => {
       events: events,
       guests: guests
     };
-    // console.log('datas:', datas);
+    // //console.log('datas:', datas);
     return res.json(datas);
 
   } catch (error) {
@@ -227,7 +227,7 @@ getAllUsersService = async (users) => {
         userPaymentProofCreatedAt: user.paymentCreatedAt
       });
     }
-    console.log('datas:', datas);
+    //console.log('datas:', datas);
   return datas;
 }
 
@@ -239,7 +239,7 @@ const register = async (req, res, next) => {
     const existing = await getUserByEmail(email);
     if (existing) return res.status(409).json({ error: 'Email déjà utilisé' });
 
-    if(accountType == 'business') console.log('#### accountType: ', accountType);
+    if(accountType == 'business') //console.log('#### accountType: ', accountType);
     let userId = null;
     if(accountType == 'business'){
       role = 'manager';
@@ -247,7 +247,7 @@ const register = async (req, res, next) => {
     }else{
       userId = await createUser({ name, email, accountType, password, acceptTerms, role });
     }
-    console.log('### userId:', userId);
+    //console.log('### userId:', userId);
 
     // Génère un code à 6 chiffres
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -288,7 +288,7 @@ const addUsersLinkedToManager = async (req, res, next) => {
   try {
     const { managerId, name, email, acceptTerms } = req.body;
     const manager = await getUserById(managerId);
-    console.log('manager plan:', manager.plan);
+    //console.log('manager plan:', manager.plan);
     if(manager.plan != 'entreprise') return res.status(400).json({ error: "Vous devez souscrire au plan entreprise avant d'ajouter un utilisateur." });
     if (!email) return res.status(400).json({ error: 'Email requis' });
 
@@ -300,7 +300,7 @@ const addUsersLinkedToManager = async (req, res, next) => {
     const password = Math.random().toString(36).slice(-8); // Génère un mot de passe aléatoire
     const plan = 'professionnel'
     const userId = await createUser({ managerId, name, email, accountType, password, acceptTerms, role, plan });
-    console.log('### userId:', userId);
+    //console.log('### userId:', userId);
 
     // Envoie du mail via Brevo
     try {
@@ -335,10 +335,10 @@ const addUsersLinkedToManager = async (req, res, next) => {
 
 const updateUserStatus = async (req, res, next) => {
   try {
-    console.log("body", req.body);
+    //console.log("body", req.body);
     const { email, isBlocked } = req.body;
     const user = await getUserByEmail(email);
-    console.log("user", user);
+    //console.log("user", user);
     if(!user) res.status(400).json({ error: 'User not found'});
     await updateUserBlokedAccount(email, isBlocked);
 
@@ -350,7 +350,7 @@ const updateUserStatus = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
     try {
-      console.log('-----> Update Profile Request Body:', req.body);
+      //console.log('-----> Update Profile Request Body:', req.body);
         const { name, email, phone, notificationMode, bio, avatar_url,
                 email_notifications, attendance_notifications,
                 thank_notifications, event_reminders,
@@ -379,7 +379,7 @@ const updateProfile = async (req, res, next) => {
         }
 
         const resultId = await updateUser(req.params.userId, updatedUser);
-        console.log('### result:', resultId);
+        //console.log('### result:', resultId);
 
         // Relancer le schedule après la maj des paramètres de notification profile
         const events = await getEventsByOrganizerId(resultId);
@@ -388,7 +388,7 @@ const updateProfile = async (req, res, next) => {
           const date = event.event_date.toISOString().split('T')[0]; // "2026-01-10"
           const time = event.event_date.toISOString().split('T')[1].split('.')[0]; // "17:26:00"
           const combinedDateTime = `${date}T${time}.000Z`;
-          console.log('### combined: ', combinedDateTime);
+          //console.log('### combined: ', combinedDateTime);
 
           const scheduleRow = await getEventScheduleByEventId(event.event_id);
           if (!scheduleRow) continue;
@@ -442,7 +442,7 @@ const login = async (req, res, next) => {
     }
 
     const user = await getUserByEmail(email);
-    console.log('user: ', user);
+    //console.log('user: ', user);
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur non trouvé' });
     }
@@ -503,14 +503,14 @@ const loginWithGoogle = async (req, res, next) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-    // console.log('GOOGLE PAYLOAD:', payload);
+    // //console.log('GOOGLE PAYLOAD:', payload);
 
     const { email, name, sub: googleId, picture } = payload;
-    console.log('Extracted Google user info:', { email, name, googleId, picture });
+    //console.log('Extracted Google user info:', { email, name, googleId, picture });
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
-    // console.log('user info:', user);
+    // //console.log('user info:', user);
     if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé. Veuillez vous inscrire avant.' });
 
     if(process.env.NODE_ENV !== 'test') {
@@ -551,7 +551,7 @@ const loginWithGoogle = async (req, res, next) => {
 const signupWithGoogle = async (req, res, next) => {
   try {
     const { tokenId, acceptTerms, accountType } = req.body;
-    console.log('req.body:', req.body);
+    //console.log('req.body:', req.body);
     if (!tokenId) {
       return res.status(400).json({ error: 'Token ID requis' });
     }
@@ -562,16 +562,16 @@ const signupWithGoogle = async (req, res, next) => {
       idToken: tokenId,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
-    console.log('GOOGLE TOKEN VERIFICATION SUCCESS:', ticket);
+    //console.log('GOOGLE TOKEN VERIFICATION SUCCESS:', ticket);
     const payload = ticket.getPayload();
-    console.log('[signupWithGoogle] PAYLOAD:', payload);
+    //console.log('[signupWithGoogle] PAYLOAD:', payload);
 
     const { email, name, sub: googleId, picture } = payload;
-    console.log('Extracted Google user info:', { email, name, googleId, picture });
+    //console.log('Extracted Google user info:', { email, name, googleId, picture });
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
-    // console.log('user info:', user);
+    // //console.log('user info:', user);
     if(user) return res.status(409).json({ error: 'Cet utilisateur existe déjà.' });
     if (!user) {
       // Crée un nouvel utilisateur si non existant
@@ -622,12 +622,12 @@ const signupWithGoogle = async (req, res, next) => {
 
 const contactUs = async (req, res, next) => {
   try {
-    console.log("Body: ", req.body);
+    //console.log("Body: ", req.body);
     const {name, email, phone, subject, message, newsletter} = req.body;
     if(newsletter){
       const usernews = await getUserNewsByEmail(email);
       if(usernews){
-        console.log("Utilisateur déjà existant.");
+        //console.log("Utilisateur déjà existant.");
         await updateUserNews(usernews.id, name, email, phone, usernews.newsletter);
         await sendMailToAdmin(name, email, phone, subject, message);
         return res.status(200).json({success: "Message envoyé avec succès"});
@@ -648,7 +648,7 @@ const contactUs = async (req, res, next) => {
 const forgotPassword = async (req, res, next) => {
   try {
     const { email, isActive } = req.body;
-    console.log('[forgotPassword] req.body:', req.body);
+    //console.log('[forgotPassword] req.body:', req.body);
     if (!email) {
       return res.status(400).json({ error: 'Email requis' });
     }
@@ -668,7 +668,7 @@ const forgotPassword = async (req, res, next) => {
     // Envoie du mail via Brevo
     try {
       await sendEmailCode(user, code, isActive);
-      console.log('Email envoyé');
+      //console.log('Email envoyé');
     } catch (error) {
       console.error("SEND EMAIL ERROR:", error.message);
       next(error);
@@ -799,28 +799,28 @@ const deleteProfile = async (req, res, next) => {
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
         const events = await getEventsByOrganizerId(req.params.userId);
         if (events.length > 0) {
-            console.log('USER EVENTS:', events);
+            //console.log('USER EVENTS:', events);
             for (const event of events) {
               const guests = await getGuestByEventId(event.event_id);
               if (guests.length > 0) {
-                console.log('EVENTS GUESTS:', guests);
+                //console.log('EVENTS GUESTS:', guests);
                 for (const g of guests) {
                   const guest = await getGuestAndInvitationRelatedById(g.id);
                   if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                   await delete_guest(guest.guest_id);
                   if(guest.invitationId) {
-                    console.log('Deleting files for guest ID:', guest.guest_id);
+                    //console.log('Deleting files for guest ID:', guest.guest_id);
                     await deleteGuestFiles(guest.guest_id, guest.invitationToken);
                   }
-                  console.log(`Guest with ID ${guest.guest_id} and related invitations deleted.`);
+                  //console.log(`Guest with ID ${guest.guest_id} and related invitations deleted.`);
                 }
               }
               await deleteEvents(event.event_id);
-              console.log(`Event with ID ${event.event_id} deleted.`);
+              //console.log(`Event with ID ${event.event_id} deleted.`);
             }
         }
         await deleteAccount(req.params.userId);
-        console.log(`User with ID ${req.params.userId} deleted.`);
+        //console.log(`User with ID ${req.params.userId} deleted.`);
         return res.status(200).json({ message: 'Utilisateur supprimé avec succès' });
     } catch (error) {
         console.error('DELETE USER ERROR:', error.message);
