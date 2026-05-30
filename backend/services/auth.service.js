@@ -12,7 +12,7 @@ async function sendEmailCode(user, code, isActive=false) {
 
   const activationLink =
   `${process.env.API_URL}/activate-account?code=${code}&email=${encodeURIComponent(user.email)}`;
-  console.log("#ActivationLink: ", activationLink);
+  //console.log("#ActivationLink: ", activationLink);
 
   const resetPassMessage = `
     <div style="
@@ -212,7 +212,7 @@ async function sendEmailCode(user, code, isActive=false) {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email envoyé à ${user.email}`);
+  //console.log(`✅ Email envoyé à ${user.email}`);
 }
 
 async function sendCredentialToUser(user) {
@@ -308,7 +308,7 @@ async function sendCredentialToUser(user) {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email envoyé à ${user.email}`);
+  //console.log(`✅ Email envoyé à ${user.email}`);
 }
 
 async function sendNotificationToAdmin(user) {
@@ -391,7 +391,7 @@ async function sendNotificationToAdmin(user) {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email envoyé à ${user.email}`);
+  //console.log(`✅ Email envoyé à ${user.email}`);
 }
 
 async function checkUserByCode(email, code, isActive=false) {

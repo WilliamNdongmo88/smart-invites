@@ -11,25 +11,25 @@ require("dotenv").config({path: ".env.test"});
 const addProofPaymentFile = async (req, res, next) => {
     try {
         const paymentFile = req.file;
-        console.log('### paymentFile:', paymentFile);
+        //console.log('### paymentFile:', paymentFile);
         const fileType = String(paymentFile.mimetype).split('/')[1];
         const userData = JSON.parse(req.body.userData);
-        //console.log('### userData:', userData);
+        ////console.log('### userData:', userData);
         
         const payment = await getPaymentProof(userData.userId);
         if (payment) {
-            console.log('Payment déjà existant mise a jour...');
+            //console.log('Payment déjà existant mise a jour...');
             const result = await updatePaymentService(paymentFile, userData, payment);
             return res.status(200).json(result);
         }
 
         const user = await getUserById(userData.userId);
         if (!user) return res.status(409).json({ error: "Organizer not found with ID: " + userData.userId });
-        console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
+        //console.log('Fichier reçu en mémoire, début de l\'upload vers Firebase...');
 
         // Appelez la fonction pour uploader le fichier et attendez le résultat
         const data = await uploadPaymentProofFileToFirebase(paymentFile, user);
-        console.log('Fichier uploadé avec succès sur Firebase.');
+        //console.log('Fichier uploadé avec succès sur Firebase.');
         const fileUrl = data.url;
         const datas = {
             organizerId: userData.userId,
@@ -42,7 +42,7 @@ const addProofPaymentFile = async (req, res, next) => {
         const newPayment = await createPaymentService(datas);
         const existingSchedule = await getEventScheduleByEventId(newPayment.id);
         if (existingSchedule) {
-            console.log(`Schedule déjà existant pour payment ${newPayment.id}`);
+            //console.log(`Schedule déjà existant pour payment ${newPayment.id}`);
             return;
         }
         const scheduleId = await createPaymentSchedule(newPayment.id, newPayment.created_at, false);
@@ -128,21 +128,21 @@ async function changeUserPlan(req, res, next) {
   // Planifier la tâche
   async function planSchedule(scheduleId, paymentId, paymentDate) {
     try {
-        console.log('[schedule 3] paymentDate :', paymentDate);
+        //console.log('[schedule 3] paymentDate :', paymentDate);
         if(paymentDate==null || paymentDate==undefined) throw new Error("La date est invalide");
         // Conversion finale selon ta logique métier
         const scheduleDate = addOneMonthAndFormat(newPayment.created_at)//test value: "2026-01-13T20:52:00.000Z"
-        console.log('[schedule 3] scheduleDate (réelle pour scheduler):', scheduleDate);
+        //console.log('[schedule 3] scheduleDate (réelle pour scheduler):', scheduleDate);
 
         // 🔁 Sécurité : annuler s'il existe déjà
         await cancelSchedule(scheduleId);
 
         // Planification
         schedule.scheduleJob(String(scheduleId), scheduleDate, async () => {
-            console.log('🚀 === Job déclenché ===');
+            //console.log('🚀 === Job déclenché ===');
             await runScheduledTask(scheduleId, paymentId, paymentDate);
         });
-        console.log('✅ Schedule planifié pour payment ', scheduleId, ' date: ', scheduleDate);
+        //console.log('✅ Schedule planifié pour payment ', scheduleId, ' date: ', scheduleDate);
     } catch (error) {
         console.error("❌ Erreur planSchedule:", error);
     }
@@ -152,7 +152,7 @@ async function changeUserPlan(req, res, next) {
     const job = schedule.scheduledJobs[String(scheduleId)];
 
     if (!job) {
-        console.log('[cancelSchedule] Aucun job trouvé pour l\`event ', scheduleId);
+        //console.log('[cancelSchedule] Aucun job trouvé pour l\`event ', scheduleId);
         return;
     }
 

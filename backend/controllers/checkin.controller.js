@@ -17,7 +17,7 @@ const { sendThankYouWhatsappToPresentGuests,
 
 const viewPdfInvitation = async (req, res, next) => {
   try {
-    console.log('qrCodes:', req.body.link);
+    //console.log('qrCodes:', req.body.link);
     const pdfUrl = req.body.link;
 
     const response = await axios.get(pdfUrl, {
@@ -55,7 +55,7 @@ const viewPdfInvitation = async (req, res, next) => {
 
 const addCheckIn = async (req, res, next) => {
     try {
-        console.log("###body: ", req.body);
+        //console.log("###body: ", req.body);
         let isValid = false;
         const {eventId, invitationId, guestId, token, scannedBy, scanStatus, checkinTime} = req.body;
         if(token=='undefined:undefined') return res.status(404).json({error: "Code Qr invalide !"});
@@ -102,7 +102,7 @@ const addCheckIn = async (req, res, next) => {
                 }
             }
             const event_and_guest_datas = await getEventAndGuestInfoByGuestId(guestId);
-            console.log('event_and_guest_datas:', event_and_guest_datas);
+            //console.log('event_and_guest_datas:', event_and_guest_datas);
             return res.status(201).json(event_and_guest_datas);
         } else {
             let checkinId = existing.id;
@@ -111,7 +111,7 @@ const addCheckIn = async (req, res, next) => {
             return res.status(409).json({error: "Code Qr déjà utilisé !"});
         }
     } catch (error) {
-        console.log('ADD CHECKIN ERROR:', error.message);
+        //console.log('ADD CHECKIN ERROR:', error.message);
         next(error)
     }
 }
@@ -147,7 +147,7 @@ const getValidCheckIn = async (req, res, next) => {
 
 // Planifier la tâche
 function planSchedule(event, schedules, organizer, guest) {
-    console.log('[schedule 2]scan date:', schedules.scheduled_for);
+    //console.log('[schedule 2]scan date:', schedules.scheduled_for);
     const date = formatDate(schedules.scheduled_for);
     
     // on passe une fonction anonyme qui appelle notre fonction async
@@ -161,10 +161,10 @@ function planSchedule(event, schedules, organizer, guest) {
 
 async function sendScheduledThankMessage(event, schedules, organizer, guest) {
     try {
-        console.log('[2] guest.rsvpStatus:', guest.rsvp_status);
+        //console.log('[2] guest.rsvpStatus:', guest.rsvp_status);
         const guests = await getAllPresentGuest(guest.id);
         if (!guests || guests.length === 0) {
-            console.log("Aucun invité présent trouvé.");
+            //console.log("Aucun invité présent trouvé.");
             return;
         }
         // Envoi des mails en parallèle contrôlée (plus rapide)
@@ -182,7 +182,7 @@ async function sendScheduledThankMessage(event, schedules, organizer, guest) {
 
 async function sendManualThankMessage(req, res, next) {
     try {
-        console.log('Body:', req.body.datas);
+        //console.log('Body:', req.body.datas);
         const {eventId, guests, message} = req.body.datas;
         // Envoi des mails en parallèle contrôlée (plus rapide)
         await Promise.all(

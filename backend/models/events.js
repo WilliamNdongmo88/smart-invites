@@ -359,7 +359,7 @@ async function getUserByEvtId(eventId) {
     GROUP BY e.id, u.id
   `, [eventId]);
 
-//   console.log('getUserByEvtId:', result[0]);
+//   //console.log('getUserByEvtId:', result[0]);
   return result[0] || null;
 }
 

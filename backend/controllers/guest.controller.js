@@ -29,7 +29,7 @@ const { whatsappInvitationToGuest, sendFileQRCodeWhatsapp, sendReminderWhatsapp,
 const addGuest = async (req, res, next) => {
     let connection;
     try {
-        console.log('req.body:', req.body);
+        //console.log('req.body:', req.body);
 
         // =========================
         // 1. VALIDATION
@@ -41,7 +41,7 @@ const addGuest = async (req, res, next) => {
         }
         const guestDatas = req.body;
         const eventId = guestDatas[0].eventId;
-        console.log('###eventId:', eventId);
+        //console.log('###eventId:', eventId);
 
         if (!eventId) {
             return res.status(400).json({
@@ -258,7 +258,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const link = await getLinkByToken(token);
-        //console.log('###Link found:', link);
+        ////console.log('###Link found:', link);
         if (!link) {
             return res.status(404).json({
                 error: "Lien d'invitation introuvable"
@@ -283,7 +283,7 @@ const addGuestFromLink = async (req, res, next) => {
         =========================================
         */
         const event = await getEventById(eventId);
-        //console.log('###Event:', event);
+        ////console.log('###Event:', event);
         if (!event) {
             return res.status(404).json({
                 error: "Evénement introuvable"
@@ -398,18 +398,23 @@ const addGuestFromLink = async (req, res, next) => {
         12. WHATSAPP
         =========================================
         */
-       console.log("notificationMode:", notificationMode);
+       //console.log("notificationMode:", notificationMode);
         if(notificationMode==='whatsapp'){
             try {
                 await whatsappInvitationToGuest( guest, qrUrl, pdfBuffer );
                 const organizer = await getUserById(event.organizer_id);
-                await whatsappGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                if(organizer.notification_mode === 'email') {
+                    await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                }
+                if(organizer.notification_mode === 'whatsapp') {
+                    await whatsappGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                }
             } catch (error) {
                 console.error( 'WHATSAPP ERROR:', error.message );
                 try {
                     await deleteGuestAfterError(guestId);
                     await updateLinkUsedCount(link.id, 'decrement');
-                    console.log(`DELETE: Guest ${guestId} supprimé après erreur WhatsApp`);
+                    //console.log(`DELETE: Guest ${guestId} supprimé après erreur WhatsApp`);
                 } catch (rollbackError) {
                     console.error(
                         'ROLLBACK ERROR:',
@@ -429,13 +434,18 @@ const addGuestFromLink = async (req, res, next) => {
             try {
                 await sendInvitationToGuest( guest, qrUrl, pdfBuffer );
                 const organizer = await getUserById(event.organizer_id);
-                await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                if(organizer.notification_mode === 'email') {
+                    await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                }
+                if(organizer.notification_mode === 'whatsapp') {
+                    await whatsappGuestResponseToOrganizer(organizer, guest, rsvpStatus);
+                }
             } catch (error) {
                 console.error('EMAIL ERROR:',error.message);
                 try {
                     await deleteGuestAfterError(guestId);
                     await updateLinkUsedCount(link.id, 'decrement');
-                    console.log(`DELETE: Guest ${guestId} supprimé après erreur Email`);
+                    ////console.log(`DELETE: Guest ${guestId} supprimé après erreur Email`);
                 } catch (rollbackError) {
                     console.error(
                         'ROLLBACK ERROR:',
@@ -614,11 +624,11 @@ const updateGuest = async (req, res, next) => {
             hasPlusOne, guesthasPlusOneAutoriseByAdmin, plusOneName, 
             notes, dietaryRestrictions, plusOneNameDietRestr, rsvpToken, fromEditePage
         } = req.body;
-        console.log('fromEditePage:', fromEditePage);
-        console.log('req.body:', req.body);
+        //console.log('fromEditePage:', fromEditePage);
+        //console.log('req.body:', req.body);
         let updateDate = null;
         const guest = await getGuestById(req.params.guestId);
-        console.log('guestInBd:', guest);
+        //console.log('guestInBd:', guest);
         if(!fromEditePage){
             if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
             if(eventId==null) eventId = guest.event_id;
@@ -630,20 +640,20 @@ const updateGuest = async (req, res, next) => {
             if(rsvpStatus==null){
                 rsvpStatus = guest.rsvp_status;
             }else if(rsvpStatus!=null && rsvpStatus=='confirmed' && hasPlusOne==false){
-                console.log('Mise à jour pour invité sans plus-one');
+                //console.log('Mise à jour pour invité sans plus-one');
                 // Si le RSVP est confirmé et qu'il n'y a personne qui l'accompagne
                 // Envoyer l'invitation Qr-Code déjà généré par mail
                 updateDate = new Date();
                 const invitation = await getGuestInvitationById(req.params.guestId);
-                console.log('invitation:', invitation[0]);
+                //console.log('invitation:', invitation[0]);
                 if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
                 if(rsvpToken!= invitation[0].token) return res.status(404).json({error: "Token d'invitation invalide!"});
                 try {
                     const event = await getEventByGuestId(guest.id);
-                    console.log('###event :', event);
+                    //console.log('###event :', event);
                     const invite = await getGuestAndInvitationRelatedById(req.params.guestId);
                     const card = await getEventInvitNote(event[0].eventId);
-                    console.log('###card :', card);
+                    //console.log('###card :', card);
                     let buffer = null;
                     if(!card.has_invitation_model_card){
                         buffer = await generateGuestPdf(invite, card);
@@ -662,7 +672,7 @@ const updateGuest = async (req, res, next) => {
                         }
                     }
                     const organizer = await getUserById(event[0].organizerId);
-                    console.log('###organizer: ', organizer);
+                    //console.log('###organizer: ', organizer);
                     if(organizer.notification_mode === 'email') {
                         await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
                     }
@@ -682,7 +692,7 @@ const updateGuest = async (req, res, next) => {
                     next(error);
                 }
             }else if(rsvpStatus=='declined'){
-                //console.log('RSVP décliné, pas d\'envoi d\'invitation');
+                ////console.log('RSVP décliné, pas d\'envoi d\'invitation');
                 // Si le RSVP est décliné, ne pas envoyer l'invitation
                 const invitation = await getGuestInvitationById(req.params.guestId);
                 if(!invitation[0]) return res.status(404).json({error: "Invitation lié a cet invité introuvale!"});
@@ -713,20 +723,20 @@ const updateGuest = async (req, res, next) => {
             if(dietaryRestrictions==null) dietaryRestrictions = guest.dietary_restrictions;
             if(plusOneNameDietRestr==null) plusOneNameDietRestr = guest.plus_one_name_diet_restr;
             if (rsvpStatus=='confirmed' && hasPlusOne==true && guest.has_plus_one==false) {
-                console.log('Mise à jour pour invité avec plus-one');
+                //console.log('Mise à jour pour invité avec plus-one');
                 // Si le champ hasPlusOne est passé à true
                 // Supprimer l'ancienne invitation et les fichiers associés(QR code et PDF)
                 // Envoyer une nouvelle invitation en tenant compte de la personne qui l'accompagne
                 try {
                     const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
-                    console.log('[guest] guest: ', guest);
+                    //console.log('[guest] guest: ', guest);
                     if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                     if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
                     await deleteGuestFiles(guest.guest_id, guest.invitationToken);
                     await generateGuestQr(guest.guest_id, guest.invitationToken, "wedding-ring.webp");
-                    console.log('[plusOneName] plusOneName: ', plusOneName);
+                    //console.log('[plusOneName] plusOneName: ', plusOneName);
                     const event = await getEventByGuestId(guest.guest_id);
-                    console.log('###event :', event);
+                    //console.log('###event :', event);
                     const card = await getEventInvitNote(event[0].eventId);
                     let buffer = null;
                     if(!card.has_invitation_model_card){
@@ -747,7 +757,7 @@ const updateGuest = async (req, res, next) => {
                         }
                     }
                     isValid = true;
-                    //console.log('###event[0].organizerId :', event[0].organizerId);
+                    ////console.log('###event[0].organizerId :', event[0].organizerId);
                     const organizer = await getUserById(event[0].organizerId);
                     if(organizer.notification_mode === 'email') {
                         await sendGuestResponseToOrganizer(organizer, guest, rsvpStatus);
@@ -775,7 +785,7 @@ const updateGuest = async (req, res, next) => {
                 const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
                 if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                 if(rsvpToken!= guest.invitationToken) return res.status(404).json({error: "Token d'invitation invalide!"});
-                console.log('Aucune mise à jour effectuée car les conditions ne sont pas remplies.');
+                //console.log('Aucune mise à jour effectuée car les conditions ne sont pas remplies.');
             }
         }else{
             updateDate = new Date();
@@ -784,7 +794,7 @@ const updateGuest = async (req, res, next) => {
             updatedGuest = await getGuestById(req.params.guestId);
         }
         
-        //console.log('updatedGuest:', updatedGuest);
+        ////console.log('updatedGuest:', updatedGuest);
         return res.status(200).json({updatedGuest});
     } catch (error) {
         console.error('UPDATE GUEST ERROR:', error.message);
@@ -809,7 +819,7 @@ const updateRsvpStatus = async (req, res, next) => {
 const deleteGuest = async (req, res, next) => {
     try {
         const guest = await getGuestAndInvitationRelatedById(req.params.guestId);
-        //console.log('guest:', guest);
+        ////console.log('guest:', guest);
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         await delete_guest(req.params.guestId);
         await deleteGuestFiles(guest.guest_id, guest.invitationToken);
@@ -824,7 +834,7 @@ const deleteSeveralGuests = async (req, res, next) => {
     try {
         if (req.body.length==0) return res.status(404).json({error: "Liste vide"});
         let guestIdList = req.body;
-        //console.log('guestIdList:', guestIdList);
+        ////console.log('guestIdList:', guestIdList);
         let returnDatas = [];
         for (const key in guestIdList) {
             const id = guestIdList[key];
@@ -879,7 +889,7 @@ async function deleteGuestAfterError(guestId, res){
         if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
         await delete_guest(guestId);
         await deleteGuestFiles(guest.guest_id, guest.invitationToken);
-        console.log('message:', `Invité ${guestId} supprimé avec succès!`);
+        //console.log('message:', `Invité ${guestId} supprimé avec succès!`);
     } catch (error) {
         console.error('DELETE GUEST ERROR:', error.message);
         next(error);

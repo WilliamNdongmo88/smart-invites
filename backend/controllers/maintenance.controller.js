@@ -14,7 +14,7 @@ const  getTableMaintenance = async(req, res, next) => {
         }
         return res.status(200).json(maintenanceTable);
     } catch (error) {
-        console.log('[getTableMaintenance] Error:', error.message);
+        console.error('[getTableMaintenance] Error:', error.message);
         next(error);
     }
 };
@@ -35,7 +35,7 @@ const restartSchedule = async (req, res, next) => {
             timeZone: 'UTC'
             });
             const eventDate = date + ' ' + time;
-            console.log('event_date:', eventDate);
+            //console.log('event_date:', eventDate);
             const eventDatas = {
                 organizerId: event.organizer_id, 
                 title: event.title, 
@@ -65,34 +65,34 @@ const restartSchedule = async (req, res, next) => {
 
         return res.status(200).json({success: "Schedule relancé avec succès."});
     } catch (error) {
-        console.log('[restartSchedule] Error:', error.message);
+        console.error('[restartSchedule] Error:', error.message);
         next(error);
     }
 }
 
 const sendNotification = async (req, res, next) => {
     try {
-        console.log('req.body:', req.body);
+        //console.log('req.body:', req.body);
         const users = await getUsers();
-        // console.log('users: ', users);
+        // //console.log('users: ', users);
         // Envoi des mails en parallèle contrôlée (plus rapide)
         await Promise.all(
             users.map(u => {
-                console.log('[user]: ', u.email);
+                //console.log('[user]: ', u.email);
                 sendNewsUpdatesToUsers(u);
             })
         );
 
         return res.status(200).json({success: "Email envoyé avec succès."});
     } catch (error) {
-        console.log('[sendNotification] Error:', error.message);
+        console.error('[sendNotification] Error:', error.message);
         next(error);
     }
 }
 
 const updateTableMaintenance = async(req, res, next) => {
     try {
-        console.log("-----> Update Maintenance Table Request Body:", req.body);
+        //console.log("-----> Update Maintenance Table Request Body:", req.body);
         const maintenanceId = req.params.id;
         let {maintenanceProgress, subscribed, estimatedTime, email, status} = req.body;
         const maintenanceTable = await getMaintenanceById(maintenanceId);
@@ -110,7 +110,7 @@ const updateTableMaintenance = async(req, res, next) => {
         }
         return res.status(200).json(updatedMaintenance);
     } catch (error) {
-        console.log('[updateTableMaintenance] Error:', error.message);
+        console.error('[updateTableMaintenance] Error:', error.message);
         next(error);
     }
 }

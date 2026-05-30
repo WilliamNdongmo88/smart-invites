@@ -9,7 +9,7 @@ const addFeedback = async (req, res, next) => {
 
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    console.log('[addFeedback] Error:', err.message);
+    console.error('[addFeedback] Error:', err.message);
     next(err);
   }
 };
@@ -19,7 +19,7 @@ const fetchFeedbackStats = async (req, res, next) => {
     const stats = await getFeedbackStats();
     res.json(stats);
   } catch (err) {
-    console.log('[fetchFeedbackStats] Error:', err.message);
+    console.error('[fetchFeedbackStats] Error:', err.message);
     next(err);
   }
 };
@@ -29,7 +29,7 @@ const fetchRecentFeedback = async (req, res, next) => {
     const data = await getRecentFeedback();
     res.json(data);
   } catch (err) {
-    console.log('[fetchRecentFeedback] Error:', err.message);
+    console.error('[fetchRecentFeedback] Error:', err.message);
     next(err);
   }
 };
@@ -42,7 +42,7 @@ const getAllUsers = async (req, res, next) => {
     for (const data of datas) {
         const user = await getUserByEmail(data.email);
         if(!user){
-            console.log(`User with email ${data.email} not found.`);
+            //console.log(`User with email ${data.email} not found.`);
             continue;
         }
         users.push(user.email);
@@ -50,32 +50,32 @@ const getAllUsers = async (req, res, next) => {
     //console.log('users ::', users);
     res.json(users);
   } catch (err) {
-    console.log('[getAllUsers] Error:', err.message);
+    console.error('[getAllUsers] Error:', err.message);
     next(err);
   }
 };
 
 const changeStatusFeedback = async (req, res, next) => {
     try {
-      console.log('req.body ::', req.body);
+      //console.log('req.body ::', req.body);
         const {status} = req.body;
         await updateStatusFeedback(req.params.id, status);
         return res.status(200).json({ message: "Statut du feedback mis à jour avec succès !" });
     } catch (error) {
-        console.log('[changeStatusFeedback] Error:', error.message);
+        console.error('[changeStatusFeedback] Error:', error.message);
         next(error);
     }
 }
 
 const sendNotificationToUsers = async (req, res, next) => {
   try {
-    console.log('[sendNotificationToUsers] req.body ::', req.body);
+    //console.log('[sendNotificationToUsers] req.body ::', req.body);
     const { name, email, message, subject } = req.body;
     await sendMailToAdminFromPortfolio(name, email, message, subject);
 
     res.status(201).json({ message: 'Notification sent successfully' });
   } catch (err) {
-    console.log('[sendNotificationToUsers] Error:', err.message);
+    console.error('[sendNotificationToUsers] Error:', err.message);
     next(err);
   }
 };

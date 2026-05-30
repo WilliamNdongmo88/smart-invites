@@ -15,7 +15,7 @@ async function processGuestInvitationResponse( guest, invitation, rsvpStatus ) {
    const event = await getEventByGuestId(guest.id);
    const invite = await getGuestAndInvitationRelatedById(guest.id);
    const card = await getEventInvitNote(event[0].eventId);
-   console.log("Card:", card);
+   //console.log("Card:", card);
 
    let buffer = null;
    if (!card.has_invitation_model_card) {
@@ -28,7 +28,7 @@ async function processGuestInvitationResponse( guest, invitation, rsvpStatus ) {
       }
 
    } else {
-    console.log('Pas de modèle de carte, envoi PDF par défaut');
+    //console.log('Pas de modèle de carte, envoi PDF par défaut');
       if (guest.notification_mode === 'email') {
          await sendInvitationToGuest( guest, invitation.qr_code_url, null );
       }

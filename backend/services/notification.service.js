@@ -144,14 +144,14 @@ async function sendGuestEmail(guest, event, token) {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email(Invitation) envoyé à ${guest.email}`);
+  //console.log(`✅ Email(Invitation) envoyé à ${guest.email}`);
   }
 };
 
 async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
-  //console.log('data:', data);
-  // console.log('qrCodeUrl:', qrCodeUrl);
-  // console.log('pdfBuffer:', pdfBuffer);
+  ////console.log('data:', data);
+  // //console.log('qrCodeUrl:', qrCodeUrl);
+  // //console.log('pdfBuffer:', pdfBuffer);
   const guest = data;
   const event = data;
   let pdfBase64 = null;
@@ -167,13 +167,13 @@ async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
     pdfBase64 = pdfBuffer.toString("base64");
   }else{
     const eventInvNote = await getEventInvitNote(event.eventId);
-    // console.log('[eventInvNote]: ', eventInvNote);
+    // //console.log('[eventInvNote]: ', eventInvNote);
     const pdfUrl = await getPdfUrlFromFirebase(`event_${event.eventId}_default_carte_${eventInvNote.code}.pdf`);
     const pdfResponse = await axios.get(pdfUrl, {
       responseType: "arraybuffer",
     });
     pdfBase64 = Buffer.from(pdfResponse.data).toString("base64");
-    // console.log('pdfBase64: ', pdfBase64);
+    // //console.log('pdfBase64: ', pdfBase64);
   }
   const logo = await getLogoUrlFromFirebase('logo.png');
   if(logo){
@@ -309,7 +309,7 @@ async function sendInvitationToGuest(data, qrCodeUrl, pdfBuffer) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(qr-code et pdf) envoyé à ${guest.email}`);
+    //console.log(`✅ Email(qr-code et pdf) envoyé à ${guest.email}`);
   }
 }
 
@@ -459,7 +459,7 @@ async function sendReminderMail(guest, event) {
     }
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(Rappel) envoyé à ${guest.email}`);
+    //console.log(`✅ Email(Rappel) envoyé à ${guest.email}`);
   }
 }
 
@@ -588,11 +588,11 @@ async function sendFileQRCodeMail(data, qrCodeUrl) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(qr-code) envoyé à ${guest.email}`);
+    //console.log(`✅ Email(qr-code) envoyé à ${guest.email}`);
 }
 
 async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
-    console.log('[sendGuestResponseToOrganizer] guest:', guest);
+    //console.log('[sendGuestResponseToOrganizer] guest:', guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
     const logo = await getLogoUrlFromFirebase('logo.png');
@@ -686,11 +686,11 @@ async function sendGuestResponseToOrganizer(organizer, guest, rsvpStatus) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(rsvp invité) envoyé à ${guest.email}`);
+    //console.log(`✅ Email(rsvp invité) envoyé à ${guest.email}`);
 }
 
 async function sendGuestPresenceToOrganizer(organizer, guest) {
-    //console.log("###guest: ", guest);
+    ////console.log("###guest: ", guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
     const logo = await getLogoUrlFromFirebase('logo.png');
@@ -760,7 +760,7 @@ async function sendGuestPresenceToOrganizer(organizer, guest) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(arrivé invité) envoyé à ${guest.email}`);
+    //console.log(`✅ Email(arrivé invité) envoyé à ${guest.email}`);
 }
 
 async function sendPdfByEmail(data, pdfBuffer) {
@@ -853,7 +853,7 @@ async function sendPdfByEmail(data, pdfBuffer) {
       'info',
       false
     );
-    console.log(`✅ Email(pdf) envoyé à ${user.email}`);
+    //console.log(`✅ Email(pdf) envoyé à ${user.email}`);
 }
 
 async function sendPdfToGuestMail(data) {
@@ -934,7 +934,7 @@ async function sendPdfToGuestMail(data) {
       };
 
       await brevo.sendTransacEmail(sendSmtpEmail);
-      console.log(`✅ Invitation PDF envoyée à ${guest.email}`);
+      //console.log(`✅ Invitation PDF envoyée à ${guest.email}`);
     } catch (error) {
         console.error("[sendPdfToGuestMail] BREVO ERROR:", error.message);
         throw error;
@@ -942,7 +942,7 @@ async function sendPdfToGuestMail(data) {
 };
 
 async function sendThankYouMailToPresentGuests(event, schedules, organizer, guest) {
-  //console.log('guest:', guest);
+  ////console.log('guest:', guest);
     const brevo = new Brevo.TransactionalEmailsApi();
     brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
@@ -1061,19 +1061,19 @@ async function sendThankYouMailToPresentGuests(event, schedules, organizer, gues
 
     await brevo.sendTransacEmail(sendSmtpEmail);
     await notifications(schedules, organizer);
-    console.log(`✅ Email(Remerciement) envoyé à ${guest.email}`);
+    //console.log(`✅ Email(Remerciement) envoyé à ${guest.email}`);
     return true;
 }
 
 async function notifications(schedules, organizer) {
   try {
     const schedule_bd = await getEventScheduleByEventId(schedules.event_id);
-    console.log('schedule_bd: ', schedule_bd);
+    //console.log('schedule_bd: ', schedule_bd);
     if (!schedule_bd.is_checkin_executed) {
-      console.log('is_checkin_executed: ', schedule_bd.is_checkin_executed);
+      //console.log('is_checkin_executed: ', schedule_bd.is_checkin_executed);
       const scheduleId = schedule_bd.id;
       const updatedSchedule = await updateEventSchedule(scheduleId, schedule_bd.event_id, schedules.scheduled_for, true, true);
-      console.log('updatedSchedule : ', updatedSchedule);
+      //console.log('updatedSchedule : ', updatedSchedule);
       await createNotification(
         schedules.event_id,
         `Rapport d'envoi du message automatique`,
@@ -1083,7 +1083,7 @@ async function notifications(schedules, organizer) {
       );
       await notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer);
     }else{
-      console.log('.### Notification déjà envoyé...');
+      //console.log('.### Notification déjà envoyé...');
     }
   } catch (error) {
     throw new Error("notifications error : " + error.message);
@@ -1163,7 +1163,7 @@ async function notifyOrganizerAboutSendThankYouMailToPresentGuests(organizer) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email(Report of thank-email) envoyé à ${organizer.email}`);
+    //console.log(`✅ Email(Report of thank-email) envoyé à ${organizer.email}`);
 }
 
 async function manualSendThankYouMailToPresentGuests(eventId, thankMessage, guest) {
@@ -1247,7 +1247,7 @@ async function manualSendThankYouMailToPresentGuests(eventId, thankMessage, gues
 
   await brevo.sendTransacEmail(sendSmtpEmail);
 
-  console.log(`✅ Email de remerciement envoyé à ${guest.email}`);
+  //console.log(`✅ Email de remerciement envoyé à ${guest.email}`);
   return true;
 }
 
@@ -1332,12 +1332,12 @@ async function sendMailToAdmin(name, email, phone, subject, message) {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email(Contact Us) envoyé à Admin SmartInvite`);
+  //console.log(`✅ Email(Contact Us) envoyé à Admin SmartInvite`);
 };
 
 //Uniquement via mail
 async function sendNewsLetterToUsers() {
-  console.log("Envoie de la news letter")
+  //console.log("Envoie de la news letter")
   const brevo = new Brevo.TransactionalEmailsApi();
   brevo.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY?.trim();
 
@@ -1388,13 +1388,13 @@ async function sendNewsLetterToUsers() {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email(New letter) envoyé à aux users`);
+  //console.log(`✅ Email(New letter) envoyé à aux users`);
 };
 
 //Uniquement via mail
 async function sendNewsUpdatesToUsers(user) {
   try {
-    console.log("📨 Envoi de la newsletter à:", user.email);
+    //console.log("📨 Envoi de la newsletter à:", user.email);
 
     const logo = await getLogoUrlFromFirebase('logo.png');
 
@@ -1525,7 +1525,7 @@ async function sendNewsUpdatesToUsers(user) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log("✅ Email envoyé avec succès:", user.name);
+    //console.log("✅ Email envoyé avec succès:", user.name);
 
   } catch (error) {
     console.error("❌ Erreur envoi newsletter Brevo:", error.response?.body || error.message);
@@ -1533,7 +1533,7 @@ async function sendNewsUpdatesToUsers(user) {
 }
 
 async function sendPaymentProofToAdminAboutChangePlan(user, planName, fileBuffer) {
-  console.log({user, planName, fileBuffer})
+  //console.log({user, planName, fileBuffer})
   try {
     const logo = await getLogoUrlFromFirebase('logo.png');
 
@@ -1645,7 +1645,7 @@ async function sendPaymentProofToAdminAboutChangePlan(user, planName, fileBuffer
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log("✅ Email envoyé avec succès:", user.name);
+    //console.log("✅ Email envoyé avec succès:", user.name);
 
   } catch (error) {
     console.error("❌ Erreur envoi newsletter Brevo:", error.response?.body || error.message);
@@ -1653,7 +1653,7 @@ async function sendPaymentProofToAdminAboutChangePlan(user, planName, fileBuffer
 }
 
 async function sendNotificationToUserAboutChangePlan(user, plan) {
-  console.log("Données:", {user, plan});
+  //console.log("Données:", {user, plan});
   try {
     const logo = await getLogoUrlFromFirebase('logo.png');
 
@@ -1917,7 +1917,7 @@ async function sendNotificationToUserAboutChangePlan(user, plan) {
     };
 
     await brevo.sendTransacEmail(sendSmtpEmail);
-    console.log("✅ Email envoyé avec succès:", user.name);
+    ////console.log("✅ Email envoyé avec succès:", user.name);
 
   } catch (error) {
     console.error("❌ Erreur envoi newsletter Brevo:", error.response?.body || error.message);
@@ -1981,7 +1981,7 @@ async function sendMailToAdminFromPortfolio(name, email, message, subject) {
   };
 
   await brevo.sendTransacEmail(sendSmtpEmail);
-  console.log(`✅ Email(Contact Us) envoyé à Admin Portfolio`);
+  ////console.log(`✅ Email(Contact Us) envoyé à Admin Portfolio`);
 };
 
 module.exports = {sendGuestEmail, sendInvitationToGuest, sendReminderMail, sendPdfByEmail,

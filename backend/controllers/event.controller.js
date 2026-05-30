@@ -22,7 +22,7 @@ const { deleteInvitationFiles } = require("../services/invitation.service");
 
 const create_Event = async (req, res, next) => {
     try {
-        // console.log('req.body:', req.body);
+        // //console.log('req.body:', req.body);
         const user = await getUserById(req.body.eventDatas[0].organizerId);
         if(user.plan == 'gratuit' && user.total_eventsCreated < 1){
           const eventDatas = await createEventService(req.body);
@@ -502,21 +502,21 @@ const getAllEvents = async (req, res, next) => {
   // Planifier la tâche
   async function planSchedule(scheduleId, eventId, eventDate) {
     try {
-        //console.log('[schedule 1] eventDate :', eventDate);
+        console.log('[schedule 1] eventDate :', eventDate);
         if(eventDate==null || eventDate==undefined) throw new Error("La date est invalide");
         // Conversion finale selon ta logique métier
         const scheduleDate = formatDate(eventDate);
-        //console.log('[schedule 1] scheduleDate (réelle pour scheduler):', scheduleDate);
+        console.log('[schedule 1] scheduleDate (réelle pour scheduler):', scheduleDate);
 
         // 🔁 Sécurité : annuler s'il existe déjà
         await cancelSchedule(scheduleId);
 
         // Planification
         schedule.scheduleJob(String(scheduleId), scheduleDate, async () => {
-            //console.log('🚀 === Job déclenché ===');
+            console.log('🚀 === Job déclenché ===');
             await runScheduledTask(scheduleId, eventId, eventDate);
         });
-        //console.log('✅ Schedule planifié pour l\'event ', scheduleId, ' date: ', scheduleDate);
+        console.log('✅ Schedule planifié pour l\'event ', scheduleId, ' date: ', scheduleDate);
     } catch (error) {
         console.error("❌ Erreur planSchedule:", error);
     }
@@ -526,28 +526,28 @@ const getAllEvents = async (req, res, next) => {
     const job = schedule.scheduledJobs[String(scheduleId)];
 
     if (!job) {
-        //console.log('[cancelSchedule] Aucun job trouvé pour l\`event ', scheduleId);
+        console.log('[cancelSchedule] Aucun job trouvé pour l\`event ', scheduleId);
         return;
     }
 
     job.cancel();
     delete schedule.scheduledJobs[String(scheduleId)];
 
-    //console.log('🛑 Schedule annulé:', scheduleId);
+    console.log('🛑 Schedule annulé:', scheduleId);
   }
  
   async function runScheduledTask(scheduleId, eventId, scheduledFor) {
-    //console.log('🚀 Scheduler exécuté pour event:', eventId);
+    console.log('🚀 Scheduler exécuté pour event:', eventId);
 
     // Marquer comme exécuté
     await updateEventSchedule(scheduleId, eventId, scheduledFor, true, false);
     await sendScheduledReport(eventId);
 
-    //console.log('✅ Scheduler terminé:', eventId);
+    console.log('✅ Scheduler terminé:', eventId);
   }
 
   async function sendScheduledReport(eventId) {
-        //console.log('=== Job déclenché =1=');
+        console.log('=== Job déclenché =1=');
     try {
         let guestPresentList = [];
         let guestConfirmedList = [];

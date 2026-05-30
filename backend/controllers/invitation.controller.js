@@ -188,7 +188,7 @@ const genererInvitation = async ( req, res, next ) => {
          * =====================================================
          */
         const event = await getEventByGuestId( guest.id );
-        console.log("#EVENT :0: ", event);
+        //console.log("#EVENT :0: ", event);
         if (!event[0]) {
             return res.status(404).json({
                 error: 'Evénement introuvable'
@@ -239,7 +239,7 @@ const genererInvitation = async ( req, res, next ) => {
          * =====================================================
          */
         const invitationUpdated = await updateInvitationQrCode( guest.id, qrUrl );
-        // console.log("###invitationUpdated:", invitationUpdated);
+        // //console.log("###invitationUpdated:", invitationUpdated);
         /**
          * =====================================================
          * 10. GENERATION PDF
@@ -277,7 +277,7 @@ const genererInvitation = async ( req, res, next ) => {
                     await sendGuestWhatsapp( guest, eventData, token );
                     break;
                 default:
-                    console.log('Aucun mode notification défini');
+                    //console.log('Aucun mode notification défini');
                     break;
             }
 
@@ -324,11 +324,11 @@ const genererInvitation = async ( req, res, next ) => {
 
 const generateAttendeeQrCode = async (req, res, next) => {
     try {
-        console.log('### body: ', req.body);
+        //console.log('### body: ', req.body);
         const {logoFileName, attendeeId} = req.body;
         let token = `attId-${attendeeId}` +uuidv4();
         const qrUrl = await generateAttendeeQr(attendeeId, token, logoFileName);
-        console.log('### qrCode_Url: ', qrUrl);
+        //console.log('### qrCode_Url: ', qrUrl);
         return res.json({ qrUrl });
     } catch (error) {
         console.error("Erreur génération :", err.message);
@@ -382,7 +382,7 @@ const viewQrCode = async (req, res, next) => {
             const guestId = req.params.token.split(':')[0];
             let logoUrl = '';
             const event = await getEventByGuestId(guestId);
-            console.log('[viewQrCode] result:', event);
+            //console.log('[viewQrCode] result:', event);
             if(event[0].type == 'wedding'){
                 logoUrl = await getLogoUrlFromFirebase("carte.jpg");
             }else if(event[0].type == 'engagement'){
@@ -398,7 +398,7 @@ const viewQrCode = async (req, res, next) => {
             const eventId = req.params.token.split(':')[0];
             let logoUrl = '';
             const event = await getEventById(eventId);
-            // console.log('[viewQrCode] event:', event);
+            // //console.log('[viewQrCode] event:', event);
             if(event.type == 'wedding'){
                 logoUrl = await getLogoUrlFromFirebase("carte.jpg");
             }else if(event.type == 'engagement'){
@@ -438,7 +438,7 @@ const rsvpGuestStatus = async (req, res, next) => {
     try {
         const {rsvpStatus} = req.body;
         const invitation = await getGuestInvitationByToken(req.params.token);
-        // console.log('invitation:', invitation);
+        // //console.log('invitation:', invitation);
         if(!invitation[0]) return res.status(404).json({error: "Invitation non trouvé"});
         await updateRsvpStatusGuest(invitation[0].guest_id, rsvpStatus.toUpperCase());
         return res.status(200).json({message: "Rsvp Status mis a jous avec succès!"});

@@ -227,7 +227,7 @@ getAllUsersService = async (users) => {
         userPaymentProofCreatedAt: user.paymentCreatedAt
       });
     }
-    //console.log('datas:', datas);
+    console.log('datas:', datas);
   return datas;
 }
 
@@ -379,7 +379,7 @@ const updateProfile = async (req, res, next) => {
         }
 
         const resultId = await updateUser(req.params.userId, updatedUser);
-        //console.log('### result:', resultId);
+        console.log('### result:', resultId);
 
         // Relancer le schedule après la maj des paramètres de notification profile
         const events = await getEventsByOrganizerId(resultId);
@@ -506,7 +506,7 @@ const loginWithGoogle = async (req, res, next) => {
     // console.log('GOOGLE PAYLOAD:', payload);
 
     const { email, name, sub: googleId, picture } = payload;
-    //console.log('Extracted Google user info:', { email, name, googleId, picture });
+    console.log('Extracted Google user info:', { email, name, googleId, picture });
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
@@ -567,7 +567,7 @@ const signupWithGoogle = async (req, res, next) => {
     console.log('[signupWithGoogle] PAYLOAD:', payload);
 
     const { email, name, sub: googleId, picture } = payload;
-    //console.log('Extracted Google user info:', { email, name, googleId, picture });
+    console.log('Extracted Google user info:', { email, name, googleId, picture });
     // Ici, tu peux créer ou mettre à jour l’utilisateur dans ta DB
     
     let user = await getUserByEmail(email);
@@ -799,28 +799,28 @@ const deleteProfile = async (req, res, next) => {
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
         const events = await getEventsByOrganizerId(req.params.userId);
         if (events.length > 0) {
-            //console.log('USER EVENTS:', events);
+            console.log('USER EVENTS:', events);
             for (const event of events) {
               const guests = await getGuestByEventId(event.event_id);
               if (guests.length > 0) {
-                //console.log('EVENTS GUESTS:', guests);
+                console.log('EVENTS GUESTS:', guests);
                 for (const g of guests) {
                   const guest = await getGuestAndInvitationRelatedById(g.id);
                   if(!guest) return res.status(401).json({error: "Aucun invité trouvé!"});
                   await delete_guest(guest.guest_id);
                   if(guest.invitationId) {
-                    //console.log('Deleting files for guest ID:', guest.guest_id);
+                    console.log('Deleting files for guest ID:', guest.guest_id);
                     await deleteGuestFiles(guest.guest_id, guest.invitationToken);
                   }
-                  //console.log(`Guest with ID ${guest.guest_id} and related invitations deleted.`);
+                  console.log(`Guest with ID ${guest.guest_id} and related invitations deleted.`);
                 }
               }
               await deleteEvents(event.event_id);
-              //console.log(`Event with ID ${event.event_id} deleted.`);
+              console.log(`Event with ID ${event.event_id} deleted.`);
             }
         }
         await deleteAccount(req.params.userId);
-        //console.log(`User with ID ${req.params.userId} deleted.`);
+        console.log(`User with ID ${req.params.userId} deleted.`);
         return res.status(200).json({ message: 'Utilisateur supprimé avec succès' });
     } catch (error) {
         console.error('DELETE USER ERROR:', error.message);
