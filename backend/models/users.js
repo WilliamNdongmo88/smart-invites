@@ -45,7 +45,7 @@ async function createDefaultAdmin() {
         );
 
         if (rows.length > 0) {
-            console.log("Admin already exists");
+            console.error("Admin already exists");
             return;
         }
         const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
@@ -62,7 +62,6 @@ async function createDefaultAdmin() {
 }
 
 async function createUser({ managerId=null, name, email, accountType, password, acceptTerms, role = 'user', plan='gratuit', isActive = false, avatar_url = null, notificationMode = 'email' }) {
-  // console.log('### Creating user with data:', { name, email, accountType, password, acceptTerms, role, isActive, avatar_url });
   const hashed = await bcrypt.hash(password, 10);
   const [result] = await pool.query(
     `INSERT INTO USERS (manager_id, name, email, notification_mode, account_type, password, accept_terms, role, plan, is_active, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -160,7 +159,6 @@ async function getUserById(id) {
       ) AS total_guests
     FROM USERS u WHERE id = ?
   `, [id]);
-  // console.log('rows:', rows[0]);
   return rows.length ? rows[0] : null;
 }
 

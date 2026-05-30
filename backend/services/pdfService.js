@@ -5,7 +5,7 @@ const { getEventInvitNote, updateCodeEventInvNote } = require('../models/event_i
 require('pdfkit-table');
 
 async function generateGuestPdf(data, card = null, plusOneName = null) {
-  console.log("[generateGuestPdf] Card", card);
+  //console.log("[generateGuestPdf] Card", card);
   const guest = data;
   const event = data;
   
@@ -41,8 +41,8 @@ async function generateGuestPdf(data, card = null, plusOneName = null) {
     let y = 30; // Départ un peu plus haut
 
     /* 🎨 Fond */
-    doc.save().rect(0, 0, pageWidth, 25).fill("#0055A4").restore();
-    doc.save().rect(0, pageHeight - 25, pageWidth, 25).fill("#EF4135").restore();
+    doc.save().rect(0, 0, pageWidth, 25).fill(`${card.top_band_color}`).restore();//"#0055A4"
+    doc.save().rect(0, pageHeight - 25, pageWidth, 25).fill(`${card.bottom_band_color}`).restore();//"#EF4135"
     doc.save().opacity(0.04).rect(0, 0, pageWidth, pageHeight).fill("#FFFFFF").restore();
 
     /* 💍 Icône */
@@ -686,7 +686,7 @@ async function uploadPdfToFirebase(guest, pdfBuffer, event = null) {
   const bucket = admin.storage().bucket();
   let code = ''
   if(event) code = generateRandom4Digits();
-  console.log('code:', code);
+  //console.log('code:', code);
   
   let fileName = null;
   if (process.env.NODE_ENV == 'development'){
@@ -718,8 +718,8 @@ async function uploadPaymentProofFileToFirebase(paymentFile, user) {
   const bucket = admin.storage().bucket();
   let code = ''
   if(user) code = generateRandom4Digits();
-  console.log('code:', code);
-  // console.log('paymentFile:', paymentFile);
+  //console.log('code:', code);
+  //console.log('paymentFile:', paymentFile);
 
   const fileType = String(paymentFile.mimetype).split('/')[1];
   

@@ -11,7 +11,7 @@ const getAllNotifications = async (req, res, next) => {
             return res.status(200).json(notifications);
         }
     } catch (error) {
-        console.log('[getNotifications] Error:', error.message);
+        console.error('[getNotifications] Error:', error.message);
         next(error);
     }
 }
@@ -24,7 +24,7 @@ const updateNotification = async (req, res, next) => {
         await updateNotif(req.params.notifId, isRead);
         return res.status(200).json({success: "Notification marqué comme lu."});
     } catch (error) {
-        console.log('[updateNotification] Error:', error.message);
+        console.error('[updateNotification] Error:', error.message);
         next(error);
     }
 }
@@ -32,12 +32,12 @@ const updateNotification = async (req, res, next) => {
 const deleteNotification = async (req, res, next) => {
     try {
         const notification = await getNotificationById(req.params.notifId);
-        console.log('notification: ', notification);
+        //console.log('notification: ', notification);
         if(!notification) return res.status(404).json({error: "Notification non trouvé ! "});
         await deleteNotif(req.params.notifId);
         return res.status(200).json({success: "Notification supprimé avec succes."});
     } catch (error) {
-        console.log('[deleteNotification] Error:', error.message);
+        console.error('[deleteNotification] Error:', error.message);
         next(error);
     }
 }

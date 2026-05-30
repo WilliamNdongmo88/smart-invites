@@ -18,7 +18,7 @@ async function getLogoUrlFromFirebase(filename) {
 
     return url;
   } catch (error) {
-    console.log('getLogoUrlFromFirebase error: ', error.message);
+    //console.log('getLogoUrlFromFirebase error: ', error.message);
   }
 }
 
@@ -37,7 +37,7 @@ async function getPdfUrlFromFirebase(filename) {
 
     return url;
   } catch (error) {
-    console.log('getPdfUrlFromFirebase error: ', error.message);
+    //console.log('getPdfUrlFromFirebase error: ', error.message);
   }
 }
 
@@ -55,14 +55,14 @@ async function getLogoFromFirebase(logoFileName) {
     const [buffer] = await file.download();
     return buffer;
   } catch (error) {
-    console.log('getLogoFromFirebase error: ', error.message);
+    //console.log('getLogoFromFirebase error: ', error.message);
   }
 }
 
 async function generateGuestQr(guestId, token, logoFileName = null) {
   try {
     const url = process.env.BASE_URL + "/api/invitation/view/" + guestId +':'+ token;
-    console.log('URL à encoder dans le QR code:', url);
+    ////console.log('URL à encoder dans le QR code:', url);
 
     const qrBuffer = await QRCode.toBuffer(url, {
       errorCorrectionLevel: "H",
@@ -85,7 +85,7 @@ async function generateGuestQr(guestId, token, logoFileName = null) {
       qrImage = qrImage.composite([{ input: resizedLogo, top: centerY, left: centerX }]);
     }
 
-    console.log("[NODE_ENV] Evironnement de travail : ", process.env.NODE_ENV);
+    ////console.log("[NODE_ENV] Evironnement de travail : ", process.env.NODE_ENV);
     const finalQr = await qrImage.png().toBuffer();
     let filePath = '';
     if (process.env.NODE_ENV == 'development'){
@@ -98,14 +98,14 @@ async function generateGuestQr(guestId, token, logoFileName = null) {
 
     return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
   } catch (error) {
-    console.log('generateGuestQr error: ', error.message);
+    ////console.log('generateGuestQr error: ', error.message);
   }
 }
 
 async function generateAttendeeQr(attendeeId, token, logoFileName = null) {
   try {
     const sfUrl = `https://wise-fox-n41nm9-dev-ed--c.trailblaze.vf.force.com/apex/AttendeeDetails?id=${attendeeId}`;
-    console.log('URL à encoder dans le QR code:', sfUrl);
+    ////console.log('URL à encoder dans le QR code:', sfUrl);
 
     const qrBuffer = await QRCode.toBuffer(sfUrl, {
       errorCorrectionLevel: "H",
@@ -128,7 +128,7 @@ async function generateAttendeeQr(attendeeId, token, logoFileName = null) {
       qrImage = qrImage.composite([{ input: resizedLogo, top: centerY, left: centerX }]);
     }
 
-    console.log("[NODE_ENV] Evironnement de travail : ", process.env.NODE_ENV);
+    ////console.log("[NODE_ENV] Evironnement de travail : ", process.env.NODE_ENV);
     const finalQr = await qrImage.png().toBuffer();
     let filePath = '';
     if (process.env.NODE_ENV == 'development'){
@@ -141,7 +141,7 @@ async function generateAttendeeQr(attendeeId, token, logoFileName = null) {
 
     return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
   } catch (error) {
-    console.log('generateGuestQr error: ', error.message);
+    ////console.log('generateGuestQr error: ', error.message);
   }
 }
 

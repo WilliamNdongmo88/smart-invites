@@ -49,7 +49,7 @@ async function deleteGuestFiles(guestId, invitationToken) {
 };
 
 async function deleteInvitationFiles(path, fileProof=false) {
-  console.log('[deleteInvitationFilesCustom] path:', path);
+  //console.log('[deleteInvitationFilesCustom] path:', path);
   let pdfPath = '';
   if (!fileProof && process.env.NODE_ENV == 'development'){
     pdfPath = `dev/pdfs/${path}`;
@@ -62,16 +62,16 @@ async function deleteInvitationFiles(path, fileProof=false) {
     pdfPath = `prod/payment/${path}`;
   }
 
-  console.log('pdfPath:', pdfPath);
+  //console.log('pdfPath:', pdfPath);
   const pdfFile = bucket.file(pdfPath);
 
   try {
     const [pdfExists] = await pdfFile.exists();
     if (pdfExists) {
       await pdfFile.delete();
-      console.log(`🗑️ PDF supprimé: ${pdfPath}`);
+      //console.log(`🗑️ PDF supprimé: ${pdfPath}`);
     }else{
-      console.log(`❌ PDF non trouvé:  ${pdfPath} .`);
+      //console.log(`❌ PDF non trouvé:  ${pdfPath} .`);
     }
 
     return { success: true };

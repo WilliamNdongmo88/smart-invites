@@ -39,7 +39,7 @@ const client = new Client({
 
 client.on('qr', (qr) => {
 
-    console.log('Scanner le QR Code :');
+    //console.log('Scanner le QR Code :');
 
     qrcode.generate(qr, {
         small: true
@@ -47,32 +47,30 @@ client.on('qr', (qr) => {
 });
 
 client.on('authenticated', () => {
-    console.log('WhatsApp authentifié ✅');
+    //console.log('WhatsApp authentifié ✅');
 });
 
 client.on('ready', () => {
 
-    console.log('WhatsApp connecté ✅');
+    //console.log('WhatsApp connecté ✅');
 
     isReady = true;
 });
 
 client.on('loading_screen', (percent, message) => {
-    console.log('⏳ Chargement :', percent, message);
+    //console.log('⏳ Chargement :', percent, message);
 });
 
 client.on('disconnected', async (reason) => {
 
-    console.log('❌ WhatsApp déconnecté :', reason);
+    console.error('❌ WhatsApp déconnecté :', reason);
 
     isReady = false;
 
-    console.log('Tentative de reconnexion...');
+    //console.log('Tentative de reconnexion...');
 
     try {
-
         await client.initialize();
-
     } catch (error) {
 
         console.error('Erreur reconnexion :', error);
@@ -80,11 +78,8 @@ client.on('disconnected', async (reason) => {
 });
 
 client.on('auth_failure', (msg) => {
-
-    console.log('Erreur authentification ❌');
-
-    console.log(msg);
-
+    console.error('Erreur authentification ❌');
+    //console.log(msg);
     isReady = false;
 });
 
@@ -128,7 +123,7 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
-    console.log('Event::event', event);
+    //console.log('Event::event', event);
     try {
 
         /**
@@ -157,7 +152,7 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
         }
 
         const chatId = numberId._serialized;
-        console.log('#chatId:', chatId);
+        //console.log('#chatId:', chatId);
 
         /**
          * Lien RSVP
@@ -294,7 +289,7 @@ const sendGuestWhatsapp = async ( guest, event, token ) => {
         //await client.sendMessage( chatId, whatsappMessage );
         const sentMessage = await client.sendMessage( chatId, whatsappMessage );
 
-        console.log(`✅ Invitation WhatsApp envoyée à ${guest.full_name}`);
+        //console.log(`✅ Invitation WhatsApp envoyée à ${guest.full_name}`);
         try {
             // MAJ INVITATION AVEC CHAT ID POUR SUIVI RSVP
             const invitation = await getGuestInvitationById(guest.id);
@@ -400,7 +395,7 @@ const sendPdfByWhatsapp = async (data, pdfBuffer) => {
             false
         );
 
-        console.log(`✅ PDF WhatsApp envoyé à ${numero}`);
+        //console.log(`✅ PDF WhatsApp envoyé à ${numero}`);
 
         return true;
 
@@ -539,7 +534,7 @@ const sendFileQRCodeWhatsapp = async (data, qrCodeUrl) => {
             }
         );
 
-        console.log(`✅ QR Code WhatsApp envoyé à ${numero}`);
+        //console.log(`✅ QR Code WhatsApp envoyé à ${numero}`);
 
         return true;
 
@@ -563,7 +558,7 @@ const whatsappInvitationToGuest = async ( data, qrCodeUrl, pdfBuffer ) => {
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
-    console.log('###  data:', data);
+    //console.log('###  data:', data);
     const guest = data;
     const event = data;
 
@@ -789,7 +784,7 @@ const whatsappInvitationToGuest = async ( data, qrCodeUrl, pdfBuffer ) => {
             throw error;
         }
 
-        console.log( `✅ Invitation WhatsApp envoyée à ${numero}` );
+        //console.log( `✅ Invitation WhatsApp envoyée à ${numero}` );
 
         return true;
 
@@ -888,9 +883,7 @@ const sendWhatsappToAdmin = async ( name, email, phone, subject, message ) => {
             whatsappMessage
         );
 
-        console.log(
-            '✅ Message WhatsApp envoyé à Admin SmartInvite'
-        );
+        //console.log('✅ Message WhatsApp envoyé à Admin SmartInvite');
 
         return true;
 
@@ -993,9 +986,7 @@ const whatsappPaymentProofToAdminAboutChangePlan = async ( user, planName, fileB
          * Envoi WhatsApp
          */
         await client.sendMessage(chatId, media, { caption } );
-        console.log(
-            `✅ Preuve paiement WhatsApp envoyée à Admin`
-        );
+        //console.log(`✅ Preuve paiement WhatsApp envoyée à Admin`);
 
         return true;
 
@@ -1139,9 +1130,7 @@ const whatsappNotificationToUserAboutChangePlan = async ( user, plan ) => {
             whatsappMessage
         );
 
-        console.log(
-            `✅ Notification WhatsApp envoyée à ${user.name}`
-        );
+        //console.log(`✅ Notification WhatsApp envoyée à ${user.name}`);
 
         return true;
 
@@ -1367,9 +1356,7 @@ const sendReminderWhatsapp = async ( guest, event ) => {
             whatsappMessage
         );
 
-        console.log(
-            `✅ WhatsApp(Rappel) envoyé à ${guest.full_name}`
-        );
+        //console.log(`✅ WhatsApp(Rappel) envoyé à ${guest.full_name}`);
 
         return true;
 
@@ -1386,7 +1373,7 @@ const sendReminderWhatsapp = async ( guest, event ) => {
 
 //sendGuestResponseToOrganizer
 const whatsappGuestResponseToOrganizer = async ( organizer, guest, rsvpStatus ) => {
-
+    //console.log('&&&&organizer:', organizer);
     if (!isReady) {
         throw new Error('WhatsApp non prêt');
     }
@@ -1435,8 +1422,7 @@ const whatsappGuestResponseToOrganizer = async ( organizer, guest, rsvpStatus ) 
 
                 subject = '✅ Réponse invité';
 
-                responseText =
-                    `vient d'accepter votre invitation`;
+                responseText = `vient d'accepter votre invitation`;
 
                 emoji = '🎉';
 
@@ -1446,8 +1432,7 @@ const whatsappGuestResponseToOrganizer = async ( organizer, guest, rsvpStatus ) 
 
                 subject = '❌ Réponse invité';
 
-                responseText =
-                    `a décliné votre invitation`;
+                responseText =   `a décliné votre invitation`;
 
                 emoji = '😔';
 
@@ -1488,9 +1473,7 @@ const whatsappGuestResponseToOrganizer = async ( organizer, guest, rsvpStatus ) 
             whatsappMessage
         );
 
-        console.log(
-            `✅ Notification WhatsApp RSVP envoyée à ${organizer.name}`
-        );
+        //console.log(`✅ Notification WhatsApp RSVP envoyée à ${organizer.name}`);
 
         return true;
 
@@ -1579,9 +1562,7 @@ const whatsappGuestPresenceToOrganizer = async ( organizer, guest ) => {
             whatsappMessage
         );
 
-        console.log(
-            `✅ Notification présence envoyée à ${organizer.name}`
-        );
+        //console.log(`✅ Notification présence envoyée à ${organizer.name}`);
 
         return true;
 
@@ -1622,9 +1603,7 @@ async function sendWhatsappToAdminFromPortfolio( name, email, message, subject) 
       body: whatsappMessage
     });
 
-    console.log(
-      `✅ Message WhatsApp(Contact Us) envoyé à Admin Portfolio`
-    );
+    //console.log(`✅ Message WhatsApp(Contact Us) envoyé à Admin Portfolio`);
 
   } catch (error) {
     console.error(
@@ -1657,13 +1636,11 @@ async function manualSendThankYouWhatsappToPresentGuests( eventId, thankMessage,
     // Format whatsapp-web.js
     const chatId = `${phone}@c.us`;
 
-    console.log("chatId:", chatId);
+    //console.log("chatId:", chatId);
 
     await client.sendMessage(chatId, whatsappMessage);
 
-    console.log(
-      `✅ Message WhatsApp de remerciement envoyé à ${guest.phone_number}`
-    );
+    //console.log( `✅ Message WhatsApp de remerciement envoyé à ${guest.phone_number}` );
 
     return true;
 
@@ -1701,9 +1678,7 @@ async function notifyOrganizerAboutSendThankYouWhatsappToPresentGuests( organize
       body: whatsappMessage,
     });
 
-    console.log(
-      `✅ WhatsApp(Report of thank-message) envoyé à ${organizer.phone_number}`
-    );
+    //console.log(`✅ WhatsApp(Report of thank-message) envoyé à ${organizer.phone_number}`);
 
     return true;
 
@@ -1723,14 +1698,11 @@ async function whatsappNotifications(schedules, organizer) {
       schedules.event_id
     );
 
-    console.log('schedule_bd: ', schedule_bd);
+    //console.log('schedule_bd: ', schedule_bd);
 
     if (!schedule_bd.is_checkin_executed) {
 
-      console.log(
-        'is_checkin_executed: ',
-        schedule_bd.is_checkin_executed
-      );
+      //console.log('is_checkin_executed: ', schedule_bd.is_checkin_executed);
 
       const scheduleId = schedule_bd.id;
 
@@ -1742,7 +1714,7 @@ async function whatsappNotifications(schedules, organizer) {
         true
       );
 
-      console.log('updatedSchedule : ', updatedSchedule);
+      //console.log('updatedSchedule : ', updatedSchedule);
 
       await createNotification(
         schedules.event_id,
@@ -1758,7 +1730,7 @@ async function whatsappNotifications(schedules, organizer) {
 
     } else {
 
-      console.log('.### Notification WhatsApp déjà envoyée...');
+      //console.log('.### Notification WhatsApp déjà envoyée...');
 
     }
 
@@ -1859,13 +1831,11 @@ async function sendThankYouWhatsappToPresentGuests( event, schedules, organizer,
     // Format whatsapp-web.js
     const chatId = `${phone}@c.us`;
 
-    console.log("chatId:", chatId);
+    //console.log("chatId:", chatId);
 
     await client.sendMessage(chatId, whatsappMessage);
 
-    console.log(
-      `✅ Message WhatsApp de remerciement envoyé à ${guest.phone_number}`
-    );
+    //console.log(`✅ Message WhatsApp de remerciement envoyé à ${guest.phone_number}`);
 
     return true;
 
@@ -1923,9 +1893,7 @@ async function sendWhatsappPdfToGuest(data) {
       body: whatsappMessage,
     });
 
-    console.log(
-      `✅ Invitation PDF WhatsApp envoyée à ${guest.phone_number}`
-    );
+    //console.log(`✅ Invitation PDF WhatsApp envoyée à ${guest.phone_number}`);
 
     return true;
 

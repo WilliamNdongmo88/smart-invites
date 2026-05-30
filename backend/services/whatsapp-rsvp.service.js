@@ -24,19 +24,19 @@ const handleRsvp = async (client, message) => {
         const phone = message.from;
         const chatId = message.from;
 
-        console.log('ChatId:', chatId);
-        console.log( `📩 Message reçu : ${text}` );
+        //console.log('ChatId:', chatId);
+        //console.log( `📩 Message reçu : ${text}` );
 
         /**
          * Retrouver le tracking et l'invitation
          */
             const isUserExist = await getInvitationByChatId( message.from );
             if (!isUserExist) {
-                    console.log('Numéro non enregistré :',message.from);
+                    //console.log('Numéro non enregistré :',message.from);
                 return;
             }
 
-        console.log('message.hasQuotedMsg: ', message.hasQuotedMsg);
+        //console.log('message.hasQuotedMsg: ', message.hasQuotedMsg);
         if (!message.hasQuotedMsg) {
             await message.reply(
                 `Merci de faire un appui long sur le message, 
@@ -46,9 +46,9 @@ const handleRsvp = async (client, message) => {
         }
 
         const quoted = await message.getQuotedMessage();
-        console.log('###quoted: ', quoted);
+        //console.log('###quoted: ', quoted);
         const tracking = await findTrackingByMessageId( quoted.id._serialized );
-        console.log('tracking trouvée :', tracking);
+        //console.log('tracking trouvée :', tracking);
         
         if (!tracking) {
             //await message.reply( `❌ Aucune invitation trouvée.` );
@@ -58,7 +58,7 @@ const handleRsvp = async (client, message) => {
         const invitation = await getInvitationById( tracking.invitation_id );
         const guest = await getGuestById( tracking.guest_id );
         const eventId = tracking.event_id;
-        console.log('Invitation trouvée :', invitation);
+        //console.log('Invitation trouvée :', invitation);
 
         /**
          * Détection RSVP
@@ -105,7 +105,7 @@ const handleRsvp = async (client, message) => {
             return;
         }
 
-        console.log( `✅ RSVP : ${response}` );
+        //console.log( `✅ RSVP : ${response}` );
 
         /**
          * Réponse automatique
