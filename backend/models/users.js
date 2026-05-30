@@ -45,7 +45,7 @@ async function createDefaultAdmin() {
         );
 
         if (rows.length > 0) {
-            console.error("Admin already exists");
+            console.log("Admin already exists");
             return;
         }
         const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
