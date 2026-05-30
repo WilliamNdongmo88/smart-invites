@@ -15,6 +15,7 @@ async function processGuestInvitationResponse( guest, invitation, rsvpStatus ) {
    const event = await getEventByGuestId(guest.id);
    const invite = await getGuestAndInvitationRelatedById(guest.id);
    const card = await getEventInvitNote(event[0].eventId);
+   console.log("Card:", card);
 
    let buffer = null;
    if (!card.has_invitation_model_card) {

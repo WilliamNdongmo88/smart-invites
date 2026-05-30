@@ -5,6 +5,7 @@ const { getEventInvitNote, updateCodeEventInvNote } = require('../models/event_i
 require('pdfkit-table');
 
 async function generateGuestPdf(data, card = null, plusOneName = null) {
+  console.log("[generateGuestPdf] Card", card);
   const guest = data;
   const event = data;
   

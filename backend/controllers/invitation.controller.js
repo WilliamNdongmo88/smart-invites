@@ -339,7 +339,7 @@ const generateAttendeeQrCode = async (req, res, next) => {
 const viewInvitation = async (req, res, next) => {
     try {
         const guest = await getGuestById(req.params.guestId);
-        console.log('[viewInvitation] guest:', guest);
+        //console.log('[viewInvitation] guest:', guest);
         if (!guest) return res.status(404).send("Invité introuvable");
 
         const invitations = await getGuestInvitationById(req.params.guestId);
