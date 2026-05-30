@@ -1,6 +1,7 @@
 const { processGuestInvitationResponse } = require("./guest-response.service");
 const { getGuestById, updateRsvpStatusGuest } = require("../models/guests");
-const { getInvitationByChatId, updateInvitationByChatId } = require("../models/invitations");
+const { getInvitationByChatId, updateInvitationByChatId, getInvitationById } = require("../models/invitations");
+const { findTrackingByMessageId } = require( '../models/whatsapp-tracking' );
 
 const handleRsvp = async (client, message) => {
 
@@ -27,16 +28,36 @@ const handleRsvp = async (client, message) => {
         console.log( `📩 Message reçu : ${text}` );
 
         /**
-         * Retrouver invitation
+         * Retrouver le tracking et l'invitation
          */
-        const invitation = await getInvitationByChatId(chatId);
-        console.log('Invitation trouvée :', invitation);
-        if (!invitation) {
-            // await message.reply(
-            //     `❌ Aucune invitation trouvée.`
-            // );
+            const isUserExist = await getInvitationByChatId( message.from );
+            if (!isUserExist) {
+                    console.log('Numéro non enregistré :',message.from);
+                return;
+            }
+
+        console.log('message.hasQuotedMsg: ', message.hasQuotedMsg);
+        if (!message.hasQuotedMsg) {
+            await message.reply(
+                `Merci de faire un appui long sur le message, 
+                cliquer sur Répondre puis saisissez votre réponse`
+            );
             return;
         }
+
+        const quoted = await message.getQuotedMessage();
+        console.log('###quoted: ', quoted);
+        const tracking = await findTrackingByMessageId( quoted.id._serialized );
+        console.log('tracking trouvée :', tracking);
+        
+        if (!tracking) {
+            //await message.reply( `❌ Aucune invitation trouvée.` );
+            return;
+        }
+        
+        const invitation = await getInvitationById( tracking.invitation_id );
+        const guest = await getGuestById( tracking.guest_id );
+        const eventId = tracking.event_id;
         console.log('Invitation trouvée :', invitation);
 
         /**
@@ -47,14 +68,11 @@ const handleRsvp = async (client, message) => {
         /**
          * Regex
          */
-        const yesRegex =
-            /\b(oui|ok|présent|present)\b/i;
+        const yesRegex =/\b(oui|ok|présent|present)\b/i;
 
-        const noRegex =
-            /\b(non|absent|désolé|desole)\b/i;
+        const noRegex =/\b(non|absent|désolé|desole)\b/i;
 
-        const maybeRegex =
-            /\b(peut-être|peut etre|possible)\b/i;
+        const maybeRegex =/\b(peut-être|peut etre|possible)\b/i;
 
         /**
          * RSVP OUI
@@ -66,18 +84,14 @@ const handleRsvp = async (client, message) => {
         /**
          * RSVP NON
          */
-        else if (
-            noRegex.test(text)
-        ) {
+        else if ( noRegex.test(text)) {
             response = 'declined';
         }
 
         /**
          * RSVP MAYBE
          */
-        else if (
-            maybeRegex.test(text)
-        ) {
+        else if (maybeRegex.test(text)) {
             response = 'maybe';
         }
 
@@ -97,18 +111,16 @@ const handleRsvp = async (client, message) => {
          * Réponse automatique
          */
         switch (response) {
-
             case 'confirmed':
-
                 await message.reply(
                     `🎉 Merci pour votre confirmation❤️
                     \n Veuillez consulter les informations ci-dessous
                     \n 👇👇👇👇👇👇👇👇👇👇`
                 );
-                if(!invitation.is_invitation_sent){
-                    const guest = await getGuestById(invitation.guest_id);
-                    await processGuestInvitationResponse(guest, invitation, 'confirmed');
-                    await updateInvitationByChatId(invitation.id, chatId, true);
+                if(!invitation[0].is_invitation_sent){
+                    const guest = await getGuestById(invitation[0].guest_id);
+                    await processGuestInvitationResponse(guest, invitation[0], 'confirmed');
+                    await updateInvitationByChatId(invitation[0].id, chatId, true);
                     await updateRsvpStatusGuest(guest.id, 'confirmed');
                 }else{
                     await message.reply(`✅ Votre invitation a déjà été envoyée.`);
@@ -116,7 +128,6 @@ const handleRsvp = async (client, message) => {
                 break;
 
             case 'declined':
-
                 await message.reply(
                     `🙏 Merci pour votre réponse.\n\nNous espérons vous voir une prochaine fois ❤️`
                 );
@@ -124,7 +135,6 @@ const handleRsvp = async (client, message) => {
                 break;
 
             case 'maybe':
-
                 await message.reply(
                     `😊 Merci !\n\nNous restons en attente de votre confirmation finale ❤️`
                 );
