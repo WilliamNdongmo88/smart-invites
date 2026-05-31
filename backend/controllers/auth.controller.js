@@ -246,7 +246,6 @@ const register = async (req, res, next) => {
     }else{
       userId = await createUser({ name, email, accountType, password, acceptTerms, role });
     }
-    //console.log('### userId:', userId);
 
     // Génère un code à 6 chiffres
     const code = Math.floor(100000 + Math.random() * 900000).toString();
